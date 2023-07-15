@@ -4,6 +4,15 @@
 SeparatedValues::SeparatedValues(string filename){
   //Store file name within object
   this.filename = filename;
+
+  //Open file stream object if it exists
+  if(std::filesystem::exists(filename)){
+    this.file.open(filename);
+  }
+  else{
+    this.file = nullptr;
+  }
+  
   //Set default flags
   this.transposeFlag = false;
   return;
@@ -16,7 +25,10 @@ SeparatedValues::~SeparatedValues(){
 
 //Public Functions
 void SeparatedValues::Parse(){
-  
+  //If the file was actually opened
+  if(this.file != nullptr){
+    
+  }
 }
 
 bool SeparatedValues::Transpose(){

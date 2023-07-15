@@ -1,3 +1,7 @@
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+
 class SeparatedValues{
 public:
   //Class constructors
@@ -26,7 +30,7 @@ private:
   
   /*
     Name:    SetDelimiter
-    Purpose: Set the delimiting character for the class.
+    Purpose: Set the delimiting character for the class. To be used by sub-classes.
     Inputs:  delim (char) - The character to use for parsing files.
     Outputs: None
   */
@@ -35,4 +39,5 @@ private:
   char fileDelimiter;
   string filename;
   bool transposeFlag;
+  std::ofstream file;
 }
