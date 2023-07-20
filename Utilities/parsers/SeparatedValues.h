@@ -1,6 +1,10 @@
+#ifndef SEPARATED_VALUES_H
+#define SEPARATED_VALUES_H
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <vector>
 
 class SeparatedValues{
 public:
@@ -20,24 +24,24 @@ public:
   /*
     Name:    Transpose
     Purpose: Convert rows of parsed contents into columns.
-    Inputs:  None
-    Outputs: setting (bool) - Transpose setting.
-    Notes:   Toggles a flag which causes all subsequent Parse commands to take appropriate transposing action..
+    Inputs:  read (bool) - Flag which determines if all indexing operations should consider rows to be columns and columns to be rows.
+             write (bool) - Flag which determines if contents written to the file will be transposed.
+    Outputs: None
+    Notes:   Allows the setting of two flags. The first flag determines if a read operation will be considered to be "transposed" for indexing.
+    If set, this means that the first index value will be considered a column from the original file while the second index value will be considered a row.
+    If not set, the first index value will be considered a row from the original file while the second index value will be considered a column.
+    The second flag determines if the matrix read from the file should be transposed when writing back to the file. This will not affect anything
+    other than the file written to disk. All indexing operations will following the first flag.
   */
-  bool Transpose();
+  void Transpose(bool read, bool write);
   
 private:
-  
-  /*
-    Name:    SetDelimiter
-    Purpose: Set the delimiting character for the class. To be used by sub-classes.
-    Inputs:  delim (char) - The character to use for parsing files.
-    Outputs: None
-  */
-  void SetDelimiter(char delim);
 
+  std::vector<std::vector<string>> content;
   char fileDelimiter;
   string filename;
-  bool transposeFlag;
+  bool readTranspose, writeTranspose;
   std::ofstream file;
 }
+
+#endif
