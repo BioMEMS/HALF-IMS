@@ -9,7 +9,8 @@
 class SeparatedValues{
 public:
   //Class constructors
-  SeparatedValues(string filename);
+  SeparatedValues();
+  SeparatedValues(std::string filename);
   //Class destructor
   ~SeparatedValues();
 
@@ -42,11 +43,11 @@ protected:
   
 private:
 
-  std::vector<std::vector<string>> content;
-  string filename;
+  std::vector<std::vector<std::string>> content;
+  std::string filename;
   char fileDelimiter;
   bool readTranspose, writeTranspose;
   std::ofstream file;
-}
+};
 
 #endif

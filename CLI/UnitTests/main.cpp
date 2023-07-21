@@ -1,27 +1,43 @@
+//Standard libraries
+#include <iostream>
+
+//HALF-IMS libraries
 #include "SeparatedValues.h"
 #include "CommaSeparatedValues.h"
 
-//Simple function to convert boolean to string with some flavor
-string StatusOutput(bool status){
-  if(status){
-    return "PASS";
-  }
-  else{
-    return "FAIL";
-  }
-}
+namespace UnitTestsOutput{
+    //Simple function to convert boolean to string with some flavor
+    std::string StatusOutput(bool status){
+      if(status){
+	return "PASS";
+      }
+      else{
+	return "FAIL";
+      }
+    }
 
-//All the unit tests for the database classes
-bool DatabaseUnitTests(){
-  bool status = true;
+  //Simple function to standardize printing ouputs
+  void PrintLine(std::string name, bool status){
+    std::cout <<  "Unit Tests (" << name << "): " << StatusOutput(status) << std::endl;
+    
+    return;
+  }
   
-  return status;
 }
 
-void main(int argv, char* argc){
+namespace DatabaseUnitTests{
+  //All the unit tests for the database classes
+  bool SeparatedValues(){
+    bool status = true;
+    
+    return status;
+  }
+}
+
+int main(int argc, char *argv[]){
   bool result = false;
   
-  std::cout << "Database Unit Tests: " << StatusOutput(DatabaseUnitTests()) << std::endl;
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", DatabaseUnitTests::SeparatedValues());
 
-  return;
+  return 0;
 }

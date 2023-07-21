@@ -1,7 +1,12 @@
 #include "SeparatedValues.h"
 
+SeparatedValues::SeparatedValues(){
+  //Do nothing
+  return;
+}
+
 //Class constructors
-SeparatedValues::SeparatedValues(string filename){
+SeparatedValues::SeparatedValues(std::string filename){
   //Store file name within object
   this.filename = filename;
 

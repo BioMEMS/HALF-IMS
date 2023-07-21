@@ -5,11 +5,11 @@
 
 class CommaSeparatedValues : public SeparatedValues {
  public:
- CommaSeparatedValues(string filename);
+  CommaSeparatedValues(std::string filename);
   ~CommaSeparatedValues();
   
  private:
   
-}
+};
 
 #endif
