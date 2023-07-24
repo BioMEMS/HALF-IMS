@@ -27,8 +27,12 @@ unit-tests: main.cpp $(OBJTGT)
 
 %.o: %.cpp %.h
 	@mkdir -p $(OUTDIRECTORY)
-	$(COMPILER) $(CPPFLAGS) -c $< -o $(OUTDIRECTORY)$(notdir $@) 
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) -c $< -o $(OUTDIRECTORY)$(notdir $@) 
 
 .PHONY: clean
 clean:
 	@rm *~ *.*sv $(OUTDIRECTORY)*.o $(OUTDIRECTORY)$(OUTFILE)
+
+.PHONY: debug
+debug:
+	@printf "%s\n" $(SOURCE) $(HDRFILES) $(SRCFILES) $(OBJTGT) $(OBJFILES)
