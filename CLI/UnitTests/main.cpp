@@ -8,8 +8,8 @@
 
 //Global variables for test development
 std::vector<std::string> contents = {"one", "two", "three", "four", "five", "six"};
-int rows = 2;
-int columns = 3;
+unsigned rows = 2;
+unsigned columns = 3;
 
 namespace UnitTestsOutput{
     //Simple function to convert boolean to string with some flavor
@@ -31,77 +31,47 @@ namespace UnitTestsOutput{
   
 }
 
-namespace DatabaseUnitTests{
-  
-  //All the unit tests for the database classes
-  bool SeparatedValuesUnit(){
+namespace CSVUnitTests{
+  bool BasicUnit(){
     bool status = true;
 
-    SeparatedValues temp("temp.sv");
+    //CommaSeparatedValues temp("temp.csv");
     
     return status;
   }
-
-  bool SeparatedValuesReadFileUnit(){
-    bool status = false;
-
-    std::string file = "temp.sv";
-    std::fstream tempFile;
-
-    //Open the temporary file for output and truncate the file
-    tempFile.open("temp.sv", std::fstream::out | std::fstream::trunc);
-
-    //Write the contents
-    for(int i = 0; i < rows; i++){
-      for(int j = 0; j < columns; j++){
-        tempFile << contents[i*columns + j] << " ";
-      }
-      tempFile << std::endl;
-    }
-
-    //Close the file
-    tempFile.close();
-
-    try{
-    SeparatedValues temp(file);
-    temp.Parse();
-    status = true;
-    }
-    catch(const std::exception& exception){
-      //Do nothing
-    }
-    
-    return status;
-  }
+}
   
-  bool SeparatedValuesReadBadFileUnit(){
-    bool status = false;
+namespace SVUnitTests{
 
-    try{
-      SeparatedValues temp("temp.sv");
-      temp.Parse();
-      status = true;
-    }
-    catch(const std::exception& exception){
-      //Do nothing
-    }
-    
-    return status;
-  }
-
-  bool SeparatedValuesCheckContents(){
-    bool status = true;
-
-    std::string file = "temp.sv";
-    
+  void WriteBasicSetupFile(std::string file){
     //Open the temporary file for output and truncate the file
     std::fstream tempFile;
     tempFile.open(file, std::fstream::out | std::fstream::trunc);
 
     //Write the contents
-    for(int i = 0; i < rows; i++){
-      for(int j = 0; j < columns; j++){
-        tempFile << contents[i*columns + j] << " ";
+    for(unsigned i = 0; i < rows; i++){
+      for(unsigned j = 0; j < columns; j++){
+	tempFile << contents[i*columns + j] << " ";
+      }
+      tempFile << std::endl;
+    }
+    
+    //Close the file
+    tempFile.close();
+
+    return;
+  }
+
+  void WriteQuotedSetupFile(std::string file){
+    std::fstream tempFile;
+
+    //Open the temporary file for output and truncate the file
+    tempFile.open(file, std::fstream::out | std::fstream::trunc);
+
+    //Write the contents
+    for(unsigned i = 0; i < rows; i++){
+      for(unsigned j = 0; j < columns; j++){
+	tempFile << '"' << contents[i*columns + j] << '"' << " ";
       }
       tempFile << std::endl;
     }
@@ -109,31 +79,201 @@ namespace DatabaseUnitTests{
     //Close the file
     tempFile.close();
 
-    try{
-      SeparatedValues temp(file);
-      temp.Parse();
-
-      for(int i = 0; i < rows; i++){
-	for(int j = 0; j < columns; j++){
-	  status &= (contents[i*columns + j].compare(temp(i,j)) == 0);
+    return;
+  }
+  
+  void WritePartQuotedSetupFile(std::string file){
+    std::fstream tempFile;
+    
+    //Open the temporary file for output and truncate the file
+    tempFile.open("temp.sv", std::fstream::out | std::fstream::trunc);
+    
+    //Write the contents
+    for(unsigned i = 0; i < rows; i++){
+      for(unsigned j = 0; j < columns; j++){
+	if((i == 0 && (j == 0 || j == 2)) || (i == 1 && j == 1)){
+	  tempFile << '"' << contents[i*columns + j] << '"' << " ";
+	}
+	else{
+	  tempFile << contents[i*columns + j] << " ";
 	}
       }
-      
+      tempFile << std::endl;
+    }
+    
+    //Close the file
+    tempFile.close();
+    
+    return;
+  }
+  
+  //All the unit tests for the database classes
+  bool BasicUnit(){
+    bool status = true;
+
+    SeparatedValues temp("temp.sv");
+
+    return status;
+  }
+
+  bool ReadFileUnit(){
+    bool status = false;
+
+    std::string file = "temp.sv";
+
+    WriteBasicSetupFile(file);
+    
+    try{
+    SeparatedValues temp(file);
+    temp.Read();
+    status = true;
     }
     catch(const std::exception& exception){
-      status = false;
+      //Do nothing
     }
 
     return status;
   }
+
+  bool ReadQuotedFileUnit(){
+    bool status = false;
+
+    std::string file = "temp.sv";
+
+    WriteQuotedSetupFile(file);
+    
+    try{
+    SeparatedValues temp(file);
+    temp.Read();
+    status = true;
+    }
+    catch(const std::exception& exception){
+      //Do nothing
+    }
+
+    return status;
+  }
+
+  bool ReadPartQuotedFileUnit(){
+    bool status = false;
+
+    std::string file = "temp.sv";
+
+    WritePartQuotedSetupFile(file);
+
+    try{
+    SeparatedValues temp(file);
+    temp.Read();
+    status = true;
+    }
+    catch(const std::exception& exception){
+      //Do nothing
+    }
+
+    return status;
+  }
+
+  bool ReadBadFileUnit(){
+    bool status = false;
+
+    try{
+      SeparatedValues temp("temp.sv");
+      temp.Read();
+      status = true;
+    }
+    catch(const std::exception& exception){
+      //Do nothing
+    }
+
+    return status;
+  }
+
+  bool CheckContents(){
+    bool status = true;
+
+    std::string file = "temp.sv";
+
+    for(int v = 0; v < 3; v++){
+
+      //Write different setup files based on variant
+      if(v == 0){
+	WriteBasicSetupFile(file);
+      }
+      else if(v == 1){
+	WriteQuotedSetupFile(file);
+      }
+      else{
+        WritePartQuotedSetupFile(file);
+      }
+      
+      try{
+	SeparatedValues temp(file);
+	temp.Read();
+	
+	for(unsigned i = 0; i < rows; i++){
+	  for(unsigned j = 0; j < columns; j++){
+	    status &= (contents[i*columns + j].compare(temp(i,j)) == 0);
+	  }
+	}
+	
+	temp.Transpose(true, true);
+	
+	for(unsigned i = 0; i < rows; i++){
+	  for(unsigned j = 0; j < columns; j++){
+	    status &= (contents[i*columns + j].compare(temp(j,i)) == 0);
+	  }
+	}
+      }
+      catch(const std::exception& exception){
+	status = false;
+      }
+    }
+    return status;
+  }
+
+  bool WriteContent(){
+    bool status = false;
+
+    std::string file = "temp.sv";
+    std::string updateFile = "update.sv";
+    WriteBasicSetupFile(file);
+
+    try{
+      SeparatedValues temp(file);
+      temp.Read();
+      
+      temp(0,0) = "blank";
+
+      temp.Open(updateFile);
+      temp.Write();
+
+      SeparatedValues tempUpdate(updateFile);
+      tempUpdate.Read();
+      
+      status = (temp(0,0).compare(tempUpdate(0,0)) == 0);
+      
+    }
+    catch(const std::exception& exception){
+      std::cout << exception.what() << std::endl;
+      status = false;
+    }
+    
+    
+    return status;
+  }
+
 }
+
 
 int main(int argc, char *argv[]){
   
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Blank Constructor", DatabaseUnitTests::SeparatedValuesUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "File Parse Crash", DatabaseUnitTests::SeparatedValuesReadFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Non-existent File Parse Crash", DatabaseUnitTests::SeparatedValuesReadBadFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Contents Check", DatabaseUnitTests::SeparatedValuesCheckContents());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Blank Constructor", SVUnitTests::BasicUnit());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "File Parse Crash", ::SVUnitTests::ReadFileUnit());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Non-existent File Parse Crash", ::SVUnitTests::ReadBadFileUnit());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Contents Check", ::SVUnitTests::CheckContents());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Quoted Contents Check", ::SVUnitTests::ReadQuotedFileUnit());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Part Quoted Contents Check", ::SVUnitTests::ReadPartQuotedFileUnit());
+  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Write Contents Check", ::SVUnitTests::WriteContent());
   
   return 0;
 }

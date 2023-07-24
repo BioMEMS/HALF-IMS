@@ -14,6 +14,9 @@ public:
   SeparatedValues();
   SeparatedValues(std::string filename);
   
+  //Class destructor
+  ~SeparatedValues();
+  
   /*
     Name:    ()
     Purpose: Operator overload to allow array-style matrix access.
@@ -25,18 +28,34 @@ public:
   */
   std::string& operator()(unsigned row, unsigned column);
   std::string operator()(unsigned row, unsigned column) const;
-  
-  //Class destructor
-  ~SeparatedValues();
 
   /*
-    Name:    Parse
-    Purpose: Read file contents and convert to arrays of strings.
+    Name:    Open
+    Purpose: Open the file for IO operations.
+    Inputs:  file (std::string) - The file to use for reading and writing operations.
+    Outputs: None
+    Notes:   If called after parsing is done, the object will not have the current files contents. When write is called, the new file
+             will be updated with the object contents. 
+  */
+  void Open(std::string file);
+  
+  /*
+    Name:    Read
+    Purpose: Read file contents to allow access through object.
     Inputs:  None
     Outputs: None
   */
-  void Parse();
+  void Read();
 
+  /*
+    Name:    Write
+    Purpose: Write the object contents back to the file.
+    Inputs:  None
+    Outputs: None
+    Notes:   Deletes any current contents of the file and writes all values.
+  */
+  void Write();
+  
   /*
     Name:    Transpose
     Purpose: Convert rows of parsed contents into columns.
@@ -44,10 +63,10 @@ public:
              write (bool) - Flag which determines if contents written to the file will be transposed.
     Outputs: None
     Notes:   Allows the setting of two flags. The first flag determines if a read operation will be considered to be "transposed" for indexing.
-    If set, this means that the first index value will be considered a column from the original file while the second index value will be considered a row.
-    If not set, the first index value will be considered a row from the original file while the second index value will be considered a column.
-    The second flag determines if the matrix read from the file should be transposed when writing back to the file. This will not affect anything
-    other than the file written to disk. All indexing operations will following the first flag.
+             If set, this means that the first index value will be considered a column from the original file while the second index value will be considered a row.
+             If not set, the first index value will be considered a row from the original file while the second index value will be considered a column.
+             The second flag determines if the matrix read from the file should be transposed when writing back to the file. This will not affect anything
+             other than the file written to disk. All indexing operations will following the first flag.
   */
   void Transpose(bool read, bool write);
 
@@ -71,6 +90,7 @@ private:
   char fileDelimiter;
   bool readTranspose, writeTranspose;
   std::fstream file;
+  unsigned maxRow, maxColumn;
 };
 
 #endif

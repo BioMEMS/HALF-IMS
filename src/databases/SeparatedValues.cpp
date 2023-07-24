@@ -13,17 +13,14 @@ SeparatedValues::SeparatedValues(std::string filename){
   //Store file name within object
   this->filename = filename;
 
-  //Open file stream object if it exists
-  if(std::filesystem::exists(filename)){
-    file.open(filename, std::fstream::in);
-  }
-
   //Set a space as the file delimiter
   this->fileDelimiter = ' ';
   
   //Set default flags
   this->readTranspose = false;
   this->writeTranspose = false;
+
+  Read();
   
   return;
 }
@@ -35,21 +32,33 @@ SeparatedValues::~SeparatedValues(){
 }
 
 std::string SeparatedValues::operator() (unsigned row, unsigned column) const{
-  //Declare local row and column variables
-  unsigned locRow, locColumn;
 
+  //Declare temporary row and column variables
+  unsigned locRow, locColumn;
+  
+  //If the tranpose flag is set
   if(readTranspose){
+    //Swap row and column
     locRow = column;
     locColumn = row;
   }
+  //Otherwise
   else{
+    //Use as provided
     locRow = row;
     locColumn = column;
   }
 
-  ExpandContent(locRow, locColumn);
-
-  return content[locRow][locColumn];
+  //If the row or column is outside the matrix
+  if(locRow >= content.size() || locColumn >= content[locRow].size()){
+    //Return a blank
+    return "";
+  }
+  //Otherwise
+  else{
+    //Return matrix content
+    return content[locRow][locColumn];
+  }
 }
 
 std::string& SeparatedValues::operator()(unsigned row, unsigned column){
@@ -76,9 +85,22 @@ std::string& SeparatedValues::operator()(unsigned row, unsigned column){
   return content[locRow][locColumn];
 }
 
-void SeparatedValues::Parse(){
+void SeparatedValues::Read(){
+  
+  //Open file stream object if it exists
+  if(std::filesystem::exists(filename)){
+    file.open(filename, std::fstream::in);
+  }
+  
   //If the file was actually opened
   if(file.is_open()){
+
+    //Default maximum values to later update
+    maxRow = 0;
+    maxColumn = 0;
+
+    //Clear out any previous contents
+    content.clear();
     
     std::string line;
     int characterCount = 0;
@@ -90,7 +112,7 @@ void SeparatedValues::Parse(){
       std::getline(file, line);
       //Save the number of characters in the line
       characterCount = line.length();
-
+      
       //Create a temporary row vector
       std::vector<std::string> temp;
       //For every character in the line
@@ -115,7 +137,7 @@ void SeparatedValues::Parse(){
 	    //Update start index with substring adjustment for quotations
 	    start = start + substringAdjust;
 	    //Slice out a substring
-	    temp.push_back(line.substr(start, i-start));
+	    temp.push_back(line.substr(start, i-start-substringAdjust));
 	    //Set the start index to the current
 	    start = i + 1;
 	    //Reset quote counter
@@ -132,11 +154,97 @@ void SeparatedValues::Parse(){
 	  quoteCounter++;
 	}       
       }
+
+      //If the current columns is greater than the historical maximum
+      if(temp.size() > maxColumn){
+	//Update maximum
+	maxColumn = temp.size();
+      }
+	
       //Push vector onto content matrix
       content.push_back(temp);
     }
+
+    
+    //Update maximum rows
+    maxRow = content.size();
+
+    //If the last line was blank (i.e. only a newline character)
+    if(characterCount == 0){
+      //Decrement maximum rows by one
+      maxRow--;
+    }
+    
+    //Close file
+    file.close();
   }
+
+  return;
 }
+
+void SeparatedValues::Write(){
+  //Open file stream object creating file as necessary
+  file.open(filename, std::fstream::out | std::fstream::trunc);
+
+  if(file.is_open()){
+    //If transpose set
+    unsigned locRow, locColumn;
+    if(writeTranspose){
+      //Swap the maxima values
+      locRow = maxColumn;
+      locColumn = maxRow;
+    }
+    //Otherwise
+    else{
+      //Use maxima values normally
+      locRow = maxRow;
+      locColumn = maxColumn;
+    }
+    
+    //For each row
+    for(unsigned i = 0; i < locRow; i++){
+      //For each column
+      for(unsigned j = 0; j < locColumn; j++){
+	//Begin enclosing output in double quotes
+	file << '"';
+    
+	//If transpose was set
+	if(writeTranspose){
+	  //Swap columns and rows for indexing
+	  file << content[j][i];
+	}
+	//Otherwise
+	else{
+	  //Index normally
+	  file << content[i][j];
+	}
+	
+	//Write end quotation and delimiter after each item
+	file << '"' << fileDelimiter;
+      }
+      
+      //End line
+      file << std::endl;
+    }
+
+    //Close file after writing
+    file.close();
+  }
+  
+  return;
+}
+
+void SeparatedValues::Open(std::string file){
+  this->filename = file;
+
+  //If the previous file is open
+  if(this->file.is_open()){
+    //Close it
+    this->file.close();
+  }
+  
+}
+
 
 void SeparatedValues::Transpose(bool read, bool write){
   //Update class flags
@@ -162,9 +270,9 @@ void SeparatedValues::ExpandContent(unsigned row, unsigned column){
   }
 
   //If the column provided is off the matrix
-  if(Column >= content[row].size()){
+  if(column >= content[row].size()){
     //Extend columns of that row to match
-    for(unsigned i = 0; i < (Column - content[row].size() + 1); i++){
+    for(unsigned i = 0; i < (column - content[row].size() + 1); i++){
       content[row].push_back("");
     }
   }
