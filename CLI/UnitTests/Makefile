@@ -31,4 +31,4 @@ unit-tests: main.cpp $(OBJTGT)
 
 .PHONY: clean
 clean:
-	@rm *~ $(OUTDIRECTORY)*.o $(OUTDIRECTORY)$(OUTFILE)
+	@rm *~ *.*sv $(OUTDIRECTORY)*.o $(OUTDIRECTORY)$(OUTFILE)

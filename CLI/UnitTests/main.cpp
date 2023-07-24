@@ -11,7 +11,7 @@ std::vector<std::string> contents = {"one", "two", "three", "four", "five", "six
 unsigned rows = 2;
 unsigned columns = 3;
 
-namespace UnitTestsOutput{
+namespace UnitTestsSetup{
     //Simple function to convert boolean to string with some flavor
     std::string StatusOutput(bool status){
       if(status){
@@ -28,22 +28,9 @@ namespace UnitTestsOutput{
     
     return;
   }
+
   
-}
-
-namespace CSVUnitTests{
-  bool BasicUnit(){
-    bool status = true;
-
-    //CommaSeparatedValues temp("temp.csv");
-    
-    return status;
-  }
-}
-  
-namespace SVUnitTests{
-
-  void WriteBasicSetupFile(std::string file){
+  void WriteBasicSetupFile(std::string file, char delimiter){
     //Open the temporary file for output and truncate the file
     std::fstream tempFile;
     tempFile.open(file, std::fstream::out | std::fstream::trunc);
@@ -51,7 +38,7 @@ namespace SVUnitTests{
     //Write the contents
     for(unsigned i = 0; i < rows; i++){
       for(unsigned j = 0; j < columns; j++){
-	tempFile << contents[i*columns + j] << " ";
+	tempFile << contents[i*columns + j] << delimiter;
       }
       tempFile << std::endl;
     }
@@ -62,7 +49,7 @@ namespace SVUnitTests{
     return;
   }
 
-  void WriteQuotedSetupFile(std::string file){
+  void WriteQuotedSetupFile(std::string file, char delimiter){
     std::fstream tempFile;
 
     //Open the temporary file for output and truncate the file
@@ -71,7 +58,7 @@ namespace SVUnitTests{
     //Write the contents
     for(unsigned i = 0; i < rows; i++){
       for(unsigned j = 0; j < columns; j++){
-	tempFile << '"' << contents[i*columns + j] << '"' << " ";
+	tempFile << '"' << contents[i*columns + j] << '"' << delimiter;
       }
       tempFile << std::endl;
     }
@@ -82,7 +69,7 @@ namespace SVUnitTests{
     return;
   }
   
-  void WritePartQuotedSetupFile(std::string file){
+  void WritePartQuotedSetupFile(std::string file, char delimiter){
     std::fstream tempFile;
     
     //Open the temporary file for output and truncate the file
@@ -92,10 +79,10 @@ namespace SVUnitTests{
     for(unsigned i = 0; i < rows; i++){
       for(unsigned j = 0; j < columns; j++){
 	if((i == 0 && (j == 0 || j == 2)) || (i == 1 && j == 1)){
-	  tempFile << '"' << contents[i*columns + j] << '"' << " ";
+	  tempFile << '"' << contents[i*columns + j] << '"' << delimiter;
 	}
 	else{
-	  tempFile << contents[i*columns + j] << " ";
+	  tempFile << contents[i*columns + j] << delimiter;
 	}
       }
       tempFile << std::endl;
@@ -107,6 +94,43 @@ namespace SVUnitTests{
     return;
   }
   
+}
+
+namespace CSVUnitTests{
+  bool BasicUnit(){
+    bool status = true;
+
+    CommaSeparatedValues temp("temp.csv");
+    
+    return status;
+  }
+
+  bool CheckContent(){
+
+    bool status = false;
+    std::string file = "temp.csv";
+    UnitTestsSetup::WriteQuotedSetupFile(file, ',');
+
+    try{
+      status = true;
+      CommaSeparatedValues temp(file);
+      temp.Read();
+
+      for(unsigned i = 0; i < rows; i++){
+	for(unsigned j = 0; j < columns; j++){
+	  status &= (contents[i*columns + j].compare(temp(i,j)) == 0);
+	}
+      }
+    }
+    catch(const std::exception& exception){
+      status = false;
+    }
+
+    return status;
+  }
+}
+  
+namespace SVUnitTests{
   //All the unit tests for the database classes
   bool BasicUnit(){
     bool status = true;
@@ -121,7 +145,7 @@ namespace SVUnitTests{
 
     std::string file = "temp.sv";
 
-    WriteBasicSetupFile(file);
+    UnitTestsSetup::WriteBasicSetupFile(file, ' ');
     
     try{
     SeparatedValues temp(file);
@@ -139,8 +163,8 @@ namespace SVUnitTests{
     bool status = false;
 
     std::string file = "temp.sv";
-
-    WriteQuotedSetupFile(file);
+    
+    UnitTestsSetup::WriteQuotedSetupFile(file, ' ');
     
     try{
     SeparatedValues temp(file);
@@ -159,7 +183,7 @@ namespace SVUnitTests{
 
     std::string file = "temp.sv";
 
-    WritePartQuotedSetupFile(file);
+    UnitTestsSetup::WritePartQuotedSetupFile(file, ' ');
 
     try{
     SeparatedValues temp(file);
@@ -197,13 +221,13 @@ namespace SVUnitTests{
 
       //Write different setup files based on variant
       if(v == 0){
-	WriteBasicSetupFile(file);
+	UnitTestsSetup::WriteBasicSetupFile(file, ' ');
       }
       else if(v == 1){
-	WriteQuotedSetupFile(file);
+	UnitTestsSetup::WriteQuotedSetupFile(file, ' ');
       }
       else{
-        WritePartQuotedSetupFile(file);
+        UnitTestsSetup::WritePartQuotedSetupFile(file, ' ');
       }
       
       try{
@@ -236,7 +260,7 @@ namespace SVUnitTests{
 
     std::string file = "temp.sv";
     std::string updateFile = "update.sv";
-    WriteBasicSetupFile(file);
+    UnitTestsSetup::WriteBasicSetupFile(file, ' ');
 
     try{
       SeparatedValues temp(file);
@@ -267,13 +291,15 @@ namespace SVUnitTests{
 
 int main(int argc, char *argv[]){
   
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Blank Constructor", SVUnitTests::BasicUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "File Parse Crash", ::SVUnitTests::ReadFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Non-existent File Parse Crash", ::SVUnitTests::ReadBadFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Contents Check", ::SVUnitTests::CheckContents());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Quoted Contents Check", ::SVUnitTests::ReadQuotedFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Part Quoted Contents Check", ::SVUnitTests::ReadPartQuotedFileUnit());
-  UnitTestsOutput::PrintLine("SeparatedValues.cpp", "Write Contents Check", ::SVUnitTests::WriteContent());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Blank Constructor", SVUnitTests::BasicUnit());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "File Parse Crash", SVUnitTests::ReadFileUnit());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Non-existent File Parse Crash", SVUnitTests::ReadBadFileUnit());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Contents Check", SVUnitTests::CheckContents());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Quoted Contents Check", SVUnitTests::ReadQuotedFileUnit());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Part Quoted Contents Check", SVUnitTests::ReadPartQuotedFileUnit());
+  UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Write Contents Check", SVUnitTests::WriteContent());
+  UnitTestsSetup::PrintLine("CommaSeparatedValues.cpp", "Blank Constructor", CSVUnitTests::BasicUnit());
+  UnitTestsSetup::PrintLine("CommaSeparatedValues.cpp", "Contents Check", CSVUnitTests::CheckContent());
   
   return 0;
 }
