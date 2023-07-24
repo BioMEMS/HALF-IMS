@@ -1,7 +1,9 @@
 #include "CommaSeparatedValues.h"
 
 CommaSeparatedValues::CommaSeparatedValues(){
+  SetDelimiter(',');
 
+  return;
 }
 
 CommaSeparatedValues::CommaSeparatedValues(std::string filename) : SeparatedValues(filename){
@@ -11,3 +13,6 @@ CommaSeparatedValues::CommaSeparatedValues(std::string filename) : SeparatedValu
   return;
 }
 
+CommaSeparatedValues::~CommaSeparatedValues(){
+  return;
+}

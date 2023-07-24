@@ -245,12 +245,32 @@ void SeparatedValues::Open(std::string file){
   
 }
 
-
 void SeparatedValues::Transpose(bool read, bool write){
   //Update class flags
   readTranspose = read;
   writeTranspose = write;
 }
+
+Utilities::Limits SeparatedValues::Size(){
+
+  Utilities::Limits temp;
+  
+  //If read transpose
+  if(readTranspose){
+    //Swap rows and columns
+    temp.Rows = maxColumn;
+    temp.Columns = maxRow;
+  }
+  //Otherwise
+  else{
+    //Provide as read
+    temp.Rows = maxRow;
+    temp.Columns = maxColumn;
+  }
+  
+  return temp;
+}
+
 
 //Protected functions
 void SeparatedValues::SetDelimiter(char delimiter){

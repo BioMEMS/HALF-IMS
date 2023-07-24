@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "Utilities.h"
+
 class SeparatedValues{
 public:
 
@@ -70,6 +72,14 @@ public:
   */
   void Transpose(bool read, bool write);
 
+  /*
+    Name:    Size
+    Purpose: Provide numerical values for the known index limits.
+    Inputs:  None
+    Outputs: limits (Limits) - A limits structure with the row and column values set.
+    Notes:   This function will not set the maximum and minimum values portion of the structure.
+  */
+  Utilities::Limits Size();
   
 protected:
   void SetDelimiter(char delimiter);
