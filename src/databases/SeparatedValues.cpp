@@ -19,8 +19,6 @@ SeparatedValues::SeparatedValues(std::string filename){
   //Set default flags
   this->readTranspose = false;
   this->writeTranspose = false;
-
-  Read();
   
   return;
 }
@@ -155,12 +153,12 @@ void SeparatedValues::Read(){
 	}       
       }
 
-      //If the current columns is greater than the historical maximum
+      //If the temporary size is greater than the historical value
       if(temp.size() > maxColumn){
-	//Update maximum
+	//Update historical value
 	maxColumn = temp.size();
       }
-	
+      
       //Push vector onto content matrix
       content.push_back(temp);
     }
@@ -168,13 +166,13 @@ void SeparatedValues::Read(){
     
     //Update maximum rows
     maxRow = content.size();
-
+    
     //If the last line was blank (i.e. only a newline character)
     if(characterCount == 0){
       //Decrement maximum rows by one
       maxRow--;
     }
-    
+
     //Close file
     file.close();
   }
@@ -185,7 +183,7 @@ void SeparatedValues::Read(){
 void SeparatedValues::Write(){
   //Open file stream object creating file as necessary
   file.open(filename, std::fstream::out | std::fstream::trunc);
-
+  
   if(file.is_open()){
     //If transpose set
     unsigned locRow, locColumn;
@@ -202,25 +200,44 @@ void SeparatedValues::Write(){
     }
     
     //For each row
-    for(unsigned i = 0; i < locRow; i++){
+    for(unsigned i = 0, tempRow = 0; i < locRow; i++){
       //For each column
-      for(unsigned j = 0; j < locColumn; j++){
+      for(unsigned j = 0, tempCol = 0; j < locColumn; j++){
 	//Begin enclosing output in double quotes
 	file << '"';
-    
-	//If transpose was set
+
+	//If transpose flag is set
 	if(writeTranspose){
-	  //Swap columns and rows for indexing
-	  file << content[j][i];
+	  //Swap row and column indices
+	  tempRow = j;
+	  tempCol = i;
 	}
 	//Otherwise
 	else{
-	  //Index normally
-	  file << content[i][j];
+	  //Use as provided
+	  tempRow = i;
+	  tempCol = j;
 	}
+
+	//If the indices have gone off the matrix
+	if((i >= content.size()) || (j >= content[i].size())){
+	  //Write a blank
+	  file << "";
+	}
+	//Otherwise
+	else{
+	  //Write content from matrix
+	  file << content[tempRow][tempCol];
+	}
+
+	//Write end quotation
+	file << '"';
 	
-	//Write end quotation and delimiter after each item
-	file << '"' << fileDelimiter;
+	//If not the last column
+	if(j < (locColumn-1)){
+	  //Write delimiter character 
+	  file << fileDelimiter;
+	}
       }
       
       //End line
