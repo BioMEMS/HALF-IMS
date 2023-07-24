@@ -1,6 +1,7 @@
 #ifndef SEPARATED_VALUES_H
 #define SEPARATED_VALUES_H
 
+#include <string>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -8,9 +9,23 @@
 
 class SeparatedValues{
 public:
-  //Class constructors
+
+  //Class constructor
   SeparatedValues();
   SeparatedValues(std::string filename);
+  
+  /*
+    Name:    ()
+    Purpose: Operator overload to allow array-style matrix access.
+    Inputs:  row (int) - The row number to access within the matrix.
+             column (int) - The column number to access within the matrix.
+    Outputs: val (std::string*) - A pointer to the string to access.
+    Notes:   This function returns a pointer to allow the calling program to directly update the value similar to an array index.
+             It is possible that this is a horrible idea and will need to be changed later. For now, convenience rules the day.
+  */
+  std::string& operator()(unsigned row, unsigned column);
+  std::string operator()(unsigned row, unsigned column) const;
+  
   //Class destructor
   ~SeparatedValues();
 
@@ -36,18 +51,26 @@ public:
   */
   void Transpose(bool read, bool write);
 
-  void PrintContents();
   
 protected:
   void SetDelimiter(char delimiter);
   
 private:
-
+  /*
+    Name:    ExpandContent
+    Purpose: Expand the content matrix to ensure accessing has a known value.
+    Inputs:  row (unsigned) - The row to access.
+             column (unsigned) - The column to access.
+    Outputs: None
+    Notes:   None
+   */
+  void ExpandContent(unsigned row, unsigned column);
+  
   std::vector<std::vector<std::string>> content;
   std::string filename;
   char fileDelimiter;
   bool readTranspose, writeTranspose;
-  std::ofstream file;
+  std::fstream file;
 };
 
 #endif

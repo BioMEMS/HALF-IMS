@@ -1,8 +1,12 @@
 #include "CommaSeparatedValues.h"
 
-CommaSeparatedValues(std::string filename) : SeparatedValues(filename){
+CommaSeparatedValues::CommaSeparatedValues(){
+
+}
+
+CommaSeparatedValues::CommaSeparatedValues(std::string filename) : SeparatedValues(filename){
   //Set the file delimiter to a comma
-  this.fileDelimiter = ',';
+  SetDelimiter(',');
 
   return;
 }

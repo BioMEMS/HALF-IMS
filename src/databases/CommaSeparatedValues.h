@@ -5,6 +5,7 @@
 
 class CommaSeparatedValues : public SeparatedValues {
  public:
+  CommaSeparatedValues();
   CommaSeparatedValues(std::string filename);
   ~CommaSeparatedValues();
   

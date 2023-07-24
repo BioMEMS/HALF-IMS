@@ -1,56 +1,98 @@
 #include "SeparatedValues.h"
 
+//Public Functions
+//Class constructor
 SeparatedValues::SeparatedValues(){
-  //Do nothing
-  return;
+  this->filename = "";
+  this->fileDelimiter = ' ';
+  this->readTranspose = false;
+  this->writeTranspose = false;
 }
 
-//Class constructors
 SeparatedValues::SeparatedValues(std::string filename){
   //Store file name within object
-  this.filename = filename;
+  this->filename = filename;
 
   //Open file stream object if it exists
   if(std::filesystem::exists(filename)){
-    this.file.open(filename);
-  }
-  else{
-    this.file = nullptr;
+    file.open(filename, std::fstream::in);
   }
 
   //Set a space as the file delimiter
-  this.fileDelimiter = ' ';
+  this->fileDelimiter = ' ';
   
   //Set default flags
-  this.readTranspose = false;
-  this.writeTranspose = false;
+  this->readTranspose = false;
+  this->writeTranspose = false;
   
   return;
 }
 
 //Class destructor
 SeparatedValues::~SeparatedValues(){
+  
   return;
 }
 
-//Public Functions
+std::string SeparatedValues::operator() (unsigned row, unsigned column) const{
+  //Declare local row and column variables
+  unsigned locRow, locColumn;
+
+  if(readTranspose){
+    locRow = column;
+    locColumn = row;
+  }
+  else{
+    locRow = row;
+    locColumn = column;
+  }
+
+  ExpandContent(locRow, locColumn);
+
+  return content[locRow][locColumn];
+}
+
+std::string& SeparatedValues::operator()(unsigned row, unsigned column){
+
+  //Declare local row and column variables
+  unsigned locRow, locColumn;
+
+  //If the read transpose flag is set
+  if(readTranspose){
+    //Translate row and column appropriately
+    locRow = column;
+    locColumn = row;
+  }
+  //Otherwise
+  else{
+    //Use indices as provided
+    locRow = row;
+    locColumn = column;
+  }
+
+  ExpandContent(locRow, locColumn);
+  
+  //Return a pointer to the string
+  return content[locRow][locColumn];
+}
+
 void SeparatedValues::Parse(){
   //If the file was actually opened
-  if(this.file != nullptr){
+  if(file.is_open()){
     
     std::string line;
     int characterCount = 0;
     bool quoteFound = false, endOfLine = false;
 
     //While there are contents of the file to read
-    while(!this.file.eof()){
+    while(!file.eof()){
       //Get a line of the file
-      line = this.file.getline();
+      std::getline(file, line);
       //Save the number of characters in the line
       characterCount = line.length();
 
       //Create a temporary row vector
-      std::vector<string> temp;
+      std::vector<std::string> temp;
       //For every character in the line
       for(int i = 0, start = 0, quoteCounter=0; i < characterCount; i++){
 
@@ -58,7 +100,7 @@ void SeparatedValues::Parse(){
 	endOfLine = (i == (characterCount - 1));
 	
 	//If the character is the delimiter and an appropriate quote count is found or the end of the line is found
-	if((line[i] == this.fileDelimiter) || endOfLine){
+	if((line[i] == fileDelimiter) || endOfLine){
 	  //Create local adjustment index
 	  int substringAdjust = 0;
 	
@@ -73,7 +115,7 @@ void SeparatedValues::Parse(){
 	    //Update start index with substring adjustment for quotations
 	    start = start + substringAdjust;
 	    //Slice out a substring
-	    temp.push_back(line.substr(start, i-start-1));
+	    temp.push_back(line.substr(start, i-start));
 	    //Set the start index to the current
 	    start = i + 1;
 	    //Reset quote counter
@@ -88,31 +130,44 @@ void SeparatedValues::Parse(){
 	if(quoteFound){
 	  //Increment counter
 	  quoteCounter++;
-	}
-	//Push vector onto content matrix
-	this.content.push_back(temp);
+	}       
       }
+      //Push vector onto content matrix
+      content.push_back(temp);
     }
   }
 }
 
 void SeparatedValues::Transpose(bool read, bool write){
   //Update class flags
-  this.readTranspose = read;
-  this.writeTranspose = write;
-}
-
-void SeparatedValues::PrintContents(){
-  for(int i = 0; i < this.contents.size(); i++){
-    for(int j = 0; j < this.contents[i].size(); j++){
-      std::cout << this.contents[i][j] << " ";
-    }
-    std::cout << std::endl;
-  }
-  return;
+  readTranspose = read;
+  writeTranspose = write;
 }
 
 //Protected functions
 void SeparatedValues::SetDelimiter(char delimiter){
-  this.fileDelimiter = delimter;
+  fileDelimiter = delimiter;
+}
+
+//Private functions
+void SeparatedValues::ExpandContent(unsigned row, unsigned column){
+
+  //If row provided is off the matrix
+  if(row >= content.size()){
+    //Extend rows to match
+    for(unsigned i = 0; i < (row - content.size() + 1); i++){
+      std::vector<std::string> blankRow;
+      content.push_back(blankRow);
+    }
+  }
+
+  //If the column provided is off the matrix
+  if(Column >= content[row].size()){
+    //Extend columns of that row to match
+    for(unsigned i = 0; i < (Column - content[row].size() + 1); i++){
+      content[row].push_back("");
+    }
+  }
+  
+  return;
 }
