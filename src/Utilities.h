@@ -1,5 +1,9 @@
-#ifndef UTILITIES_H
+#Ifndef UTILITIES_H
 #define UTILITIES_H
+
+#include <map>
+#include <cmath>
+#include <regex>
 
 namespace Utilities{
   //Simple limits structure to hold values
@@ -9,13 +13,120 @@ namespace Utilities{
     double MinimumValue;
     double MaximumValue;
   };
+
+  bool NumericalConvert(std::string value){
+    //Get length of string
+    int length = value.length();
+    //Instantiate default flag
+    flag = (length > 0);
+
+    //If only a single character
+    if(length == 1){
+      //Check to ensure the only character is not a decimal point
+      flag &= (value[0] != '.');
+    }
+    
+    //For each character in the provided string
+    for(int i = 0; flag && (i < length); i++){
+      //Check for numeric and decimal point characters
+      flag &= (value[i] == '.' || isdigit((int)value[i]));
+    }
+
+    return flag;
+  }
   
   class InputFlags{
   public:
+    //Class constructor
     InputFlags();
+    //Class Destructor
     ~InputFlags();
+
+    //Enumeration denoting accepted delimiter type
+    enum Types{
+      Space = 1,
+      Equal = 2,
+      Standalone = 4,
+      Dash = 8,
+      DoubleDash = 16;
+    };
     
-    //Functions to set known flags
+    /*
+      Name:    Add
+      Purpose: Establish a relationship between a human-readable name, flag, and accepted delimiters.
+      Inputs:  name (std::string) - The human-readable name to use as reference.
+               flags (std::vector<std::string>) - The command-line input flags to associate with the human-readable name.
+	       delimiters (std::vector<Types>) - The delimiter enumeration values to associate with each flag. 
+      Outputs: None
+      Notes:   Each flag provided can have different delimiter selections denoted by enumeration value. This will affect the values parsed from a provided array.
+               The flags provided have a one-to-one relationship with the delimiters provided. If a flag does not have an equivalent delimiter, the last delimiter in the
+	       provided list will be used. 
+    */
+    void Add(std::string name, std::vector<std::string> flags, std::vector<Types> delimiters);
+
+    /*
+      Name:    Get
+      Purpose: Get the desired value from the command-line inputs.
+      Inputs:  name (std::string) - The name of the value to retrieve.
+      Outputs: value (std::string) - The value parsed from the command-line inputs.
+      Notes:   None
+    */
+    std::string Get(std::string name);
+    /*
+      Name:    Get
+      Purpose: Get the desired value from the command-line inputs.
+      Inputs:  name (std::string) - The name of the value to retrieve.
+      Outputs: values (std::vector<std::string>) - The values parsed from the command-line inputs.
+      Notes:   None
+    */
+    std::vector<std::string> Get(std::string name);
+    /*
+      Name:    Get
+      Purpose: Get the desired value from the command-line inputs.
+      Inputs:  name (std::string) - The name of the value to retrieve.
+      Outputs: value (double) - The value parsed from the command-line inputs.
+      Notes:   Will return NaN if unable to convert value.
+    */
+    double Get(std::string name);
+    /*
+      Name:    Get
+      Purpose: Get the desired value from the command-line inputs.
+      Inputs:  name (std::string) - The name of the value to retrieve.
+      Outputs: value (std::vector<double>) - The values parsed from the command-line inputs.
+      Notes:   Will return NaN if unable to convert value.
+    */
+    std::vector<double> Get(std::string name);
+   
+    /*
+      Name:    Parse
+      Purpose: Find all flags and their respective outputs.
+      Inputs:  count (int) - The number of arguments provided.
+               arguments (char*[]) - A pointer to an array of C-style strings. Typically taken directly from the inputs to the main function.
+      Outputs: None
+      Notes:   None
+    */
+    void Parse(int count, char* arguments[]);
+
+    /*
+      Name:    Present
+      Purpose: Check if a flag was found in the command-line inputs.
+      Inputs:  name (std::string) - The name of the value to retrieve.
+      Outputs: found (bool) - Flag which indicates if the flag was found.
+      Notes:   None
+    */
+    bool Present(std::string name);
+     
+  private:
+    std::regex GenerateRegularExpression(std::string flag, Types);
+    
+    //Referential array to track the human-readable name to CLI flags
+    std::map<std::string, std::vector<std::string>> flags;
+    //Referential array to track the flag to CLI delimiter type
+    std::map<std::string, Types> types;
+    //Referential array to track the flag to found value
+    std::map<std::string, std::string> values;
+    //Referential array to trackk if the flag is present
+    std::map<std::string, bool> present;
   };
 }
 #endif
