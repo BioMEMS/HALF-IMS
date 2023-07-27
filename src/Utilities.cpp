@@ -120,7 +120,8 @@ namespace Utilities{
 
   void InputFlags::Parse(int count, char* arguments[]){
 
-    std::string locFlag;
+    std::string locFlag, locValue;
+    bool locFound;
     std::vector<std::string> temp;
     
       //For each flag association
@@ -141,30 +142,29 @@ namespace Utilities{
 	  
 	  //For each value in the arguments list
 	  for(int i = 0, select = 0; i < count; i++, select = 0){
-	    //If the current argument matches a standlone regular expression
-	    if(std::regex_match(arguments[i], soloDelimited)){
-	      
-	    }
+	    //Default values
+	    locValue = "";
+	    locFound = std::regex_match(arguments[i], soloDelimited);
+	    
 	    //If the current argument matches a space delimited regular expression 
-	    else if(std::regex_match(arguments[i], spaceDelimited)){
-	      if(i < (count-1)){
-		this->values[locFlag] = arguments[i+1];
-	      }
-	      else{
-		this->values[locFlag] = "";
-	      }
+	    if(std::regex_match(arguments[i], spaceDelimited)){
 	      this->present[locFlag] = true;
+	      //If the current index is not the last one
+	      if(i < (count-1)){
+		//Get the next value after the flag
+		locValue = arguments[i+1];
+	      }
 	    }
 	    //If the current argument matches an equal delimited regular expression
 	    else if(std::regex_match(arguments[i], equalDelimited)){
-	      
+	      locFound = true;
+	      //Get all characters after the equal sign 
+	      locValue = arguments[i].substr(arguments.find('='));
 	    }
-	    //Otherwise
-	    else{
-	      //Ensure the value found is blank
-	      this->values[locFlag] = "";
-	      this->present[locFlag] = false;
-	    }
+
+	    //Update structures with values
+	    this->values[locFlag] = locValue;
+	    this->present[locFlag] = locFound;
 	  }
 	}
       }
@@ -172,6 +172,51 @@ namespace Utilities{
       return;
   }
 
+  std::regex InputFlags::GenerateRegularExpression(std::string flag, Types type){
+    int indexType = Types::Standalone;
+    int dashType = type & (Types::Dash | Types::DoubleDash);
+
+    //Begin pattern by assuming that it must be at the beginning of the string
+    std::string pattern = "^";
+    
+    //If not in the error state
+    if((type & Types::Space) || (type & Types::Equal) || (types & Types::Standalone)){
+      //Bit-mask out index flag
+      indexType = type & (Types::Space | Types::Equal | Types::Standalone);
+    
+      //Generate the dash portion
+      pattern += "-";
+      //If only a single dash
+      if(dashType == Types::Dash){
+	//Ensure pattern matches one
+	pattern += "{1}";
+      }
+      //If only a double dash
+      else if(dashType == Types::DoubleDash){
+	//Ensure pattern matches two
+	pattern += "{2}";
+      }
+      //Otherwise
+      else{
+	//Match either one or two
+	pattern += "{1,2}";
+      }
+      
+      //Place flag after dash section
+      pattern += flag;
+      
+      //If the index type is an equals
+      if(indexType == Types::Equal){
+	//Ensure that the 
+	pattern += "=.*";
+      }
+    }
+    
+    //Ensure the pattern matches the entirety of the string
+    pattern += "&";
+
+    return std::regex(pattern);
+  }
   //End of Utilities namespace
 }
 

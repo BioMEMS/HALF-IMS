@@ -117,7 +117,16 @@ namespace Utilities{
     bool Present(std::string name);
      
   private:
-    std::regex GenerateRegularExpression(std::string flag, Types);
+    /*
+      Name:    GenerateRegularExpression
+      Purpose: Create a regular expression object that obeys command-line input convention.
+      Inputs:  flag (std::string) - The flag to use in the expression.
+               type (Types) - The bit-field that indicates how to generate the expression.
+      Outputs: expression (std::regex) - The generated regular expression.
+      Note:    The generated expression cannot be any combination of space-delimited, equal-delimited, or standalone.
+               Standalone will be selected as default if provided a mix of these conditions. 
+    */
+    std::regex GenerateRegularExpression(std::string flag, Types type);
     
     //Referential array to track the human-readable name to CLI flags
     std::map<std::string, std::vector<std::string>> flags;
