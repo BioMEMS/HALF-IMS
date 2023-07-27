@@ -3,6 +3,7 @@
 #include <fstream>
 
 //HALF-IMS libraries
+#include "Utilities.h"
 #include "SeparatedValues.h"
 #include "CommaSeparatedValues.h"
 
@@ -15,10 +16,10 @@ namespace UnitTestsSetup{
     //Simple function to convert boolean to string with some flavor
     std::string StatusOutput(bool status){
       if(status){
-	return "PASS";
+	return "\033[92mPASS\033[0m";
       }
       else{
-	return "FAIL";
+	return "\033[31mFAIL\033[0m";
       }
     }
 
@@ -73,7 +74,7 @@ namespace UnitTestsSetup{
     std::fstream tempFile;
     
     //Open the temporary file for output and truncate the file
-    tempFile.open("temp.sv", std::fstream::out | std::fstream::trunc);
+    tempFile.open(file, std::fstream::out | std::fstream::trunc);
     
     //Write the contents
     for(unsigned i = 0; i < rows; i++){
@@ -94,6 +95,24 @@ namespace UnitTestsSetup{
     return;
   }
   
+}
+
+namespace UtilitiesUnitTests{
+  bool BasicUnit(){
+    bool status = true;
+    Utilities::Checks temp;
+
+    status = temp.NumericalConvert("1.0");
+    
+    return status;
+  }
+
+  bool PeriodCheck(){
+    bool status = true;
+    Utilities::Checks temp;
+
+    return !temp.NumericalConvert(".");
+  }
 }
 
 namespace CSVUnitTests{
@@ -300,6 +319,8 @@ int main(int argc, char *argv[]){
   UnitTestsSetup::PrintLine("SeparatedValues.cpp", "Write Contents Check", SVUnitTests::WriteContent());
   UnitTestsSetup::PrintLine("CommaSeparatedValues.cpp", "Blank Constructor", CSVUnitTests::BasicUnit());
   UnitTestsSetup::PrintLine("CommaSeparatedValues.cpp", "Contents Check", CSVUnitTests::CheckContent());
+  UnitTestsSetup::PrintLine("Utilities.cpp", "Numeric Check", UtilitiesUnitTests::BasicUnit());
+  UnitTestsSetup::PrintLine("Utilities.cpp", "Period Check", UtilitiesUnitTests::PeriodCheck());
   
   return 0;
 }
