@@ -5,6 +5,7 @@
 #include <filesystem>
 
 //HALF-IMS libraries
+#include "Utilities.h"
 #include "CommaSeparatedValues.h"
 
 //Function to load a CSV file and normalize DET1 and DET2 columns to 2.5V
@@ -41,6 +42,11 @@ std::string FileToOutputDirectory(std::string inputFile, std::string outputDirec
 
 int main(int argc, char *argv[]){
 
+  Utilities::InputFlags cli;
+  cli.Parse(argc, argv);
+
+  return 0;
+  
   std::string outDir = "./";
   
   //Declare array of CSV files based upon input list

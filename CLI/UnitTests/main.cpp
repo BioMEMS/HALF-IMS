@@ -9,6 +9,7 @@
 
 //Global variables for test development
 std::vector<std::string> contents = {"one", "two", "three", "four", "five", "six"};
+
 unsigned rows = 2;
 unsigned columns = 3;
 
@@ -99,19 +100,67 @@ namespace UnitTestsSetup{
 
 namespace UtilitiesUnitTests{
   bool BasicUnit(){
-    bool status = true;
     Utilities::Checks temp;
 
-    status = temp.NumericalConvert("1.0");
-    
-    return status;
+    return temp.NumericalConvert("1.0");
   }
 
   bool PeriodCheck(){
-    bool status = true;
     Utilities::Checks temp;
 
     return !temp.NumericalConvert(".");
+  }
+
+  bool AddCheck(){
+    bool status = false;
+    char* args[] = {"--test", "-v"};
+    Utilities::InputFlags temp;
+
+    try{
+      temp.Add("test", std::vector<std::string> {"-t", "--test"}, std::vector<int> {Utilities::InputFlags::Types::Standalone | Utilities::InputFlags::Types::Dash, Utilities::InputFlags::Types::Standalone | Utilities::InputFlags::Types::DoubleDash});
+      status = true;
+    }
+    catch(const std::exception& exception){
+      
+    }
+    return status;
+  }
+
+  bool ParseCheck(){
+    bool status = false;
+    char* args[] = {"--test", "-v"};
+    Utilities::InputFlags temp;
+
+    temp.Add("test", std::vector<std::string> {"t", "test"}, std::vector<int> {Utilities::InputFlags::Types::Standalone | Utilities::InputFlags::Types::Dash, Utilities::InputFlags::Types::Standalone | Utilities::InputFlags::Types::DoubleDash});
+    
+    try{
+      temp.Parse(2, args);
+      status = true;
+    }
+    catch(const std::exception& exception){
+      
+    }
+    return status;
+    
+  }
+
+  bool GetCheck(){
+    bool status = false;
+    char* args[] = {"--test", "-v"};
+    Utilities::InputFlags temp;
+
+    temp.Add("test", std::vector<std::string> {"t", "test"}, std::vector<int> {Utilities::InputFlags::Types::Space | Utilities::InputFlags::Types::Dash, Utilities::InputFlags::Types::Space | Utilities::InputFlags::Types::DoubleDash});
+    temp.Parse(2, args);
+    
+    try{
+      std::string val = args[1];
+      status = (temp.Get("test") == val);
+    }
+    catch(const std::exception& exception){
+      
+    }
+    return status;
+   
   }
 }
 
@@ -321,6 +370,9 @@ int main(int argc, char *argv[]){
   UnitTestsSetup::PrintLine("CommaSeparatedValues.cpp", "Contents Check", CSVUnitTests::CheckContent());
   UnitTestsSetup::PrintLine("Utilities.cpp", "Numeric Check", UtilitiesUnitTests::BasicUnit());
   UnitTestsSetup::PrintLine("Utilities.cpp", "Period Check", UtilitiesUnitTests::PeriodCheck());
+  UnitTestsSetup::PrintLine("Utilities.cpp", "Input Add", UtilitiesUnitTests::AddCheck());
+  UnitTestsSetup::PrintLine("Utilities.cpp", "Parse Check", UtilitiesUnitTests::ParseCheck());
+  UnitTestsSetup::PrintLine("Utilities.cpp", "Get Check", UtilitiesUnitTests::GetCheck());
   
   return 0;
 }

@@ -1,4 +1,4 @@
-#Ifndef UTILITIES_H
+#ifndef UTILITIES_H
 #define UTILITIES_H
 
 #include <map>
@@ -14,26 +14,21 @@ namespace Utilities{
     double MaximumValue;
   };
 
-  bool NumericalConvert(std::string value){
-    //Get length of string
-    int length = value.length();
-    //Instantiate default flag
-    flag = (length > 0);
+  class Checks{
+  public:
+    Checks();
+    ~Checks();
 
-    //If only a single character
-    if(length == 1){
-      //Check to ensure the only character is not a decimal point
-      flag &= (value[0] != '.');
-    }
-    
-    //For each character in the provided string
-    for(int i = 0; flag && (i < length); i++){
-      //Check for numeric and decimal point characters
-      flag &= (value[i] == '.' || isdigit((int)value[i]));
-    }
+    /*
+      Name:    NumericalConvert
+      Purpose: Determine if a string can be converted to a numerical value.
+      Inputs:  value (std::string) - The string to check.
+      Outputs: flag (bool) - Indicator if the string can be converted.
+      Notes:   None
+    */
+    bool NumericalConvert(std::string value);
 
-    return flag;
-  }
+  };
   
   class InputFlags{
   public:
@@ -48,7 +43,7 @@ namespace Utilities{
       Equal = 2,
       Standalone = 4,
       Dash = 8,
-      DoubleDash = 16;
+      DoubleDash = 16
     };
     
     /*
@@ -56,13 +51,13 @@ namespace Utilities{
       Purpose: Establish a relationship between a human-readable name, flag, and accepted delimiters.
       Inputs:  name (std::string) - The human-readable name to use as reference.
                flags (std::vector<std::string>) - The command-line input flags to associate with the human-readable name.
-	       delimiters (std::vector<Types>) - The delimiter enumeration values to associate with each flag. 
+	       delimiters (std::vector<int>) - The delimiter enumeration values to associate with each flag. 
       Outputs: None
       Notes:   Each flag provided can have different delimiter selections denoted by enumeration value. This will affect the values parsed from a provided array.
                The flags provided have a one-to-one relationship with the delimiters provided. If a flag does not have an equivalent delimiter, the last delimiter in the
 	       provided list will be used. 
     */
-    void Add(std::string name, std::vector<std::string> flags, std::vector<Types> delimiters);
+    void Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters);
 
     /*
       Name:    Get
@@ -72,30 +67,33 @@ namespace Utilities{
       Notes:   None
     */
     std::string Get(std::string name);
+
     /*
-      Name:    Get
+      Name:    GetList
       Purpose: Get the desired value from the command-line inputs.
       Inputs:  name (std::string) - The name of the value to retrieve.
       Outputs: values (std::vector<std::string>) - The values parsed from the command-line inputs.
       Notes:   None
     */
-    std::vector<std::string> Get(std::string name);
+    std::vector<std::string> GetList(std::string name);
+    
     /*
-      Name:    Get
+      Name:    GetNumeric
       Purpose: Get the desired value from the command-line inputs.
       Inputs:  name (std::string) - The name of the value to retrieve.
       Outputs: value (double) - The value parsed from the command-line inputs.
       Notes:   Will return NaN if unable to convert value.
     */
-    double Get(std::string name);
+    double GetNumeric(std::string name);
+
     /*
-      Name:    Get
+      Name:    GetNumericList
       Purpose: Get the desired value from the command-line inputs.
       Inputs:  name (std::string) - The name of the value to retrieve.
       Outputs: value (std::vector<double>) - The values parsed from the command-line inputs.
-      Notes:   Will return NaN if unable to convert value.
+      Notes:   Will put NaN if unable to convert a value.
     */
-    std::vector<double> Get(std::string name);
+    std::vector<double> GetNumericList(std::string name);
    
     /*
       Name:    Parse
@@ -126,15 +124,15 @@ namespace Utilities{
       Note:    The generated expression cannot be any combination of space-delimited, equal-delimited, or standalone.
                Standalone will be selected as default if provided a mix of these conditions. 
     */
-    std::regex GenerateRegularExpression(std::string flag, Types type);
+    std::regex GenerateRegularExpression(std::string flag, int type);
     
     //Referential array to track the human-readable name to CLI flags
     std::map<std::string, std::vector<std::string>> flags;
     //Referential array to track the flag to CLI delimiter type
-    std::map<std::string, Types> types;
+    std::map<std::string, int> types;
     //Referential array to track the flag to found value
     std::map<std::string, std::string> values;
-    //Referential array to trackk if the flag is present
+    //Referential array to track if the flag is present
     std::map<std::string, bool> present;
   };
 }
