@@ -1,4 +1,5 @@
 #include "Utilities.h"
+#include <iostream>
 
 namespace Utilities{
 
@@ -117,11 +118,21 @@ namespace Utilities{
     std::vector<std::string> values;
 
     //So long as positions can be found
-    for(std::size_t i = 0, end = 0; i != std::string::npos; ){
-      //Find a comma from the previous position
-      end = temp.find(",",i);
-      //Extract the substring and put into vector
-      values.push_back(temp.substr(i, end-i));
+    for(unsigned i = 0, prev = 0, flag = 0; i < temp.length(); i++){
+      //Generate a flag to determine if at the end of the string
+      flag = (i == (temp.length()-1));
+      //If the current character is a comma or at the end of the string
+      if(temp[i] == ',' || flag){
+	//If right at the end of the list
+	if(flag){
+	  //Bump the counter by one to not truncate a character
+	  i++;
+	}
+	//Extract the substring and put into vector
+	values.push_back(temp.substr(prev, i-prev));
+	//Update the history
+	prev = i+1; 
+      }
     }
 
     return values;
@@ -198,7 +209,7 @@ namespace Utilities{
 	      //Get all characters after the equal sign
 	      locValue = locValue.substr(locValue.find('='));
 	    }
-
+	    
 	    //If the flag is not currently found
 	    if(!this->present[locFlag]){
 	      //Update structures with values
@@ -213,6 +224,18 @@ namespace Utilities{
       return;
   }
 
+  bool InputFlags::Present(std::string name){
+    std::vector<std::string> tempFlags = this->flags[name];
+
+    bool status = false;
+    
+    for(unsigned i = 0; i < tempFlags.size(); i++){
+      status |= this->present[tempFlags[i]];
+    }
+    
+    return status;
+  }
+  
   std::regex InputFlags::GenerateRegularExpression(std::string flag, int type){
     int indexType = Types::Standalone;
     int dashType = type & (Types::Dash | Types::DoubleDash);

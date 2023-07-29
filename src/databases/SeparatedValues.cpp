@@ -7,6 +7,8 @@ SeparatedValues::SeparatedValues(){
   this->fileDelimiter = ' ';
   this->readTranspose = false;
   this->writeTranspose = false;
+  this->maxRow = 0;
+  this->maxColumn = 0;
 }
 
 SeparatedValues::SeparatedValues(std::string filename){
@@ -19,7 +21,10 @@ SeparatedValues::SeparatedValues(std::string filename){
   //Set default flags
   this->readTranspose = false;
   this->writeTranspose = false;
-  
+
+  //Set default size parameters
+  this->maxRow = 0;
+  this->maxColumn = 0;
   return;
 }
 
@@ -313,6 +318,14 @@ void SeparatedValues::ExpandContent(unsigned row, unsigned column){
       content[row].push_back("");
     }
   }
-  
+
+  //If either of the maximums are exceeded, update them
+  if(row > maxRow){
+    maxRow = row;
+  }
+
+  if(column > maxColumn){
+    maxColumn = column;
+  }
   return;
 }
