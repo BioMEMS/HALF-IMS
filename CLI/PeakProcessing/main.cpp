@@ -3,7 +3,6 @@
 #include <fstream>
 #include <string>
 #include <filesystem>
-#include <thread>
 
 //HALF-IMS libraries
 #include "Utilities.h"
@@ -16,7 +15,7 @@
 #define AVG_FLAG "average"
 
 //Function to load a CSV file and normalize DET1 and DET2 columns to 2.5V and average to an arbitrary value
-void ProcessFile(std::string file, unsigned averageFactor, CommaSeparatedValues* files[], unsigned index){
+CommaSeparatedValues* ProcessFile(std::string file, unsigned averageFactor){
 
   //Instantiate an object for the processed data
   CommaSeparatedValues *processed = new CommaSeparatedValues("temp.csv");
@@ -29,6 +28,7 @@ void ProcessFile(std::string file, unsigned averageFactor, CommaSeparatedValues*
   
   std::string temp;
   double tempData, average, weight, weightSum;
+  
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
     //Get the header name
@@ -46,7 +46,7 @@ void ProcessFile(std::string file, unsigned averageFactor, CommaSeparatedValues*
       weightSum = 0;
       
       //If the current column is NOT the X-value
-      if(temp != "X_VALUE"){
+      if(temp != "X_Value"){
 	//Calculate start and stop indices
 	start = j - averageFactor/2;
 	stop = j + averageFactor/2;
@@ -97,15 +97,14 @@ void ProcessFile(std::string file, unsigned averageFactor, CommaSeparatedValues*
 	
 	//Calculate the weight average of the point
 	average = average/weightSum;
-
 	
 	//If DET1 or DET2 columns
 	if(temp == "DET1" || temp == "DET2"){
 	  //Normalize to 2.45 V and flip sign
 	  average = -1*(average-2.45);
+
 	}
-	  
-	
+
 	//Convert average to a string and save to CSV
 	(*processed)(j,i) = std::to_string(average);
       }
@@ -117,8 +116,88 @@ void ProcessFile(std::string file, unsigned averageFactor, CommaSeparatedValues*
     }
   }
 
-  //Place pointer in array
-  files[index] = processed;
+  //Return pointer to CSV
+  return processed;
+}
+
+void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparatedValues* output){
+  //Get the size of the input data
+  Utilities::Limits size = data->Size();
+  Utilities::Limits outputSize = output->Size();
+  
+  std::string temp = "";
+  unsigned colIndices[7] = {0, 0, 0, 0, 0, 0, 0};
+  unsigned startIndices[2] = {0, 0}; //Hold the 10% of maximum points
+  unsigned stopIndices[2] = {0, 0}; //Hold the 90% of maximum points
+  double maximums[2] = {-100, -100}; //Default values should be well below anything in the files
+  double detVal = 0;
+  
+  //Find the relevant column indices
+  for(unsigned i = 0; i < size.Columns; i++){
+    temp = (*data)(0,i);
+    if(temp == "DET1"){
+      colIndices[0] = i;
+    }
+    else if(temp == "DET2"){
+      colIndices[1] = i;
+    }
+    else if(temp == "X_Value"){
+      colIndices[2] = i;
+    }
+    else if(temp == "VS+"){
+      colIndices[3] = i;
+    }
+    else if(temp == "VS-"){
+      colIndices[4] = i;
+    }
+    else if(temp == "VL+"){
+      colIndices[5] = i;
+    }
+    else if(temp == "VL-"){
+      colIndices[6] = i;
+    }
+  }
+
+  //For each detector
+  for(unsigned j = 0; j < 2; j++){
+    //For each row starting from the end
+    for(unsigned i = size.Rows-1; i > 0; i--){
+      //Get the current row's detector value
+      detVal = std::stod((*data)(i,colIndices[j]));
+
+      //If the detector value exceeds the maximum
+      if(detVal > maximums[j]){
+	//Save the value
+	maximums[j] = detVal;
+      }
+      
+      //If the detector value is around 10% of the maximum
+      if((detVal >= 0.09*maximums[j]) && (detVal <= 0.11*maximums[j])){
+	//Save the index
+	startIndices[j] = i;
+      }
+      //If the detector value is around 90% of the maximum
+      else if((detVal >= 0.89*maximums[j]) && (detVal <= 0.91*maximums[j])){
+	//Save the index
+	stopIndices[j] = i;
+      }
+    }
+  }
+
+  //Add the file name to the line
+  (*output)(outputSize.Rows, 0) = file;
+  //Add the long and short voltage values assuming the middle value from the data to be semi-accurate
+  (*output)(outputSize.Rows, 1) = (*data)(size.Rows/2,colIndices[3]);
+  (*output)(outputSize.Rows, 2) = (*data)(size.Rows/2,colIndices[4]);
+  (*output)(outputSize.Rows, 3) = (*data)(size.Rows/2,colIndices[5]);
+  (*output)(outputSize.Rows, 4) = (*data)(size.Rows/2,colIndices[6]);
+  //Calculate the time difference
+  (*output)(outputSize.Rows, 5) = std::to_string(std::stod((*data)(colIndices[2],stopIndices[0])) - std::stod((*data)(colIndices[2], startIndices[0])));
+  //Write detector maximums to file
+  (*output)(outputSize.Rows, 6) = std::to_string(maximums[0]);
+  (*output)(outputSize.Rows, 7) = std::to_string(maximums[1]);
+  
+  return;
 }
 
 std::vector<std::string> GetInputFiles(std::vector<std::string> inputs, bool* abort){
@@ -229,45 +308,42 @@ int main(int argc, char *argv[]){
   
   //Declare array of CSV files based upon input list
   CommaSeparatedValues* files[inputFiles.size()];
-  std::thread* threads[inputFiles.size()];
+
+  //Open the desired output file
+  CommaSeparatedValues* peaks = new CommaSeparatedValues("");
+  peaks->Open(FileToOutputDirectory("peaks.csv", output));
+  peaks->Read();
   
-  //For every file input
-  for(unsigned i = 0; i < inputFiles.size(); i++){
-    threads[i] = new std::thread(ProcessFile, inputFiles[i], averageFactor, files, i);
+  //If file is blank
+  if((peaks->Size()).Rows == 0){
+    //Write in the header row
+    (*peaks)(0,0) = "File";
+    (*peaks)(0,1) = "VS+";
+    (*peaks)(0,2) = "VS-";
+    (*peaks)(0,3) = "VL+";
+    (*peaks)(0,4) = "VL-";
+    (*peaks)(0,5) = "Rise Time";
   }
 
-  for(unsigned i = 0, counter = 0, completed = 0; counter < inputFiles.size(); i++){
-    //If not off the array
-    if(i <= inputFile.size()){
-      //Update counter
-      counter += threads[i]->joinable();
-    }
-    //Otherwise
-    else{
-      if(counter > completed){
-	std::cout << "Progress: " << counter << "/" << inputFiles.size() << std::endl;
-	completed = counter;
-      }
-      i = 0;
-      counter = 0;
-    }
-  }
-  
-  //For all threads
-  for(unsigned i = 0; i < inputFiles.size(); i++){
-    //Block this thread until they can be joined
-    threads[i]->join();
-  }
+  peaks->Write();
   
   //For every file opened
-  for(int i = 0; i < inputFiles.size(); i++){
+  for(unsigned i = 0; i < inputFiles.size(); i++){
     std::cout << "Processing: " << inputFiles[i] << std::endl;
-    files[i]->Open(FileToOutputDirectory(inputFiles[i], output));
-    files[i]->Write();
+    files[i] = ProcessFile(inputFiles[i], averageFactor);
+    std::cout << "Generating peak data..." << std::endl;
+    GeneratePeakData(inputFiles[i], files[i], peaks);
+  }
+  
+  peaks->Write();
+  
+  for(unsigned i = 0; i < inputFiles.size(); i++){
+    //files[i]->Open(FileToOutputDirectory(inputFiles[i], output));
+    //files[i]->Write();
     //Delete the allocated memory
     delete files[i];
-    delete threads[i];
   }
-    
+  delete peaks;
+  
   return 0;
 }
