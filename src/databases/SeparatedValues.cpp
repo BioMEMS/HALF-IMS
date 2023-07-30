@@ -1,4 +1,5 @@
 #include "SeparatedValues.h"
+#include <iostream>
 
 //Public Functions
 //Class constructor
@@ -38,7 +39,7 @@ std::string SeparatedValues::operator() (unsigned row, unsigned column) const{
 
   //Declare temporary row and column variables
   unsigned locRow, locColumn;
-  
+
   //If the tranpose flag is set
   if(readTranspose){
     //Swap row and column
@@ -51,7 +52,7 @@ std::string SeparatedValues::operator() (unsigned row, unsigned column) const{
     locRow = row;
     locColumn = column;
   }
-
+  
   //If the row or column is outside the matrix
   if(locRow >= content.size() || locColumn >= content[locRow].size()){
     //Return a blank
@@ -320,12 +321,12 @@ void SeparatedValues::ExpandContent(unsigned row, unsigned column){
   }
 
   //If either of the maximums are exceeded, update them
-  if(row > maxRow){
-    maxRow = row;
+  if(row >= maxRow){
+    maxRow = content.size();
   }
 
-  if(column > maxColumn){
-    maxColumn = column;
+  if(column >= maxColumn){
+    maxColumn = content[row].size();
   }
   return;
 }
