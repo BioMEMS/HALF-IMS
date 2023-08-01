@@ -186,13 +186,16 @@ void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparat
 
   //Add the file name to the line
   (*output)(outputSize.Rows, 0) = file;
+  
   //Add the long and short voltage values assuming the middle value from the data to be semi-accurate
   (*output)(outputSize.Rows, 1) = (*data)(size.Rows/2,colIndices[3]);
   (*output)(outputSize.Rows, 2) = (*data)(size.Rows/2,colIndices[4]);
   (*output)(outputSize.Rows, 3) = (*data)(size.Rows/2,colIndices[5]);
   (*output)(outputSize.Rows, 4) = (*data)(size.Rows/2,colIndices[6]);
+
   //Calculate the time difference
-  (*output)(outputSize.Rows, 5) = std::to_string(std::stod((*data)(colIndices[2],stopIndices[0])) - std::stod((*data)(colIndices[2], startIndices[0])));
+  (*output)(outputSize.Rows, 5) = std::to_string(std::stod((*data)(stopIndices[0], colIndices[2])) - std::stod((*data)(startIndices[0], colIndices[2])));
+  
   //Write detector maximums to file
   (*output)(outputSize.Rows, 6) = std::to_string(maximums[0]);
   (*output)(outputSize.Rows, 7) = std::to_string(maximums[1]);
@@ -323,6 +326,8 @@ int main(int argc, char *argv[]){
     (*peaks)(0,3) = "VL+";
     (*peaks)(0,4) = "VL-";
     (*peaks)(0,5) = "Rise Time";
+    (*peaks)(0,6) = "DET1 Max";
+    (*peaks)(0,7) = "DET2 Max";
   }
 
   peaks->Write();
@@ -330,16 +335,16 @@ int main(int argc, char *argv[]){
   //For every file opened
   for(unsigned i = 0; i < inputFiles.size(); i++){
     std::cout << "Processing: " << inputFiles[i] << std::endl;
-    files[i] = ProcessFile(inputFiles[i], averageFactor);
-    std::cout << "Generating peak data..." << std::endl;
+    files[i] = ProcessFile(inputFiles[i], averageFactor);    
     GeneratePeakData(inputFiles[i], files[i], peaks);
   }
   
   peaks->Write();
-  
+
+  //Cleanup
   for(unsigned i = 0; i < inputFiles.size(); i++){
-    //files[i]->Open(FileToOutputDirectory(inputFiles[i], output));
-    //files[i]->Write();
+    files[i]->Open(FileToOutputDirectory(inputFiles[i], output));
+    files[i]->Write();
     //Delete the allocated memory
     delete files[i];
   }
