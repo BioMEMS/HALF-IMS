@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Utilities.h"
+#include "Checker.h"
 
 class SeparatedValues{
 public:
@@ -31,6 +32,15 @@ public:
   std::string& operator()(unsigned row, unsigned column);
   std::string operator()(unsigned row, unsigned column) const;
 
+  /*
+    Name:    []
+    Purpose: Extract a row from the database.
+    Inputs:  index (unsigned) - The row number to use.
+    Outputs: row (std::vector<std::string>) - A copy of all values in the row.
+    Notes:   Use transpose if a column is desired. 
+  */
+  std::vector<std::string> operator[](unsigned row);
+  
   /*
     Name:    Open
     Purpose: Open the file for IO operations.

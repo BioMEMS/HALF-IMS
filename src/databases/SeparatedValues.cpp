@@ -1,5 +1,4 @@
 #include "SeparatedValues.h"
-#include <iostream>
 
 //Public Functions
 //Class constructor
@@ -87,6 +86,30 @@ std::string& SeparatedValues::operator()(unsigned row, unsigned column){
   
   //Return a pointer to the string
   return content[locRow][locColumn];
+}
+
+std::vector<std::string> SeparatedValues::operator[](unsigned index){
+  std::vector<std::string> row;
+  unsigned maxIndex = 0;
+  //If matrix is transposed
+  if(readTranspose){
+    //Set the maximum index as the total row count
+    maxIndex = content.size();
+  }
+  //Otherwise
+  else{
+    //Set the maximum index as the total column count for the desired row
+    maxIndex = content[index].size();
+  }
+
+  //For every desired item
+  for(unsigned i = 0; i < maxIndex; i++){
+    //Use the extraction operator to get the row value
+    row.push_back(operator()(index,i));
+  }
+  
+  //Provide a copy of the vector
+  return row;
 }
 
 void SeparatedValues::Read(){

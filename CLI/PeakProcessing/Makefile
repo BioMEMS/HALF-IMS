@@ -5,6 +5,8 @@ CPPFLAGS=-ggdb -std=c++17 -Wall -Wextra
 #Declare directories for source files
 SOURCEDIRECTORIES=../../src/
 SOURCEDIRECTORIES+=../../src/databases/
+SOURCEDIRECTORIES+=../../src/utilities/
+SOURCEDIRECTORIES+=../../src/signal-processing/
 #Declare output file
 OUTFILE=peakprocessing.x
 #Declare output directory
@@ -31,3 +33,12 @@ peak-processing: main.cpp $(OBJTGT)
 .PHONY: clean
 clean:
 	@rm *~ $(OUTDIRECTORY)*.o $(OUTDIRECTORY)$(OUTFILE)
+
+.PHONU: test
+test:
+	@printf "%s\n" "Source Directory" $(SOURCE)
+	@printf "%s\n" "Header Files" $(HDRFILES)
+	@printf "%s\n" "Source Files" $(SRCFILES)
+	@printf "%s\n" "Object Targets" $(OBJTGT)
+	@printf "%s\n" "Object Files" $(OBJFILES)
+

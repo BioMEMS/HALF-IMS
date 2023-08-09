@@ -5,117 +5,99 @@
 #include <filesystem>
 
 //HALF-IMS libraries
-#include "Utilities.h"
+#include "Filter.h"
+#include "CLIParser.h"
 #include "CommaSeparatedValues.h"
+#include "Checker.h"
 
 //Pre-processor Variables
-#define OUTPUT_FLAG "output"
-#define INPUT_FLAG "input"
-#define HELP_FLAG "help"
-#define AVG_FLAG "average"
+#define OUTPUT_DIRECTORY "output"
+#define INPUT_FILES "input"
+#define HELP_NAME "help"
+#define AVERAGE_VALUE "average"
 
 //Function to load a CSV file and normalize DET1 and DET2 columns to 2.5V and average to an arbitrary value
-CommaSeparatedValues* ProcessFile(std::string file, unsigned averageFactor){
+CommaSeparatedValues* ProcessFile(std::string file, double aperture){
+  //Instantiate a filter object
+  SignalProcessing::Filter filter;
 
+  //Set the aperture value for the filter
+  filter.SetParameter(SignalProcessing::Filter::Parameters::Aperture, aperture);
+  
+  //Instantiate a checker object
+  Utilities::Checker numChecker;
+  
   //Instantiate an object for the processed data
   CommaSeparatedValues *processed = new CommaSeparatedValues("temp.csv");
+
   //Get the file data
   CommaSeparatedValues data(file);
   data.Read();
-
+  
   //Grab the size for loops
   Utilities::Limits size = data.Size();
   
   std::string temp;
-  double tempData, average, weight, weightSum;
+  std::vector<std::string> dataStrings;
+  std::vector<double> dataValues;
   
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
     //Get the header name
     temp = data(0,i);
+    
     //Put header in output CSV
     (*processed)(0,i) = temp;
+
+    //If the column is not the x-values 
+    if(temp != "X_Value"){
+      //Set the transpose flag to extract data
+      data.Transpose(true, false);
+  
+      //Extract column
+      dataStrings = data[i];
+
+      //Unset transpose flag to read column headers properly
+      data.Transpose(false, false);
     
-    //If the header is for either detector
-    for(unsigned j = 1, start=1, stop=averageFactor+1; j < size.Rows; j++){
-      
-      //Clear values
-      average = 0;
-      tempData = 0;
-      weight = 1;
-      weightSum = 0;
-      
-      //If the current column is NOT the X-value
-      if(temp != "X_Value"){
-	//Calculate start and stop indices
-	start = j - averageFactor/2;
-	stop = j + averageFactor/2;
-	
-	//If start is below 1
-	if(start <= 1){
-	  //Set to 1
-	  start = 1;
-	}
-	
-	//If stop is above the total row count
-	if(stop >= size.Rows){
-	  //Set to the last row
-	  stop = size.Rows - 1;
-	}
-	
-	//For the entirety of the aperture
-	for(unsigned k = start; k < stop; k++){
-	  //If the data is not a blank string
-	  if(data(j,i) != ""){
-	    //Convert the data to a numerical value
-	    tempData = std::stod(data(j,i));
-	  }
-	  //Otherwise
-	  else{
-	    //Default to zero
-	    tempData = 0;
-	  }
+      //Clear out data values
+      dataValues.clear();
 
-	  //If the indices are the same
-	  if(k == j){
-	    //Weight is one
-	    weight = 1;
-	  }
-	  //Otherwise
-	  else{
-	    //Convert unsigned to integers
-	    int cur = j;
-	    int tgt = k;
-	    //Weight is the inverse of the distance from the target point
-	    weight = 1/std::abs(cur-tgt);
-	  }
+      //Resize to current column size minus the header
+      dataValues.resize(dataStrings.size()-1);
+
+      //For all the data strings other than the header value
+      for(unsigned j = 1; j < dataStrings.size(); j++){
+	//If the current string can be converted to a numerical value
+	if(numChecker.NumericalConvert(dataStrings[j])){
+	  //Convert value and place in values array
+	  dataValues[j] = std::stod(dataStrings[j]);
 	  
-	  //Add the values together
-	  average += (weight*tempData);
-	  weightSum += weight;
+	  //If the DET1 or DET2 columns
+	  if((temp == "DET1") || (temp == "DET2")){
+	    //Normalize value by 2.5 V and invert sign
+	    dataValues[j] = -1*(dataValues[j] - 2.5);
+	  }
 	}
-	
-	//Calculate the weight average of the point
-	average = average/weightSum;
-	
-	//If DET1 or DET2 columns
-	if(temp == "DET1" || temp == "DET2"){
-	  //Normalize to 2.45 V and flip sign
-	  average = -1*(average-2.45);
-
+	//Otherwise
+	else{
+	  //Write a default value of zero
+	  dataValues[j] = 0;
 	}
-
-	//Convert average to a string and save to CSV
-	(*processed)(j,i) = std::to_string(average);
       }
-      //Otherwise
-      else{
-	//Copy string value directly and do not smooth
-	(*processed)(j,i) = data(j,i);
+      
+      //Filter column
+      dataValues = filter.Apply(dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
+
+      //For every value after the column header
+      for(unsigned j = 1; j < dataStrings.size(); j++){
+	//Convert data into a string and value into CSV file
+	(*processed)(i, j) = std::to_string(dataValues[j]);
       }
     }
+    
   }
-
+  
   //Return pointer to CSV
   return processed;
 }
@@ -249,27 +231,27 @@ int main(int argc, char *argv[]){
 
   //Instantiate abort flag
   bool abort = false;
-  unsigned averageFactor = 20;
+  double aperture = 20;
   
   //Instantiate command line input parser
-  Utilities::InputFlags cli;
+  Utilities::CLIParser cli;
 
   //Calculate flag types to be accepted
-  int flagTypeOne = Utilities::InputFlags::Dash | Utilities::InputFlags::Space;
-  int flagTypeTwo = Utilities::InputFlags::DoubleDash | Utilities::InputFlags::Space;
-  int flagTypeThree = Utilities::InputFlags::Dash | Utilities::InputFlags::DoubleDash | Utilities::InputFlags::Standalone;
+  int flagTypeOne = Utilities::CLIParser::Dash | Utilities::CLIParser::Space;
+  int flagTypeTwo = Utilities::CLIParser::DoubleDash | Utilities::CLIParser::Space;
+  int flagTypeThree = Utilities::CLIParser::Dash | Utilities::CLIParser::DoubleDash | Utilities::CLIParser::Standalone;
 
   //Add desired flags to parser
-  cli.Add(HELP_FLAG, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree});
-  cli.Add(INPUT_FLAG, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(OUTPUT_FLAG, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(AVG_FLAG, std::vector<std::string>{"af", "average-factor"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+  cli.Add(HELP_NAME, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree});
+  cli.Add(INPUT_FILES, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+  cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+  cli.Add(AVERAGE_VALUE, std::vector<std::string>{"af", "average-factor"}, std::vector<int>{flagTypeOne, flagTypeTwo});
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
   //If the user called for the help routine
-  if(cli.Present(HELP_FLAG)){
+  if(cli.Present(HELP_NAME)){
     //Print a message and exit
     std::cout << "Help called!" << std::endl;
     return 0;
@@ -278,15 +260,15 @@ int main(int argc, char *argv[]){
   //Declare default output as current directory
   std::string output = "."; //Might break on Windows? Use Filesystem library?
   //If the output flag is present
-  if(cli.Present(OUTPUT_FLAG)){
+  if(cli.Present(OUTPUT_DIRECTORY)){
     //Extract necessary arguments
-    output = cli.Get(OUTPUT_FLAG);
+    output = cli.Get(OUTPUT_DIRECTORY);
   }
   
   //Instantiate a vector to hold the files to process
   std::vector<std::string> inputFiles;
-  if(cli.Present(INPUT_FLAG)){
-    inputFiles = GetInputFiles(cli.GetList(INPUT_FLAG), &abort);
+  if(cli.Present(INPUT_FILES)){
+    inputFiles = GetInputFiles(cli.GetList(INPUT_FILES), &abort);
   }
   else{
     std::cout << "Inputs are required." << std::endl;
@@ -304,9 +286,9 @@ int main(int argc, char *argv[]){
   }
 
   //If the average flag is present
-  if(cli.Present(AVG_FLAG)){
+  if(cli.Present(AVERAGE_VALUE)){
     //Extract the value and convert to an unsigned
-    averageFactor = std::stoi(cli.Get(AVG_FLAG));
+    aperture = std::stod(cli.Get(AVERAGE_VALUE));
   }
   
   //Declare array of CSV files based upon input list
@@ -335,7 +317,7 @@ int main(int argc, char *argv[]){
   //For every file opened
   for(unsigned i = 0; i < inputFiles.size(); i++){
     std::cout << "Processing: " << inputFiles[i] << std::endl;
-    files[i] = ProcessFile(inputFiles[i], averageFactor);    
+    files[i] = ProcessFile(inputFiles[i], aperture);    
     GeneratePeakData(inputFiles[i], files[i], peaks);
   }
   

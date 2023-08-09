@@ -1,41 +1,20 @@
-#ifndef UTILITIES_H
-#define UTILITIES_H
+#ifndef CLI_PARSER_H
+#define CLI_PARSER_H
 
 #include <map>
 #include <cmath>
 #include <regex>
 
+#include "Checker.h"
+
 namespace Utilities{
-  //Simple limits structure to hold values
-  struct Limits{
-    unsigned Rows;
-    unsigned Columns;
-    double MinimumValue;
-    double MaximumValue;
-  };
 
-  class Checks{
-  public:
-    Checks();
-    ~Checks();
-
-    /*
-      Name:    NumericalConvert
-      Purpose: Determine if a string can be converted to a numerical value.
-      Inputs:  value (std::string) - The string to check.
-      Outputs: flag (bool) - Indicator if the string can be converted.
-      Notes:   None
-    */
-    bool NumericalConvert(std::string value);
-
-  };
-  
-  class InputFlags{
+  class CLIParser{
   public:
     //Class constructor
-    InputFlags();
+    CLIParser();
     //Class Destructor
-    ~InputFlags();
+    ~CLIParser();
 
     //Enumeration denoting accepted delimiter type
     enum Types{

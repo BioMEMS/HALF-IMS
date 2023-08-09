@@ -1,48 +1,16 @@
-#include "Utilities.h"
-#include <iostream>
+#include "CLIParser.h"
 
 namespace Utilities{
-
-
-  Checks::Checks(){
-    //Blank constructor
-  }
-
-  Checks::~Checks(){
-    //Blank destructor
-  }
   
-  bool Checks::NumericalConvert(std::string value){
-    //Get length of string
-    int length = value.length();
-    //Instantiate default flag
-    bool flag = (length > 0);
-
-    //If only a single character
-    if(length == 1){
-      //Check to ensure the only character is not a decimal point
-      flag &= (value[0] != '.');
-    }
-    
-    //For each character in the provided string
-    for(int i = 0; flag && (i < length); i++){
-      //Check for numeric and decimal point characters
-      flag &= (value[i] == '.' || isdigit((int)value[i]));
-    }
-
-    return flag;
-  }
-
-  
-  InputFlags::InputFlags(){
+  CLIParser::CLIParser(){
 
   }
   
-  InputFlags::~InputFlags(){
+  CLIParser::~CLIParser(){
     
   }
 
-  void InputFlags::Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters){
+  void CLIParser::Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters){
     
     //Insert flags under the provided name
     this->flags[name] = flags;
@@ -76,7 +44,7 @@ namespace Utilities{
     return;
   }
 
-  std::string InputFlags::Get(std::string name){
+  std::string CLIParser::Get(std::string name){
     //Declare return variable
     std::string value = "";
 
@@ -92,10 +60,10 @@ namespace Utilities{
     return value;
   }
 
-  double InputFlags::GetNumeric(std::string name){
+  double CLIParser::GetNumeric(std::string name){
     //Insantiate default variables
     double value = std::nan("1");
-    Checks checker;
+    Checker checker;
     
     //Get the value found
     std::string temp = this->Get(name);
@@ -110,7 +78,7 @@ namespace Utilities{
     return value;
   }
   
-  std::vector<std::string> InputFlags::GetList(std::string name){
+  std::vector<std::string> CLIParser::GetList(std::string name){
     //Get the value string
     std::string temp = this->Get(name);
 
@@ -138,10 +106,10 @@ namespace Utilities{
     return values;
   }
 
-  std::vector<double> InputFlags::GetNumericList(std::string name){
+  std::vector<double> CLIParser::GetNumericList(std::string name){
     //Instantiate return values
     std::vector<double> values;
-    Checks checker;
+    Checker checker;
     
     //Get the list of values as strings
     std::vector<std::string> temp = this->GetList(name);
@@ -163,7 +131,7 @@ namespace Utilities{
     return values;
   }
 
-  void InputFlags::Parse(int count, char* arguments[]){
+  void CLIParser::Parse(int count, char* arguments[]){
 
     std::string locFlag, locValue;
     bool locFound;
@@ -224,7 +192,7 @@ namespace Utilities{
       return;
   }
 
-  bool InputFlags::Present(std::string name){
+  bool CLIParser::Present(std::string name){
     std::vector<std::string> tempFlags = this->flags[name];
 
     bool status = false;
@@ -236,7 +204,7 @@ namespace Utilities{
     return status;
   }
   
-  std::regex InputFlags::GenerateRegularExpression(std::string flag, int type){
+  std::regex CLIParser::GenerateRegularExpression(std::string flag, int type){
     int indexType = Types::Standalone;
     int dashType = type & (Types::Dash | Types::DoubleDash);
 
