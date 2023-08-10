@@ -338,7 +338,7 @@ void SeparatedValues::ExpandContent(unsigned row, unsigned column){
   //If the column provided is off the matrix
   if(column >= content[row].size()){
     //Extend columns of that row to match
-    for(unsigned i = 0; i < (column - content[row].size() + 1); i++){
+    for(;content[row].size() <= column;){
       content[row].push_back("");
     }
   }

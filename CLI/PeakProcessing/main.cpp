@@ -37,20 +37,20 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture){
   //Grab the size for loops
   Utilities::Limits size = data.Size();
   
-  std::string temp;
+  std::string headerColumn;
   std::vector<std::string> dataStrings;
   std::vector<double> dataValues;
   
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
     //Get the header name
-    temp = data(0,i);
+    headerColumn = data(0,i);
     
     //Put header in output CSV
-    (*processed)(0,i) = temp;
+    (*processed)(0,i) = headerColumn;
 
     //If the column is not the x-values 
-    if(temp != "X_Value"){
+    if(headerColumn != "X_Value"){
       //Set the transpose flag to extract data
       data.Transpose(true, false);
   
@@ -74,7 +74,7 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture){
 	  dataValues[j] = std::stod(dataStrings[j]);
 	  
 	  //If the DET1 or DET2 columns
-	  if((temp == "DET1") || (temp == "DET2")){
+	  if((headerColumn == "DET1") || (headerColumn == "DET2")){
 	    //Normalize value by 2.5 V and invert sign
 	    dataValues[j] = -1*(dataValues[j] - 2.5);
 	  }
@@ -87,7 +87,7 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture){
       }
       
       //Filter column
-      dataValues = filter.Apply(dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
+      filter.Apply(&dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
 
       //For every value after the column header
       for(unsigned j = 1; j < dataStrings.size(); j++){

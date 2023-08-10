@@ -32,7 +32,7 @@ namespace SignalProcessing{
       Notes:   There are four filter types: LowPass, HighPass, BandPass, and Average. Average filtering
       applies a weighted average to the signal.
     */
-    std::vector<double> Apply(std::vector<double> trace, Operation filter);
+    void Apply(std::vector<double> *trace, Operation filter);
     
     /*
       Name:    SetParameter
@@ -56,10 +56,10 @@ namespace SignalProcessing{
     
   private:
     
-    std::vector<double> LowPass(std::vector<double> trace);
-    std::vector<double> HighPass(std::vector<double> trace);
-    std::vector<double> BandPass(std::vector<double> trace);
-    std::vector<double> Average(std::vector<double> trace);
+    void LowPass(std::vector<double> *trace);
+    void HighPass(std::vector<double> *trace);
+    void BandPass(std::vector<double> *trace);
+    void Average(std::vector<double> *trace);
     
     //Hold the values to use in filtering operations
     std::map<std::string, bool> filterFlags;

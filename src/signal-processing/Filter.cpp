@@ -1,4 +1,5 @@
 #include "Filter.h"
+#include <iostream>
 
 namespace SignalProcessing{
 
@@ -11,23 +12,24 @@ namespace SignalProcessing{
     
   }
   
-  std::vector<double> Filter::Apply(std::vector<double> trace, Operation filter){
-    std::vector<double> output;
+  void Filter::Apply(std::vector<double> *trace, Operation filter){
+
+    std::cout << "HERE?" << std::endl;
     
     if(filter == Operation::LowPassFilter){
-      output =  LowPass(trace);
+      LowPass(trace);
     }
     else if(filter == Operation::HighPassFilter){
-      output = HighPass(trace);
+      HighPass(trace);
     }
     else if(filter == Operation::BandPassFilter){
-      output = BandPass(trace);
+      BandPass(trace);
     }
     else if(filter == Operation::WeightedAverage){
-      output = Average(trace);
+      Average(trace);
     }
     
-    return output;
+    return;
   }
 
   void Filter::SetParameter(Parameters param, double value){
@@ -39,21 +41,21 @@ namespace SignalProcessing{
   }
   
   //Private functions
-  std::vector<double> Filter::LowPass(std::vector<double> trace){
-    return trace;
+  void Filter::LowPass(std::vector<double> *trace){
+    return;
   }
 
-  std::vector<double> Filter::HighPass(std::vector<double> trace){
-    return trace;
+  void Filter::HighPass(std::vector<double> *trace){
+    return;
   }
 
-  std::vector<double> Filter::BandPass(std::vector<double> trace){
-    return trace;
+  void Filter::BandPass(std::vector<double> *trace){
+    return;
   }
 
-  std::vector<double> Filter::Average(std::vector<double> trace){
+  void Filter::Average(std::vector<double> *trace){
     //Get the aperture size defined
-    int aperture = 20, traceSize = trace.size();
+    int aperture = 20, traceSize = (*trace).size();
 
     //Instantiate the output trace with input size
     std::vector<double> output;
@@ -97,15 +99,19 @@ namespace SignalProcessing{
       //For every point within the aperture
       for(int j = start, k = 0; j <= stop; j++, k++){
 	//Sum the trace value multiplied by the weight
-	average += (weight[k]*trace[j]);
+	average += (weight[k]*(*trace)[j]);
       }
 
       //Calculate the weighted average and place into output trace
       output[i] = average/weightSum;
     }
 
-    //Return calculated values
-    return output;
+    //Update provided array with new values
+    for(unsigned i = 0; i < output.size(); i++){
+      (*trace)[i] = output[i];
+    }
+    
+    return;
   }
 
 }
