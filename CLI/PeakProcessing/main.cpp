@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <filesystem>
+#include <map>
 
 //HALF-IMS libraries
 #include "Filter.h"
@@ -15,9 +16,23 @@
 #define INPUT_FILES "input"
 #define HELP_NAME "help"
 #define AVERAGE_VALUE "average"
+#define DATA_COLUMNS "data"
+#define PARAMETER_COLUMNS "parameters"
+#define TIME_COLUMN "sample"
+
+bool ProcessHeader(std::string target, std::vector<std::string> headers){
+  bool flag = false;
+
+  //Check all headers against target
+  for(unsigned i = 0; !flag && i < headers.size(); i++){
+    flag |= (headers[i] == target);
+  }
+
+  return flag;
+}
 
 //Function to load a CSV file and normalize DET1 and DET2 columns to 2.5V and average to an arbitrary value
-CommaSeparatedValues* ProcessFile(std::string file, double aperture){
+CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector<std::string> dataHeaders, std::vector<std::string> parameterHeaders){
   //Instantiate a filter object
   SignalProcessing::Filter filter;
 
@@ -38,45 +53,41 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture){
   Utilities::Limits size = data.Size();
   
   std::string headerColumn;
-  std::vector<std::string> dataStrings;
-  std::vector<double> dataValues;
+  //Dynamically allocate array with same number of elements as the rows
+  std::vector<std::string>* dataStrings;
+  double* dataValues = new double[size.Rows-1];
   
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
     //Get the header name
     headerColumn = data(0,i);
-    
+
     //Put header in output CSV
     (*processed)(0,i) = headerColumn;
 
-    //If the column is not the x-values 
-    if(headerColumn != "X_Value"){
-      //Set the transpose flag to extract data
+    //If the column is a data or parameter column
+    if(ProcessHeader(headerColumn, dataHeaders) || ProcessHeader(headerColumn, parameterHeaders)){
+      //Transpose the CSV to turn rows into columns
       data.Transpose(true, false);
-  
-      //Extract column
+
+      //Extract a column, previously a row, from the CSV
       dataStrings = data[i];
 
-      //Unset transpose flag to read column headers properly
+      //Undo the transpose
       data.Transpose(false, false);
-    
-      //Clear out data values
-      dataValues.clear();
-
-      //Resize to current column size minus the header
-      dataValues.resize(dataStrings.size()-1);
-
+      
       //For all the data strings other than the header value
-      for(unsigned j = 1; j < dataStrings.size(); j++){
+      for(unsigned j = 1; j < size.Rows; j++){
 	//If the current string can be converted to a numerical value
-	if(numChecker.NumericalConvert(dataStrings[j])){
+	if(numChecker.NumericalConvert((*dataStrings)[j])){
 	  //Convert value and place in values array
-	  dataValues[j] = std::stod(dataStrings[j]);
+	  dataValues[j-1] = std::stod((*dataStrings)[j]);
 	  
-	  //If the DET1 or DET2 columns
-	  if((headerColumn == "DET1") || (headerColumn == "DET2")){
+	  //If the column is a data header
+	  if(ProcessHeader(headerColumn, dataHeaders)){
+	  
 	    //Normalize value by 2.5 V and invert sign
-	    dataValues[j] = -1*(dataValues[j] - 2.5);
+	    dataValues[j-1] = -1*(dataValues[j-1] - 2.5);
 	  }
 	}
 	//Otherwise
@@ -87,101 +98,118 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture){
       }
       
       //Filter column
-      filter.Apply(&dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
+      //filter.Apply(&dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
 
       //For every value after the column header
-      for(unsigned j = 1; j < dataStrings.size(); j++){
+      for(unsigned j = 1; j < size.Rows; j++){
 	//Convert data into a string and value into CSV file
-	(*processed)(i, j) = std::to_string(dataValues[j]);
+	(*processed)(j, i) = std::to_string(dataValues[j]);
       }
+
+      //Clean up memory after done
+      if(dataStrings != nullptr){
+	delete dataStrings;
+      }
+    }
+    else{
+      
     }
     
   }
+
+  //De-allocate heap memory
+  delete[] dataValues;
   
   //Return pointer to CSV
   return processed;
 }
 
-void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparatedValues* output){
+void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparatedValues* output, std::vector<std::string> dataHeaders, std::vector<std::string> parameterHeaders, std::map<std::string, unsigned> outputColumns){
   //Get the size of the input data
   Utilities::Limits size = data->Size();
   Utilities::Limits outputSize = output->Size();
+
+  //Flags to track if the header should be processed
+  bool dataHeader = false, parameterHeader = false;
   
   std::string temp = "";
-  unsigned colIndices[7] = {0, 0, 0, 0, 0, 0, 0};
-  unsigned startIndices[2] = {0, 0}; //Hold the 10% of maximum points
-  unsigned stopIndices[2] = {0, 0}; //Hold the 90% of maximum points
-  double maximums[2] = {-100, -100}; //Default values should be well below anything in the files
+  unsigned startIndex = 0; //Hold the 10% of maximum points
+  unsigned stopIndex = 0; //Hold the 90% of maximum points
+  unsigned timeAxisIndex = 0; //Hold the index for the time axis for later calculations
+  double maximum = -100; //Default values should be well below anything in the files
   double detVal = 0;
-  
-  //Find the relevant column indices
-  for(unsigned i = 0; i < size.Columns; i++){
-    temp = (*data)(0,i);
-    if(temp == "DET1"){
-      colIndices[0] = i;
-    }
-    else if(temp == "DET2"){
-      colIndices[1] = i;
-    }
-    else if(temp == "X_Value"){
-      colIndices[2] = i;
-    }
-    else if(temp == "VS+"){
-      colIndices[3] = i;
-    }
-    else if(temp == "VS-"){
-      colIndices[4] = i;
-    }
-    else if(temp == "VL+"){
-      colIndices[5] = i;
-    }
-    else if(temp == "VL-"){
-      colIndices[6] = i;
-    }
-  }
-
-  //For each detector
-  for(unsigned j = 0; j < 2; j++){
-    //For each row starting from the end
-    for(unsigned i = size.Rows-1; i > 0; i--){
-      //Get the current row's detector value
-      detVal = std::stod((*data)(i,colIndices[j]));
-
-      //If the detector value exceeds the maximum
-      if(detVal > maximums[j]){
-	//Save the value
-	maximums[j] = detVal;
-      }
-      
-      //If the detector value is around 10% of the maximum
-      if((detVal >= 0.09*maximums[j]) && (detVal <= 0.11*maximums[j])){
-	//Save the index
-	startIndices[j] = i;
-      }
-      //If the detector value is around 90% of the maximum
-      else if((detVal >= 0.89*maximums[j]) && (detVal <= 0.91*maximums[j])){
-	//Save the index
-	stopIndices[j] = i;
-      }
-    }
-  }
+  //Get the time axis from the parameters
+  std::string timeAxis = parameterHeaders.back();
 
   //Add the file name to the line
   (*output)(outputSize.Rows, 0) = file;
   
-  //Add the long and short voltage values assuming the middle value from the data to be semi-accurate
-  (*output)(outputSize.Rows, 1) = (*data)(size.Rows/2,colIndices[3]);
-  (*output)(outputSize.Rows, 2) = (*data)(size.Rows/2,colIndices[4]);
-  (*output)(outputSize.Rows, 3) = (*data)(size.Rows/2,colIndices[5]);
-  (*output)(outputSize.Rows, 4) = (*data)(size.Rows/2,colIndices[6]);
+  //Find the time column index
+  for(unsigned j = 0; j < size.Columns; j++){
+    if((*data)(0, j) == timeAxis){
+      timeAxisIndex = j;
+    }
+  }
+  
+  //For each column in the data file
+  for(unsigned j = 0; j < size.Columns; j++){
+    //Pull out the header for the file
+    temp = (*data)(0,j);
 
-  //Calculate the time difference
-  (*output)(outputSize.Rows, 5) = std::to_string(std::stod((*data)(stopIndices[0], colIndices[2])) - std::stod((*data)(startIndices[0], colIndices[2])));
-  
-  //Write detector maximums to file
-  (*output)(outputSize.Rows, 6) = std::to_string(maximums[0]);
-  (*output)(outputSize.Rows, 7) = std::to_string(maximums[1]);
-  
+    //Calculate header processing flags
+    dataHeader = ProcessHeader(temp, dataHeaders);
+    parameterHeader = (temp != timeAxis) && ProcessHeader(temp, parameterHeaders);
+    
+    //If the header should be processed as a data header
+    if(dataHeader || parameterHeader){
+      //For each row starting from the end
+      for(unsigned i = size.Rows-1; i > 0; i--){
+	//Get the current row's detector value
+	detVal = std::stod((*data)(i,j));
+
+	//If a data header
+	if(dataHeader){
+	  //If the detector value exceeds the maximum
+	  if(detVal > maximum){
+	    //Save the value
+	    maximum = detVal;
+	  }
+	  
+	  //If the detector value is around 10% of the maximum
+	  if((detVal >= 0.09*maximum) && (detVal <= 0.11*maximum)){
+	    //Save the index
+	    startIndex = i;
+	  }
+	  //If the detector value is around 90% of the maximum
+	  else if((detVal >= 0.89*maximum) && (detVal <= 0.91*maximum)){
+	    //Save the index
+	    stopIndex = i;
+	  }
+	}
+	else{
+	  maximum += detVal;
+	}
+      }
+
+      //If the values found were for a data header
+      if(dataHeader){
+	//Convert maximum found value to a string and place in output
+	(*output)(outputSize.Rows, outputColumns[temp]) = std::to_string(maximum);
+	
+	//Calculat the time difference and place in output
+	(*output)(outputSize.Rows, outputColumns[temp]+1) = std::to_string(std::stod((*data)(stopIndex, timeAxisIndex)) - std::stod((*data)(startIndex, timeAxisIndex)));				     
+      }
+      //If the values found were for a parameter header
+      else if (parameterHeader){
+	//Calculate the average of the maximum value
+	maximum /= (size.Rows - 1);
+
+	//Convert value to a string and write to the output
+	(*output)(outputSize.Rows, outputColumns[temp]) = std::to_string(maximum);
+      }
+    }
+  }
+
   return;
 }
 
@@ -246,14 +274,17 @@ int main(int argc, char *argv[]){
   cli.Add(INPUT_FILES, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo});
   cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo});
   cli.Add(AVERAGE_VALUE, std::vector<std::string>{"af", "average-factor"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  
+  cli.Add(DATA_COLUMNS, std::vector<std::string>{"d", "data-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+  cli.Add(PARAMETER_COLUMNS, std::vector<std::string>{"p", "parameter-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+  cli.Add(TIME_COLUMN, std::vector<std::string>{"t", "time-column"}, std::vector<int>{flagTypeOne, flagTypeTwo});
+	  
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
   //If the user called for the help routine
   if(cli.Present(HELP_NAME)){
     //Print a message and exit
-    std::cout << "Help called!" << std::endl;
+    cli.Help();
     return 0;
   }
 
@@ -290,6 +321,30 @@ int main(int argc, char *argv[]){
     //Extract the value and convert to an unsigned
     aperture = std::stod(cli.Get(AVERAGE_VALUE));
   }
+
+  //Set default columns to process
+  std::vector<std::string> dataColumns = {"DET1", "DET2"};
+  //If the user specified columns to process
+  if(cli.Present(DATA_COLUMNS)){
+    //Replace list with user defined values
+    dataColumns = cli.GetList(DATA_COLUMNS);
+  }
+
+  //Set default columns to ignore
+  std::vector<std::string> parameterColumns = {"VL+", "VL-", "VS+", "VS-"};
+  //If the user specified ignore columns
+  if(cli.Present(PARAMETER_COLUMNS)){
+    //Replace list with user defined values
+    parameterColumns = cli.GetList(PARAMETER_COLUMNS);
+  }
+
+  //Set default time column
+  std::string timeColumn = "X_Value";
+  //If user specified a different column
+  if(cli.Present(TIME_COLUMN)){
+    //Update value
+    timeColumn = cli.Get(TIME_COLUMN);
+  }
   
   //Declare array of CSV files based upon input list
   CommaSeparatedValues* files[inputFiles.size()];
@@ -298,27 +353,50 @@ int main(int argc, char *argv[]){
   CommaSeparatedValues* peaks = new CommaSeparatedValues("");
   peaks->Open(FileToOutputDirectory("peaks.csv", output));
   peaks->Read();
-  
+
+  std::map<std::string, unsigned> outputIndices;
   //If file is blank
   if((peaks->Size()).Rows == 0){
-    //Write in the header row
+    unsigned offset = 1;
+    //Write in the header row beginning with the file column
     (*peaks)(0,0) = "File";
-    (*peaks)(0,1) = "VS+";
-    (*peaks)(0,2) = "VS-";
-    (*peaks)(0,3) = "VL+";
-    (*peaks)(0,4) = "VL-";
-    (*peaks)(0,5) = "Rise Time";
-    (*peaks)(0,6) = "DET1 Max";
-    (*peaks)(0,7) = "DET2 Max";
+    outputIndices.insert({"File", 0});
+    
+    //For all parameter columns
+    for(unsigned i = 0; i < parameterColumns.size(); i++){
+      //Write desired parameter column
+      (*peaks)(0,i+offset) = parameterColumns[i];
+      //Add index name to the referential array
+      outputIndices.insert({parameterColumns[i], i+offset});
+    }
+    
+    //Update offset value
+    offset = parameterColumns.size()-1;
+
+    //For all data columns
+    for(unsigned i = 0, j=0; j < dataColumns.size(); j++,i+=2){
+      //Write rise time column header for data column
+      (*peaks)(0, i+dataColumns.size()+offset) = dataColumns[j] + " Rise Time";
+      //Write maximum column header for data column
+      (*peaks)(0, i+dataColumns.size()+offset+1) = dataColumns[j] + " Max";
+      
+      //Add single data column to referential array
+      outputIndices.insert({dataColumns[j], i + dataColumns.size() + offset});
+    }
   }
 
   peaks->Write();
+
+  //Push time column onto parameter columns as last element to ensure
+  //it is always included in processed CSV files, but can be easily found
+  //for peak data generation. Do this after generating the header for
+  //the peak data file to prevent weirdness
+  parameterColumns.push_back(timeColumn);
   
   //For every file opened
   for(unsigned i = 0; i < inputFiles.size(); i++){
-    std::cout << "Processing: " << inputFiles[i] << std::endl;
-    files[i] = ProcessFile(inputFiles[i], aperture);    
-    GeneratePeakData(inputFiles[i], files[i], peaks);
+    files[i] = ProcessFile(inputFiles[i], aperture, dataColumns, parameterColumns);
+    GeneratePeakData(inputFiles[i], files[i], peaks, dataColumns, parameterColumns, outputIndices);    
   }
   
   peaks->Write();

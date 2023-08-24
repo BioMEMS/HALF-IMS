@@ -36,10 +36,10 @@ public:
     Name:    []
     Purpose: Extract a row from the database.
     Inputs:  index (unsigned) - The row number to use.
-    Outputs: row (std::vector<std::string>) - A copy of all values in the row.
+    Outputs: row (*char) - A pointer to an array of strings which is a copy of all values in the row.
     Notes:   Use transpose if a column is desired. 
   */
-  std::vector<std::string> operator[](unsigned row);
+  std::vector<std::string>* operator[](unsigned row);
   
   /*
     Name:    Open

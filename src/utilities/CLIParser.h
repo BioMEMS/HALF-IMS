@@ -4,6 +4,7 @@
 #include <map>
 #include <cmath>
 #include <regex>
+#include <iostream>
 
 #include "Checker.h"
 
@@ -92,7 +93,16 @@ namespace Utilities{
       Notes:   None
     */
     bool Present(std::string name);
-     
+
+    /*
+      Name:    Help
+      Purpose: Print a help message to standard console.
+      Inputs:  None
+      Outputs: None
+      Notes:   This should later be expanded to allow for sending values to an arbitrary file stream.
+    */
+    void Help();
+
   private:
     /*
       Name:    GenerateRegularExpression

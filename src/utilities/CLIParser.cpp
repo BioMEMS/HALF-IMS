@@ -203,6 +203,11 @@ namespace Utilities{
     
     return status;
   }
+
+  void CLIParser::Help(){
+    std::cout << "Help called!" << std::endl;
+    return;
+  }
   
   std::regex CLIParser::GenerateRegularExpression(std::string flag, int type){
     int indexType = Types::Standalone;
@@ -249,6 +254,7 @@ namespace Utilities{
     
     return std::regex(pattern);
   }
+
   //End of Utilities namespace
 }
 

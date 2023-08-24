@@ -59,7 +59,10 @@ namespace SignalProcessing{
 
     //Instantiate the output trace with input size
     std::vector<double> output;
-    output.resize(traceSize);
+    //output.resize(traceSize);
+    for(unsigned i = 0; i < traceSize; i++){
+      output.push_back(0);
+    }
     
     //Instantiate filter weight value
     double weight[aperture];

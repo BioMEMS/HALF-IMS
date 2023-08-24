@@ -32,7 +32,7 @@ peak-processing: main.cpp $(OBJTGT)
 
 .PHONY: clean
 clean:
-	@rm *~ $(OUTDIRECTORY)*.o $(OUTDIRECTORY)$(OUTFILE)
+	@rm *~ $(OUTDIRECTORY)*
 
 .PHONU: test
 test:

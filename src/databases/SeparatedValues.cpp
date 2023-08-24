@@ -88,8 +88,8 @@ std::string& SeparatedValues::operator()(unsigned row, unsigned column){
   return content[locRow][locColumn];
 }
 
-std::vector<std::string> SeparatedValues::operator[](unsigned index){
-  std::vector<std::string> row;
+std::vector<std::string>* SeparatedValues::operator[](unsigned row){
+  std::vector<std::string>* values;
   unsigned maxIndex = 0;
   //If matrix is transposed
   if(readTranspose){
@@ -99,17 +99,21 @@ std::vector<std::string> SeparatedValues::operator[](unsigned index){
   //Otherwise
   else{
     //Set the maximum index as the total column count for the desired row
-    maxIndex = content[index].size();
+    maxIndex = content[row].size();
   }
 
+  //Allocate enough memory to hold the desired values
+  values = new std::vector<std::string>();
+  (*values).resize(maxIndex);
+  
   //For every desired item
   for(unsigned i = 0; i < maxIndex; i++){
     //Use the extraction operator to get the row value
-    row.push_back(operator()(index,i));
+    (*values)[i] = operator()(row,i);
   }
   
   //Provide a copy of the vector
-  return row;
+  return values;
 }
 
 void SeparatedValues::Read(){
