@@ -37,22 +37,22 @@ namespace SignalProcessing{
     /*
       Name:    SetParameter
       Purpose: Allow dynamic setting of separate values for filtering.
-      Inputs:  param (std::string) - The parameter name to update.
+      Inputs:  param (int) - The parameter to update.
                value (double) - The value to set.
       Outputs: None
-      Notes:   None
+      Notes:   Use the Filter::Parameter enumeration to get the appropriate value. Parameter values should not be treated as bit-wise flags. 
     */
-    void SetParameter(Parameters param, double value);
+    void SetParameter(int param, double value);
     
     /*
       Name:    SetParameter
       Purpose: Allow dynamic setting of separate flags for filtering.
-      Inputs:  param (std::string) - The parameter name to update.
+      Inputs:  param (int) - The parameter to update.
                value (bool) - The value to set.
       Outputs: None
-      Notes:   None
+      Notes:   Use the Filter::Parameter enumeration to get the appropriate value. Parameter values should not be treated as bit-wise flags. 
     */
-    void SetParameter(Parameters param, bool value);
+    void SetParameter(int param, bool value);
     
   private:
     
@@ -62,8 +62,8 @@ namespace SignalProcessing{
     void Average(std::vector<double> *trace);
     
     //Hold the values to use in filtering operations
-    std::map<std::string, bool> filterFlags;
-    std::map<std::string, double> filterParamters;
+    std::map<int, bool> filterFlags;
+    std::map<int, double> filterParameters;
   };
   
 }

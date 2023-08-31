@@ -55,7 +55,7 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector
   std::string headerColumn;
   //Dynamically allocate array with same number of elements as the rows
   std::vector<std::string>* dataStrings;
-  double* dataValues = new double[size.Rows-1];
+  std::vector<double>* dataValues = new std::vector<double>(size.Rows-1);
   
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
@@ -81,29 +81,29 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector
 	//If the current string can be converted to a numerical value
 	if(numChecker.NumericalConvert((*dataStrings)[j])){
 	  //Convert value and place in values array
-	  dataValues[j-1] = std::stod((*dataStrings)[j]);
+	  (*dataValues)[j-1] = std::stod((*dataStrings)[j]);
 	  
 	  //If the column is a data header
 	  if(ProcessHeader(headerColumn, dataHeaders)){
 	  
 	    //Normalize value by 2.5 V and invert sign
-	    dataValues[j-1] = -1*(dataValues[j-1] - 2.5);
+	    (*dataValues)[j-1] = -1*((*dataValues)[j-1] - 2.5);
 	  }
 	}
 	//Otherwise
 	else{
 	  //Write a default value of zero
-	  dataValues[j] = 0;
+	  (*dataValues)[j] = 0;
 	}
       }
       
       //Filter column
-      //filter.Apply(&dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
+      filter.Apply(dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
 
       //For every value after the column header
       for(unsigned j = 1; j < size.Rows; j++){
 	//Convert data into a string and value into CSV file
-	(*processed)(j, i) = std::to_string(dataValues[j]);
+	(*processed)(j, i) = std::to_string((*dataValues)[j]);
       }
 
       //Clean up memory after done
@@ -118,7 +118,7 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector
   }
 
   //De-allocate heap memory
-  delete[] dataValues;
+  delete dataValues;
   
   //Return pointer to CSV
   return processed;
