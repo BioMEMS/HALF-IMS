@@ -83,7 +83,7 @@ namespace SignalProcessing{
 
   void Filter::Average(std::vector<double> *trace){
     //Get the aperture size defined
-    int aperture = filterParameters[Parameters::Aperture];
+    int aperture = std::abs(filterParameters[Parameters::Aperture]);
 
     //Save the trace length
     int traceSize = (*trace).size();

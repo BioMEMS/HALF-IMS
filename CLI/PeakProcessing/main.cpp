@@ -4,6 +4,7 @@
 #include <string>
 #include <filesystem>
 #include <map>
+#include <limits>
 
 //HALF-IMS libraries
 #include "Filter.h"
@@ -16,6 +17,7 @@
 #define INPUT_FILES "input"
 #define HELP_NAME "help"
 #define AVERAGE_VALUE "average"
+#define AVERAGE_REPEATS "repeats"
 #define DATA_COLUMNS "data"
 #define PARAMETER_COLUMNS "parameters"
 #define TIME_COLUMN "sample"
@@ -32,7 +34,7 @@ bool ProcessHeader(std::string target, std::vector<std::string> headers){
 }
 
 //Function to load a CSV file and normalize DET1 and DET2 columns to 2.5V and average to an arbitrary value
-CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector<std::string> dataHeaders, std::vector<std::string> parameterHeaders){
+CommaSeparatedValues* ProcessFile(std::string file, double aperture, unsigned averageRepeats, std::vector<std::string> dataHeaders, std::vector<std::string> parameterHeaders){
   //Instantiate a filter object
   SignalProcessing::Filter filter;
 
@@ -65,16 +67,17 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector
     //Put header in output CSV
     (*processed)(0,i) = headerColumn;
 
+    //Transpose the CSV to turn rows into columns
+    data.Transpose(true, false);
+    
+    //Extract a column, previously a row, from the CSV
+    dataStrings = data[i];
+    
+    //Undo the transpose
+    data.Transpose(false, false);
+    
     //If the column is a data or parameter column
     if(ProcessHeader(headerColumn, dataHeaders) || ProcessHeader(headerColumn, parameterHeaders)){
-      //Transpose the CSV to turn rows into columns
-      data.Transpose(true, false);
-
-      //Extract a column, previously a row, from the CSV
-      dataStrings = data[i];
-
-      //Undo the transpose
-      data.Transpose(false, false);
       
       //For all the data strings other than the header value
       for(unsigned j = 1; j < size.Rows; j++){
@@ -96,25 +99,33 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, std::vector
 	  (*dataValues)[j] = 0;
 	}
       }
-      
-      //Filter column
-      filter.Apply(dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
 
+      //For the desired number of filtering repeats
+      for(unsigned j = 0; j < averageRepeats; j++){
+	//Filter column
+	filter.Apply(dataValues, SignalProcessing::Filter::Operation::WeightedAverage);
+      }
+      
       //For every value after the column header
       for(unsigned j = 1; j < size.Rows; j++){
 	//Convert data into a string and value into CSV file
 	(*processed)(j, i) = std::to_string((*dataValues)[j]);
       }
-
-      //Clean up memory after done
-      if(dataStrings != nullptr){
-	delete dataStrings;
-      }
     }
+    //Otherwise
     else{
       
+      //For all strings in the column
+      for(unsigned j = 1; j < size.Rows; j++){
+	//Write to output file
+	(*processed)(j, i) = (*dataStrings)[j];
+      }
     }
-    
+ 
+    //Clean up memory after done
+    if(dataStrings != nullptr){
+      delete dataStrings;
+    }
   }
 
   //De-allocate heap memory
@@ -136,7 +147,7 @@ void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparat
   unsigned startIndex = 0; //Hold the 10% of maximum points
   unsigned stopIndex = 0; //Hold the 90% of maximum points
   unsigned timeAxisIndex = 0; //Hold the index for the time axis for later calculations
-  double maximum = -100; //Default values should be well below anything in the files
+  double maximum = 0; 
   double detVal = 0;
   //Get the time axis from the parameters
   std::string timeAxis = parameterHeaders.back();
@@ -162,6 +173,18 @@ void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparat
     
     //If the header should be processed as a data header
     if(dataHeader || parameterHeader){
+
+      //If a data header
+      if(dataHeader){
+	//Reset maximum value to lowest possible value for the system
+	maximum = std::numeric_limits<double>::lowest();
+      }
+      //Otherwise
+      else{
+	//Reset maximum to zero
+	maximum = 0;
+      }
+      
       //For each row starting from the end
       for(unsigned i = size.Rows-1; i > 0; i--){
 	//Get the current row's detector value
@@ -186,18 +209,20 @@ void GeneratePeakData(std::string file, CommaSeparatedValues* data, CommaSeparat
 	    stopIndex = i;
 	  }
 	}
+	//Otherwise
 	else{
+	  //Add value to maximum for later averaging
 	  maximum += detVal;
 	}
       }
 
       //If the values found were for a data header
       if(dataHeader){
-	//Convert maximum found value to a string and place in output
-	(*output)(outputSize.Rows, outputColumns[temp]) = std::to_string(maximum);
+	//Calculate the time difference and place in output
+	(*output)(outputSize.Rows, outputColumns[temp]) = std::to_string(std::stod((*data)(stopIndex, timeAxisIndex)) - std::stod((*data)(startIndex, timeAxisIndex)));
 	
-	//Calculat the time difference and place in output
-	(*output)(outputSize.Rows, outputColumns[temp]+1) = std::to_string(std::stod((*data)(stopIndex, timeAxisIndex)) - std::stod((*data)(startIndex, timeAxisIndex)));				     
+	//Convert maximum found value to a string and place in output
+	(*output)(outputSize.Rows, outputColumns[temp]+1) = std::to_string(maximum);			     
       }
       //If the values found were for a parameter header
       else if (parameterHeader){
@@ -259,7 +284,10 @@ int main(int argc, char *argv[]){
 
   //Instantiate abort flag
   bool abort = false;
+
+  //Instantiate default filtering values
   double aperture = 20;
+  unsigned filterRepeats = 1;
   
   //Instantiate command line input parser
   Utilities::CLIParser cli;
@@ -270,14 +298,16 @@ int main(int argc, char *argv[]){
   int flagTypeThree = Utilities::CLIParser::Dash | Utilities::CLIParser::DoubleDash | Utilities::CLIParser::Standalone;
 
   //Add desired flags to parser
-  cli.Add(HELP_NAME, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree});
-  cli.Add(INPUT_FILES, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(AVERAGE_VALUE, std::vector<std::string>{"af", "average-factor"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(DATA_COLUMNS, std::vector<std::string>{"d", "data-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(PARAMETER_COLUMNS, std::vector<std::string>{"p", "parameter-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-  cli.Add(TIME_COLUMN, std::vector<std::string>{"t", "time-column"}, std::vector<int>{flagTypeOne, flagTypeTwo});
-	  
+  //cli.Add(Utilities::CLIParser::description, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A simple program which can take in multiple CSV files and identify the peak values.");
+  cli.Add(HELP_NAME, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree}, "Display this help message.");
+  cli.Add(INPUT_FILES, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of input files to process.");
+  cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
+  cli.Add(AVERAGE_VALUE, std::vector<std::string>{"af", "average-factor"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The aperture of the moving average. Default is 20.");
+  cli.Add(AVERAGE_REPEATS, std::vector<std::string>{"ar", "average-repeat"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of times to apply the moving average. Default is 1.");
+  cli.Add(DATA_COLUMNS, std::vector<std::string>{"d", "data-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of headers to process as if they were data. Default is \"DET1\",\"DET2\"");
+  cli.Add(PARAMETER_COLUMNS, std::vector<std::string>{"p", "parameter-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of headers to process as if they were parameters. Default is \"VL+\",\"VL-\",\"VS+\",\"VS-\"");
+  cli.Add(TIME_COLUMN, std::vector<std::string>{"t", "time-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The header value to interpret as the time axis of the data which is used during the rise time calculation.");
+  
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
@@ -318,10 +348,16 @@ int main(int argc, char *argv[]){
 
   //If the average flag is present
   if(cli.Present(AVERAGE_VALUE)){
-    //Extract the value and convert to an unsigned
+    //Extract the value and convert to a numeric
     aperture = std::stod(cli.Get(AVERAGE_VALUE));
   }
 
+  //If the average repeat flag is present
+  if(cli.Present(AVERAGE_REPEATS)){
+    //Extract the value and convert to a numeric
+    filterRepeats = std::stod(cli.Get(AVERAGE_REPEATS));
+  }
+  
   //Set default columns to process
   std::vector<std::string> dataColumns = {"DET1", "DET2"};
   //If the user specified columns to process
@@ -355,47 +391,64 @@ int main(int argc, char *argv[]){
   peaks->Read();
 
   std::map<std::string, unsigned> outputIndices;
+
+  
+  unsigned offset = 1;
+  bool blankPeakFile = (peaks->Size()).Rows == 0;
+  
   //If file is blank
-  if((peaks->Size()).Rows == 0){
-    unsigned offset = 1;
+  if(blankPeakFile){
     //Write in the header row beginning with the file column
     (*peaks)(0,0) = "File";
-    outputIndices.insert({"File", 0});
+  }    
+
+  //Add all parameter columns and the file to the indices mapping
+  outputIndices.insert({"File", 0});
+  for(unsigned i = 0; i < parameterColumns.size(); i++){
+
+    //Add index to mapping
+    outputIndices.insert({parameterColumns[i], i+offset});
     
-    //For all parameter columns
-    for(unsigned i = 0; i < parameterColumns.size(); i++){
+    //If the output peak file is blank
+    if(blankPeakFile){
       //Write desired parameter column
       (*peaks)(0,i+offset) = parameterColumns[i];
-      //Add index name to the referential array
-      outputIndices.insert({parameterColumns[i], i+offset});
     }
+  }
     
-    //Update offset value
-    offset = parameterColumns.size()-1;
+  //Update offset value
+  offset = dataColumns.size() + parameterColumns.size()-1;
+  
+  //For all data columns
+  for(unsigned i = 0, j=0; j < dataColumns.size(); j++,i+=2){
 
-    //For all data columns
-    for(unsigned i = 0, j=0; j < dataColumns.size(); j++,i+=2){
+    //Add single entry to indices mapping
+    outputIndices.insert({dataColumns[j], i + offset});
+
+    //If the output peak file is blank
+    if(blankPeakFile){
       //Write rise time column header for data column
-      (*peaks)(0, i+dataColumns.size()+offset) = dataColumns[j] + " Rise Time";
+      (*peaks)(0, i+offset) = dataColumns[j] + " Rise Time";
       //Write maximum column header for data column
-      (*peaks)(0, i+dataColumns.size()+offset+1) = dataColumns[j] + " Max";
-      
-      //Add single data column to referential array
-      outputIndices.insert({dataColumns[j], i + dataColumns.size() + offset});
+      (*peaks)(0, i+offset+1) = dataColumns[j] + " Max";
     }
   }
 
-  peaks->Write();
-
+  //For every file opened
+  for(unsigned i = 0; i < inputFiles.size(); i++){
+    //Process the desired data and parameter columns within the file
+    files[i] = ProcessFile(inputFiles[i], aperture, filterRepeats, dataColumns, parameterColumns);
+  }
+  
   //Push time column onto parameter columns as last element to ensure
   //it is always included in processed CSV files, but can be easily found
   //for peak data generation. Do this after generating the header for
-  //the peak data file to prevent weirdness
+  //the peak data file to prevent the time axis from being filtered
   parameterColumns.push_back(timeColumn);
   
   //For every file opened
   for(unsigned i = 0; i < inputFiles.size(); i++){
-    files[i] = ProcessFile(inputFiles[i], aperture, dataColumns, parameterColumns);
+    //Generate peak data for all the parameter and data columns
     GeneratePeakData(inputFiles[i], files[i], peaks, dataColumns, parameterColumns, outputIndices);    
   }
   

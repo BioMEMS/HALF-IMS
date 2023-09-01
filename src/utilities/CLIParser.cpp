@@ -10,11 +10,14 @@ namespace Utilities{
     
   }
 
-  void CLIParser::Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters){
+  void CLIParser::Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters, std::string description){
     
     //Insert flags under the provided name
     this->flags[name] = flags;
-
+    
+    //Insert description under the provided name
+    this->descriptions[name] = description;
+    
     int temp;
     //For each flag
     for(unsigned i = 0; i < flags.size(); i++){

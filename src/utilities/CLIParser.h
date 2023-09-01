@@ -25,19 +25,23 @@ namespace Utilities{
       Dash = 8,
       DoubleDash = 16
     };
+
+    //Constant string to be used during additions for help message displays
+    const std::string description = "description";
     
     /*
       Name:    Add
       Purpose: Establish a relationship between a human-readable name, flag, and accepted delimiters.
       Inputs:  name (std::string) - The human-readable name to use as reference.
                flags (std::vector<std::string>) - The command-line input flags to associate with the human-readable name.
-	       delimiters (std::vector<int>) - The delimiter enumeration values to associate with each flag. 
+	       delimiters (std::vector<int>) - The delimiter enumeration values to associate with each flag.
+	       description (std::string) - The contents to display during a help call.
       Outputs: None
       Notes:   Each flag provided can have different delimiter selections denoted by enumeration value. This will affect the values parsed from a provided array.
                The flags provided have a one-to-one relationship with the delimiters provided. If a flag does not have an equivalent delimiter, the last delimiter in the
 	       provided list will be used. 
     */
-    void Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters);
+    void Add(std::string name, std::vector<std::string> flags, std::vector<int> delimiters, std::string description);
 
     /*
       Name:    Get
@@ -100,6 +104,8 @@ namespace Utilities{
       Inputs:  None
       Outputs: None
       Notes:   This should later be expanded to allow for sending values to an arbitrary file stream.
+               If the name string provided is the publicly available "description" value from this class, the description
+	       will be printed out without the flags to allow a program summary.
     */
     void Help();
 
@@ -117,6 +123,8 @@ namespace Utilities{
     
     //Referential array to track the human-readable name to CLI flags
     std::map<std::string, std::vector<std::string>> flags;
+    //Referential array to track the description strings provided for each CLI flag.
+    std::map<std::string, std::string> descriptions;
     //Referential array to track the flag to CLI delimiter type
     std::map<std::string, int> types;
     //Referential array to track the flag to found value
