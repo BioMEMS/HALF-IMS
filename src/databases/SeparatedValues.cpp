@@ -167,6 +167,13 @@ void SeparatedValues::Read(){
 	  if(endOfLine || (quoteCounter == 0) || (quoteCounter == 2)){
 	    //Update start index with substring adjustment for quotations
 	    start = start + substringAdjust;
+
+	    //If the end of line
+	    if(endOfLine){
+	      //Revert adjust value to prevent erroneous clipping of last column
+	      substringAdjust = 0;
+	    }
+	    
 	    //Slice out a substring
 	    temp.push_back(line.substr(start, i-start-substringAdjust));
 	    //Set the start index to the current
