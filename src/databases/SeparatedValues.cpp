@@ -116,6 +116,33 @@ std::unique_ptr<std::vector<std::string>> SeparatedValues::operator[](unsigned r
   return values;
 }
 
+unsigned SeparatedValues::ExtractRow(std::string* output, unsigned row){
+
+  unsigned maxIndex = 0;
+  //If matrix is transposed
+  if(readTranspose){
+    //Set the maximum index as the total row count
+    maxIndex = content.size();
+  }
+  //Otherwise
+  else{
+    //Set the maximum index as the total column count for the desired row
+    maxIndex = content[row].size();
+  }
+
+  //Allocate a static array
+  output = new std::string[maxIndex];
+
+  //For every desired item
+  for(unsigned i = 0; i < maxIndex; i++){
+    //Use the extraction operator to get the row value
+    output[i] = operator()(row,i);
+  }
+
+  
+  return maxIndex;
+}
+
 void SeparatedValues::Read(){
   
   //Open file stream object if it exists

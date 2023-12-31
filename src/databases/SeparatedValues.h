@@ -39,7 +39,17 @@ public:
     Outputs: row (std::vector<std::string>*) - A pointer to a vector of strings which is a copy of all values in the row.
     Notes:   Use transpose if a column is desired. 
   */
-  std::unique_ptr<std::vector<std::string>> operator[](unsigned row);
+  std::vector<std::string>* operator[](unsigned row);
+
+  /*
+    Name:   ExtractRow
+    Purpose: Extract a row from the database.
+    Inputs:  output (std::string*) - A pointer which will be updated to allocated memory.
+             row (unsigned) - The row number to use.
+    Outputs: count (unsigned) - The number of elements allocated.
+    Notes:   Avoiding some memory allocation issues with allocating vectors on the heap. 
+  */
+  unsigned ExtractRow(std::string* output, unsigned row);
   
   /*
     Name:    Open
