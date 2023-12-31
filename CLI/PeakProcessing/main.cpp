@@ -56,7 +56,9 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, unsigned av
   
   std::string headerColumn;
   //Dynamically allocate array with same number of elements as the rows
-  std::vector<std::string>* dataStrings;
+  //std::vector<std::string>* dataStrings;
+  unsigned elements = 0;
+  std::string* dataStrings;
   std::vector<double>* dataValues = new std::vector<double>(size.Rows-1);
   
   //For each column
@@ -71,7 +73,8 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, unsigned av
     data.Transpose(true, false);
     
     //Extract a column, previously a row, from the CSV
-    dataStrings = data[i];
+    //dataStrings = data[i];
+    elements = data.ExtractRow(dataStrings, i);
     
     //Undo the transpose
     data.Transpose(false, false);
