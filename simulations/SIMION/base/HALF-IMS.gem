@@ -1,0 +1,23 @@
+; SIMION GEM file with parameterization.
+
+# -- dx is the axial x-offset in grid units.
+# local dx =  0.00005
+
+# local xPoints = 60000
+# local yPoints = 100
+# local zPoints = 10
+
+# local numElectrodePairs = 220 ;From paper
+# local electrodeSpacing = 5
+# local electrodeHeight = 4 ;Should equate to 15/40 nm per paper
+# local electrodeLengthShort = 4 ;Should equate to 10 um per paper
+# local electrodeLengthLong = electrodeLengthShort * 5 ;Should equate to 50 um per paper
+# local electrodePattern = 2*electrodeSpacing + electrodeLengthShort + electrodeLengthLong
+
+pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic)
+for i=0,numElectrodePairs do
+	electrode(1) { fill { within { corner_box(i*electrodePattern,0, electrodeLengthShort,electrodeHeight) } } }
+	electrode(2) { fill { within { corner_box(i*electrodePattern,yPoints-electrodeHeight, electrodeLengthShort,electrodeHeight) } } }
+	electrode(3) { fill { within { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing,0, electrodeLengthLong,electrodeHeight) } } }
+	electrode(4) { fill { within { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing,yPoints-electrodeHeight, electrodeLengthLong,electrodeHeight) } } }
+end

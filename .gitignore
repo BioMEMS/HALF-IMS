@@ -1,6 +1,8 @@
 #Files to ignore
 *~
 *.o
+*.pa*
+*.processed.gem
 
 #Directories to ignore
 bin/
