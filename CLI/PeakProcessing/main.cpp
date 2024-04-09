@@ -60,7 +60,7 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, unsigned av
   unsigned elements = 0;
   std::string* dataStrings;
   std::vector<double>* dataValues = new std::vector<double>(size.Rows-1);
-  
+
   //For each column
   for(unsigned i = 0; i < size.Columns; i++){
     //Get the header name
@@ -126,8 +126,9 @@ CommaSeparatedValues* ProcessFile(std::string file, double aperture, unsigned av
     }
  
     //Clean up memory after done
-    if(dataStrings != nullptr){
-      delete dataStrings;
+    if(dataStrings != nullptr){ 
+      //delete dataStrings;
+      //dataStrings = nullptr;
     }
   }
 
@@ -436,13 +437,13 @@ int main(int argc, char *argv[]){
       (*peaks)(0, i+offset+1) = dataColumns[j] + " Max";
     }
   }
-
+  
   //For every file opened
   for(unsigned i = 0; i < inputFiles.size(); i++){
     //Process the desired data and parameter columns within the file
     files[i] = ProcessFile(inputFiles[i], aperture, filterRepeats, dataColumns, parameterColumns);
   }
-  
+
   //Push time column onto parameter columns as last element to ensure
   //it is always included in processed CSV files, but can be easily found
   //for peak data generation. Do this after generating the header for
