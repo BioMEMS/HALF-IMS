@@ -1,7 +1,7 @@
 ; Parameterized HALF-IMS SIMION GEM file
 
 ; Cascades to determine geometries, paper indicates 220 long-short electrode pairs
-# local numElectrodePairs = 8
+# numElectrodePairs = 8
 
 # -- dx is the axial x-offset in grid units.
 ; Set scaling of PA to 1 um per grid unit
