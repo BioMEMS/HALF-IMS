@@ -1,9 +1,13 @@
 simion.workbench_program()
+
+-- Update the electrodes functions by importing the file to ensure functionality
+simion.import("electrodes.lua")
+
+-- Adjustable parameters which show up in the GUI under Ion Workbench "Variables" tab
 adjustable long_electrode_voltage = 0
 adjustable short_electrode_voltage = 0
 adjustable shutter_electrode_voltage = 0
 adjustable bias_ring_voltage = 5
-adjustable num_electrode_pairs = 8
 adjustable freeze_potentials = 1
 adjustable ion_velocity_scale = 1
 
@@ -20,11 +24,14 @@ end
 -- Voltage adjustment segment.
 function segment.fast_adjust()
 
+  -- Get the total number of electrode pairs for indexing
+  local num_electrode_pairs = get_electrode_pair_count()
+  
   -- Set all electrodes to 0
   for i = 1,num_electrode_pairs do
     adj_elect[i] = 0
   end
-
+  
   -- Set shutter electrodes to desired voltages
   adj_elect[1] = shutter_electrode_voltage/2
   adj_elect[2] = -shutter_electrode_voltage/2
@@ -55,7 +62,10 @@ end
 function segment.other_actions()
 
   sim_update_pe_surface = 1  -- update display
-    
+
+  if (ion_splat ~= 0) then
+     print(ion_number, ": ", ion_px_mm, ",", ion_py_mm, ",", ion_pz_mm)
+  end
 end
 
 function segment.terminate()
@@ -63,5 +73,4 @@ function segment.terminate()
 
   --Reset flag
   velocity_scaled = 0
-  print("called! ", velocity_scaled)
 end

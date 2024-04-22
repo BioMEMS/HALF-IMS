@@ -1,7 +1,10 @@
 ; Parameterized HALF-IMS SIMION GEM file
 
+; Import the electrodes functions necessary to generate geometries
+simion.import("electrodes.lua")
+
 ; Cascades to determine geometries, paper indicates 220 long-short electrode pairs
-# numElectrodePairs = 8
+# numElectrodePairs = get_electrode_pair_count()
 
 # -- dx is the axial x-offset in grid units.
 ; Set scaling of PA to 1 um per grid unit
@@ -74,7 +77,7 @@
 ; Create a grid scaled to dx value
 pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic,,dx)
 
-; Create all geometries scalled to dx value
+; Create all geometries scaled to dx value
 locate (0,0,0,dx){
 
     ; Generate the shutter electrodes

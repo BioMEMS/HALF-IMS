@@ -3,6 +3,7 @@
 *.o
 *.pa*
 *.processed.gem
+*.tmp
 
 #Directories to ignore
 bin/
