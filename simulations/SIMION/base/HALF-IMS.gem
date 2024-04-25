@@ -1,7 +1,7 @@
 ; Parameterized HALF-IMS SIMION GEM file
 
 ; Import the electrodes functions necessary to generate geometries
-simion.import("electrodes.lua")
+simion.import("geometry.lua")
 
 ; Cascades to determine geometries, paper indicates 220 long-short electrode pairs
 # numElectrodePairs = get_electrode_pair_count()
@@ -11,24 +11,25 @@ simion.import("electrodes.lua")
 ; which will essentially minimize the electrode height
 ; to one grid unit, but attempting to use the ideal parameter
 ; of 5 nm causes SIMION to complain about system memory. 
-# local dx = 1E-3
+# local dx = get_grid_x_spacing()
+# local dy = get_grid_y_spacing()
+# local dz = get_grid_z_spacing()
 
 ; Should equate to 15/40 nm per paper, set in grid units
-;# local electrodeHeight = (15E-9)/dx
-# local electrodeHeight = 4
+# local electrodeHeight = get_electrode_height()
 
 ; Spacing to give before electrodes start, set in grid units
-# local flowChannelOffset = 10
+# local flowChannelOffset = get_flow_channel_offset()
 
 ; Define parameters for the shutter/gate electrodes
-# local shutterElectrodeCount = 2
+# local shutterElectrodeCount = get_shutter_electrode_count()
 
 ; Unclear what this should be per the paper, but set in grid units
 ;# local shutterElectrodeLength = (10E-5)/dx
-# local shutterElectrodeLength =  25
+# local shutterElectrodeLength =  get_shutter_electrode_length()
 
 ; Unclear what this should be per the paper, but set in grid units
-# local shutterElectrodeSpacing = 50
+# local shutterElectrodeSpacing = get_shutter_electrode_spacing()
 
 ; Total shutter gate grid units
 # local shutterElectrodePattern = shutterElectrodeLength + shutterElectrodeSpacing + flowChannelOffset
@@ -36,49 +37,43 @@ simion.import("electrodes.lua")
 ; Define parameters for the long and short electrodes which make up the HALF-IMS channel
 ; Should equate to 10 um per paper, but set in grid units
 ;# local electrodeSpacing = (10E-6)/dx
-# local electrodeSpacing = 4
+# local electrodeSpacing = get_electrode_spacing()
 
 ; Should equate to 10 um per paper, but set in grid units
 ;# local electrodeLengthShort = (10E-6)/dx
-# local electrodeLengthShort = 4
+# local electrodeLengthShort = get_short_electrode_length()
 
 ; Should equate to 50 um per paper, but set in grid units
-# local electrodeLengthLong = electrodeLengthShort * 5
+# local electrodeLengthLong = get_long_electrode_length()
 
 ; The electrode pattern to lay down for every pair number
 # local electrodePattern = 2*electrodeSpacing + electrodeLengthShort + electrodeLengthLong
 
 ; Define parameters for the bias ring and detector pad
 ; Unclear what this should be per paper, but set in grid units
-;# local biasRingLength = (10E-6)/dx
-# local biasRingLength =  4
+# local biasRingLength =  get_bias_ring_length()
 
 ; Unclear what this should be per paper, but set in grid units
-# local biasRingSpacing = biasRingLength*5
+# local biasRingSpacing = get_bias_ring_spacing()
 
 ; Unclear what this should be per paper, but set in grid units
-;# local detectorPadLength = (1E-3)/dx
-# local detectorPadLength = 25
+# local detectorPadLength = get_detector_pad_length()
 
 ; Unclear what this should be per paper, but set in grid units
-;# local detectorPadSpacing = (100E-6)/dx
-# local detectorPadSpacing = 25
+# local detectorPadSpacing = get_detector_pad_spacing()
 
 ; Unclear what this should be per paper, but set in grid units
 # local detectorPatternSpacing = biasRingLength + biasRingSpacing + detectorPadLength + detectorPadSpacing
 
-;# local xPoints = 60000
-# local xPoints = shutterElectrodePattern + numElectrodePairs*electrodePattern + detectorPatternSpacing
-;# local yPoints = (50E-6)/dx
-# local yPoints = 50
-;# local zPoints = (1E-3)/dx
-# local zPoints = 0
+# local xPoints = get_device_x_length()
+# local yPoints = get_device_y_length()
+# local zPoints = get_device_z_length()
 
 ; Create a grid scaled to dx value
-pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic,,dx)
+pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic,,dx,dy,dz)
 
 ; Create all geometries scaled to dx value
-locate (0,0,0,dx){
+locate (0,0,0,dx,dy,dz){
 
     ; Generate the shutter electrodes
     electrode(1) { fill { within { corner_box(flowChannelOffset, 0, shutterElectrodeLength, electrodeHeight) } } }
@@ -95,7 +90,7 @@ locate (0,0,0,dx){
 
     ; Calculate the total number of electrodes to offset final electrodes
     # local totalElectrodes = 4*(numElectrodePairs-1)+4+shutterElectrodeCount
-    # local totalElectrodeOffset = (numElectrodePairs-1)*electrodePattern + shutterElectrodePattern + electrodePattern - electrodeSpacing
+    # local totalElectrodeOffset = (numElectrodePairs-1)*electrodePattern + shutterElectrodePattern + electrodePattern
 
     ; Generate the bias ring electrodes
     electrode(totalElectrodes + 1) { fill { within { corner_box( totalElectrodeOffset + biasRingSpacing, 0, biasRingLength, electrodeHeight) } } }
