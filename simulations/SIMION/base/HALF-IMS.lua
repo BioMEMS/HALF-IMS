@@ -9,23 +9,27 @@ adjustable short_electrode_voltage = 0
 adjustable shutter_electrode_voltage = 0
 adjustable bias_ring_voltage = 5
 adjustable freeze_potentials = 1
-adjustable ion_velocity_scale = 1
+
 -- Get the total number of electrode pairs for indexing
 local num_electrode_pairs = get_electrode_pair_count()
+local num_shutter_electrodes = get_shutter_electrode_count()
 
+-- Initial position for each ion
+local initial_x_pos = 0
+local initial_y_pos = 0
+local initial_z_pos = 0
 
--- Offset for the indexing
-local num_shutter_electrodes = 2
+-- Variables for ion scaling
+-- Velocity scale factors
+adjustable ion_x_velocity_scale = 1
+adjustable ion_y_velocity_scale = 1
+adjustable ion_z_velocity_scale = 1
 
--- Flag to track if velocity has been scaled on ions
-local velocity_scaled = 0
+-- Flag tracking if the particular ion has been scaled
+local initial_scaled = 0
 
 function segment.initialize()
-   -- Update the pre-defined ion velocity by the scaling parameter (does not seem to be working?)
-   ion_vx_mm = ion_vx_mm*ion_velocity_scale
-   ion_vy_mm = ion_vy_mm*ion_velocity_scale
-   ion_vz_mm = ion_vz_mm*ion_velocity_scale
-
+   -- Unclear when this gets called, but it never seems to output a log message...
 end
 
 -- Voltage adjustment segment.
@@ -57,31 +61,44 @@ end
 
 -- Adjust acceleration every cycle
 function segment.accel_adjust()
-  print("test",ion_vx_mm)
+
 end
 
 -- Segment called after each time-step.
 function segment.other_actions()
 
-   -- Update the pre-defined ion velocity by the scaling parameter (does not seem to be working?)
-   ion_vx_mm = ion_vx_mm*ion_velocity_scale
-   ion_vy_mm = ion_vy_mm*ion_velocity_scale
-   ion_vz_mm = ion_vz_mm*ion_velocity_scale
+   -- Unclear why initialize is not scaling, so code is placed here with a flag
+   -- Keep in mind that this does not seem to act at the first timestep, so there
+   -- is a slight delay on when this gets activated which could yield some
+   -- inaccuracies
+   if (initial_scaled ~= 1) then
+     -- Update the pre-defined ion velocity by the scaling parameter
+     ion_vx_mm = ion_vx_mm*ion_x_velocity_scale
+     ion_vy_mm = ion_vy_mm*ion_y_velocity_scale
+     ion_vz_mm = ion_vz_mm*ion_z_velocity_scale
 
-   print(ion_number, ion_vx_mm)
-   
-  sim_update_pe_surface = 1  -- update display
+     -- Save the initial position for later logging
+     initial_x_pos = ion_px_mm
+     initial_y_pos = ion_py_mm
+     initial_z_pos = ion_pz_mm
+     
+     -- Set flag to prevent this section from being called again for the current ion
+     initial_scaled = 1
+   end
 
-  if (ion_splat ~= 0) then
-     print(ion_number, ",", ion_px_mm, ",", ion_py_mm, ",", ion_pz_mm, ",", hit_detector(ion_px_mm, ion_py_mm))
+   sim_update_pe_surface = 1  -- update display
+
+   if (ion_splat ~= 0) then
+     -- Log final position and hit metric
+     print(ion_number, initial_x_pos, ",", initial_y_pos, ",", initial_z_pos, ",", ion_px_mm, ",", ion_py_mm, ",", ion_pz_mm, ",", hit_detector(ion_px_mm, ion_py_mm))
+     
+     -- Update flag as ion is done
+     initial_scaled = 0
   end
 end
 
 function segment.terminate()
   sim_retain_changed_potentials = freeze_potentials
-
-  --Reset flag
-  velocity_scaled = 0
 end
 
 -- Helper functions
