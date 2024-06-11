@@ -1,3 +1,6 @@
 [submodule "dependencies/gnuplot-iostream"]
 	path = dependencies/gnuplot-iostream
 	url = https://github.com/dstahlke/gnuplot-iostream.git
+[submodule "simulations/SIMION/ion-library"]
+	path = simulations/SIMION/ion-library
+	url = git@github.com:BioMEMS/ion-library.git

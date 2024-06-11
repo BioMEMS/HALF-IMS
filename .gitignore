@@ -5,5 +5,11 @@
 *.processed.gem
 *.tmp
 
+#Ignore ion library files in the base directory
+m_defs.dat
+simulations/SIMION/base/*.fly2
+simulations/SIMION/base/*.fly
+simulations/SIMION/base/*.ion
+
 #Directories to ignore
 bin/

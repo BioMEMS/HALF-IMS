@@ -1,17 +1,17 @@
 particles {
   coordinates = 0,
   standard_beam {
-    n = 20,
+    n = 100,
     tob = 0,
-    mass = 1,
+    mass = 79.12,
     charge = -1,
+    ke = 0.1,
     cwf = 1,
-    color = 17,
+    color = 0,
     direction = vector(1, 0, 0),
     position = line_distribution {
-      first = vector(0, 5e-06, 0),
-      last = vector(0, 4.5e-05, 0)
-    },
-    speed = 4
+      first = vector(0, 0, 0),
+      last = vector(0, 0, 0)
+    }
   }
 }

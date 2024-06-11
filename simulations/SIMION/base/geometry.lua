@@ -16,7 +16,31 @@ function set_electrode_pair_count(electrode_count)
 	 return
 end
 
--- Local variables for grid spacing in meters
+-- Function to get the minimum grid spacing
+function get_grid_min_spacing()
+	 -- Get known x and y grid spacing
+	 local temp = tonumber(get_grid_y_spacing())
+	 local spacing = tonumber(get_grid_x_spacing())
+
+	 -- Determine if y spacing is smaller than x spacing
+	 if(temp < spacing) then
+	 	 -- Update return value if smaller
+	 	 spacing = temp
+	 end	 
+
+	 -- Get known z grid spacing
+	 temp = tonumber(get_grid_z_spacing())
+
+	 -- Determine if z spacing is smaller than x/y spacing
+	 if(temp < spacing) then
+	 	 -- Update return value if smaller
+	 	 spacing = temp
+	 end
+	 
+	 return spacing
+end
+
+-- Local variables for grid x spacing in meters
 local default_grid_x_spacing_file_name = "grid_x_spacing.tmp"
 local default_grid_x_spacing = 5E-9
 
@@ -32,7 +56,7 @@ function set_grid_x_spacing(spacing)
 	 return
 end
 
--- Local variables for grid spacing in meters
+-- Local variables for grid y spacing in meters
 local default_grid_y_spacing_file_name = "grid_y_spacing.tmp"
 local default_grid_y_spacing = 5E-9
 
@@ -48,7 +72,7 @@ function set_grid_y_spacing(spacing)
 	 return
 end
 
--- Local variables for grid spacing in meters
+-- Local variables for grid z spacing in meters
 local default_grid_z_spacing_file_name = "grid_z_spacing.tmp"
 local default_grid_z_spacing = 1
 

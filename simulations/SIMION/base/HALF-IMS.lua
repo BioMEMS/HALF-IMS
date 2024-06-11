@@ -2,13 +2,23 @@ simion.workbench_program()
 
 -- Update the electrodes functions by importing the file to ensure functionality
 simion.import("geometry.lua")
+simion.import("electrode_potentials.lua")
 
 -- Adjustable parameters which show up in the GUI under Ion Workbench "Variables" tab
-adjustable long_electrode_voltage = 0
-adjustable short_electrode_voltage = 0
-adjustable shutter_electrode_voltage = 0
-adjustable bias_ring_voltage = 5
+
+-- Control whether the PE view is frozen after potentials are updated
 adjustable freeze_potentials = 1
+
+-- Velocity scale factors
+adjustable ion_x_velocity_scale = 1
+adjustable ion_y_velocity_scale = 1
+adjustable ion_z_velocity_scale = 1
+
+-- Variables to hold file values
+local long_electrode_voltage = get_long_electrode_potential()
+local short_electrode_voltage = get_short_electrode_potential()
+local shutter_electrode_voltage = get_shutter_electrode_potential()
+local bias_ring_voltage = get_bias_ring_electrode_potential()
 
 -- Get the total number of electrode pairs for indexing
 local num_electrode_pairs = get_electrode_pair_count()
@@ -18,12 +28,6 @@ local num_shutter_electrodes = get_shutter_electrode_count()
 local initial_x_pos = 0
 local initial_y_pos = 0
 local initial_z_pos = 0
-
--- Variables for ion scaling
--- Velocity scale factors
-adjustable ion_x_velocity_scale = 1
-adjustable ion_y_velocity_scale = 1
-adjustable ion_z_velocity_scale = 1
 
 -- Flag tracking if the particular ion has been scaled
 local initial_scaled = 0
