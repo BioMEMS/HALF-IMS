@@ -89,8 +89,6 @@ function set_file_value(file_name, value)
 	       -- Incremement index
 	       i = i + 1
 	 end
-	 -- Write desired value
-	 -- io.write(value)
 	 
 	 -- Close the file
 	 io.close(file_id)
@@ -179,4 +177,33 @@ function windows_operating_system()
 
 	 local start, stop = string.find(temp_path, ":")
 	 return (start < 3) and (stop < 3)
+end
+
+-- Append the provided line to the file
+function write_to_log(file, line)
+
+	 -- Open provided file
+	 local file_id = io.open(file, "a")
+
+	 -- Write provided line
+	 file_id:write(line)
+
+	 -- Close file handler
+	 io.close(file_id)
+
+	 return
+end
+
+-- Functions to set/get an output log file in configuration
+local results_output_file_name = "output_log"
+
+-- Get the current output log file name
+function get_results_file_name()
+	 return get_raw_file_value(results_output_file_name,"output.csv")
+end
+
+-- Set the output log file name
+function set_results_file_name(name)
+	 set_file_value(results_output_file_name, name)
+	 return
 end

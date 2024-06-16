@@ -3,22 +3,25 @@ simion.workbench_program()
 -- Update the electrodes functions by importing the file to ensure functionality
 simion.import("geometry.lua")
 simion.import("electrode_potentials.lua")
+simion.import("ions.lua")
 
 -- Adjustable parameters which show up in the GUI under Ion Workbench "Variables" tab
 
 -- Control whether the PE view is frozen after potentials are updated
 adjustable freeze_potentials = 1
 
--- Velocity scale factors
-adjustable ion_x_velocity_scale = 1
-adjustable ion_y_velocity_scale = 1
-adjustable ion_z_velocity_scale = 1
+-- Ion Velocities
+local ion_x_velocity = get_ion_x_velocity()
+local ion_y_velocity = get_ion_y_velocity()
+local ion_z_velocity = get_ion_z_velocity()
 
 -- Variables to hold file values
 local long_electrode_voltage = get_long_electrode_potential()
 local short_electrode_voltage = get_short_electrode_potential()
 local shutter_electrode_voltage = get_shutter_electrode_potential()
 local bias_ring_voltage = get_bias_ring_electrode_potential()
+local cur_carrier_gas = get_carrier_gas_rate()
+local cur_ion_file = get_current_ion_file()
 
 -- Get the total number of electrode pairs for indexing
 local num_electrode_pairs = get_electrode_pair_count()
@@ -31,6 +34,10 @@ local initial_z_pos = 0
 
 -- Flag tracking if the particular ion has been scaled
 local initial_scaled = 0
+
+-- Variable to hold the log string and log file name
+local output_log_line = ""
+local output_log_file_name = get_results_file_name()
 
 function segment.initialize()
    -- Unclear when this gets called, but it never seems to output a log message...
@@ -77,9 +84,9 @@ function segment.other_actions()
    -- inaccuracies
    if (initial_scaled ~= 1) then
      -- Update the pre-defined ion velocity by the scaling parameter
-     ion_vx_mm = ion_vx_mm*ion_x_velocity_scale
-     ion_vy_mm = ion_vy_mm*ion_y_velocity_scale
-     ion_vz_mm = ion_vz_mm*ion_z_velocity_scale
+     ion_vx_mm = ion_x_velocity
+     ion_vy_mm = ion_y_velocity
+     ion_vz_mm = ion_z_velocity
 
      -- Save the initial position for later logging
      initial_x_pos = ion_px_mm
@@ -93,8 +100,28 @@ function segment.other_actions()
    sim_update_pe_surface = 1  -- update display
 
    if (ion_splat ~= 0) then
-     -- Log final position and hit metric
-     print(ion_number, initial_x_pos, ",", initial_y_pos, ",", initial_z_pos, ",", ion_px_mm, ",", ion_py_mm, ",", ion_pz_mm, ",", hit_detector(ion_px_mm, ion_py_mm))
+     -- Log final position, hit metric, and simulation parameters
+     output_log_line = ""
+     output_log_line = output_log_line .. num_electrode_pairs .. ","
+     output_log_line = output_log_line .. cur_ion_file .. ","
+     output_log_line = output_log_line .. ion_mass .. ","
+     output_log_line = output_log_line .. cur_carrier_gas .. ","
+     output_log_line = output_log_line .. bias_ring_voltage .. ","
+     output_log_line = output_log_line .. shutter_electrode_voltage .. ","
+     output_log_line = output_log_line .. long_electrode_voltage .. ","
+     output_log_line = output_log_line .. short_electrode_voltage .. ","
+     output_log_line = output_log_line .. ion_number .. ","
+     output_log_line = output_log_line .. initial_x_pos .. ","
+     output_log_line = output_log_line .. initial_y_pos .. ","
+     output_log_line = output_log_line .. initial_z_pos .. ","
+     output_log_line = output_log_line .. ion_px_mm .. ","
+     output_log_line = output_log_line .. ion_py_mm .. ","
+     output_log_line = output_log_line .. ion_pz_mm .. ","
+     output_log_line = output_log_line .. tostring(hit_detector(ion_px_mm, ion_py_mm))
+     output_log_line = output_log_line .. "\n"
+
+     -- Write line to CSV
+     write_to_log(output_log_file_name, output_log_line)
      
      -- Update flag as ion is done
      initial_scaled = 0

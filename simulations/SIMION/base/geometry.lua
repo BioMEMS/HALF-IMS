@@ -1,7 +1,7 @@
 simion.import("file_io.lua")
 
 -- Local variables for electrode pairs
-local default_electrode_file_name = "electrodes_count.tmp"
+local default_electrode_file_name = "electrodes_count"
 local default_electrode_count = 220
 
 -- Functions to get/set the total number of electrode pairs
@@ -41,7 +41,7 @@ function get_grid_min_spacing()
 end
 
 -- Local variables for grid x spacing in meters
-local default_grid_x_spacing_file_name = "grid_x_spacing.tmp"
+local default_grid_x_spacing_file_name = "grid_x_spacing"
 local default_grid_x_spacing = 5E-9
 
 -- Functions to get/set grid spacing
@@ -57,7 +57,7 @@ function set_grid_x_spacing(spacing)
 end
 
 -- Local variables for grid y spacing in meters
-local default_grid_y_spacing_file_name = "grid_y_spacing.tmp"
+local default_grid_y_spacing_file_name = "grid_y_spacing"
 local default_grid_y_spacing = 5E-9
 
 -- Functions to get/set grid spacing
@@ -73,7 +73,7 @@ function set_grid_y_spacing(spacing)
 end
 
 -- Local variables for grid z spacing in meters
-local default_grid_z_spacing_file_name = "grid_z_spacing.tmp"
+local default_grid_z_spacing_file_name = "grid_z_spacing"
 local default_grid_z_spacing = 1
 
 -- Functions to get/set grid spacing
@@ -89,7 +89,7 @@ function set_grid_z_spacing(spacing)
 end
 
 -- Local variables for electrode height
-local default_electrode_height_file_name = "electrode_height.tmp"
+local default_electrode_height_file_name = "electrode_height"
 local default_electrode_height = 20E-9
 
 -- Functions to get/set universal electrode height
@@ -105,7 +105,7 @@ function set_electrode_height(height)
 end
 
 -- Local variables for flow channel offset
-local default_flow_channel_file_name = "flow_channel_offset.tmp"
+local default_flow_channel_file_name = "flow_channel_offset"
 local default_flow_channel_offset = 10E-6
 
 -- Functions to get/set flow channel offset
@@ -119,7 +119,7 @@ function set_flow_channel_offset(offset)
 end
 
 -- Local variables for shutter electrode count
-local default_shutter_electrode_count_file_name = "shutter_electrode_count.tmp"
+local default_shutter_electrode_count_file_name = "shutter_electrode_count"
 local default_shutter_electrode_count = 2
 
 -- Functions to get/set shutter electrode count
@@ -133,7 +133,7 @@ function set_shutter_electrode_count(count)
 end
 
 -- Local variables for shutter electrode length
-local default_shutter_electrode_length_file_name = "shutter_electrode_length.tmp"
+local default_shutter_electrode_length_file_name = "shutter_electrode_length"
 local default_shutter_electrode_length = 10E-5
 
 -- Functions to get/set shutter electrode length
@@ -147,7 +147,7 @@ function set_shutter_electrode_length(length)
 end
 
 -- Local variables for shutter electrode spacing
-local default_shutter_electrode_spacing_file_name = "shutter_electrode_spacing.tmp"
+local default_shutter_electrode_spacing_file_name = "shutter_electrode_spacing"
 local default_shutter_electrode_spacing = 100E-6
 
 -- Functions to get/set shutter electrode spacing
@@ -161,7 +161,7 @@ function set_shutter_electrode_spacing(spacing)
 end
 
 -- Local variables for long & short electrode spacing
-local default_electrode_spacing_file_name = "electrode_spacing.tmp"
+local default_electrode_spacing_file_name = "electrode_spacing"
 local default_electrode_spacing = 10E-6
 
 -- Functions to get/set long & short electrode spacing
@@ -175,7 +175,7 @@ function set_electrode_spacing(spacing)
 end
 
 -- Local variables for short electrode length
-local default_short_electrode_length_file_name = "short_electrode_length.tmp"
+local default_short_electrode_length_file_name = "short_electrode_length"
 local default_short_electrode_length = 10E-6
 
 -- Functions to get/set short electrode length
@@ -189,7 +189,7 @@ function set_short_electrode_length(length)
 end
 
 -- Local variables for long electrode length
-local default_long_electrode_length_file_name = "long_electrode_length.tmp"
+local default_long_electrode_length_file_name = "long_electrode_length"
 local default_long_electrode_length = 50E-6
 
 -- Functions to get/set long electrode length
@@ -203,7 +203,7 @@ function set_long_electrode_length(length)
 end
 
 -- Local variables for bias ring spacing
-local default_bias_ring_spacing_file_name = "bias_ring_spacing.tmp"
+local default_bias_ring_spacing_file_name = "bias_ring_spacing"
 local default_bias_ring_spacing = 20E-6
 
 -- Functions to get/set bias ring spacing
@@ -217,7 +217,7 @@ function set_bias_ring_spacing(spacing)
 end
 
 -- Local variables for bias ring length
-local default_bias_ring_length_file_name = "bias_ring_length.tmp"
+local default_bias_ring_length_file_name = "bias_ring_length"
 local default_bias_ring_length = 10E-6
 
 -- Functions to get/set bias ring length
@@ -231,7 +231,7 @@ function set_bias_ring_length(length)
 end
 
 -- Local variables for detector pad spacing
-local default_detector_pad_spacing_file_name = "detector_pad_spacing.tmp"
+local default_detector_pad_spacing_file_name = "detector_pad_spacing"
 local default_detector_pad_spacing = 100E-6
 
 -- Functions to get/set detector pad spacing
@@ -245,7 +245,7 @@ function set_detector_pad_spacing(spacing)
 end
 
 -- Local variables for detector pad length
-local default_detector_pad_length_file_name = "detector_pad_length.tmp"
+local default_detector_pad_length_file_name = "detector_pad_length"
 local default_detector_pad_length = 1E-3
 
 -- Functions to get/set detector pad length
@@ -299,7 +299,7 @@ function get_device_x_length()
 end
 
 -- Local variables for Y-direction dimension
-local default_y_direction_file_name = "y_direction_length.tmp"
+local default_y_direction_file_name = "y_direction_length"
 local default_y_direction = 50E-6
 
 -- Functions to get/set the number of grid units in the Y-direction
@@ -315,7 +315,7 @@ function set_device_y_length(length)
 end
 
 -- Local variables for Z-direction dimension
-local default_z_direction_file_name = "z_direction_length.tmp"
+local default_z_direction_file_name = "z_direction_length"
 local default_z_direction = 1E-3
 
 -- Functions to get/set the number of grid units in the Z-direction
