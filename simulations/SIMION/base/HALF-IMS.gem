@@ -66,7 +66,7 @@ simion.import("geometry.lua")
 # local yPoints = get_device_y_length()
 # local zPoints = get_device_z_length()
 
-# local electrodeYPosition = (yPoints-electrodeHeight)/2
+# local electrodeYPosition = yPoints-electrodeHeight
 
 ; Create a grid scaled to dx value
 pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic,,dx,dy,dz)
@@ -81,6 +81,7 @@ locate (0,0,0,dx,dy,dz){
     ; Loop to generate the electrodes along the channel using a row-major format for the electrode potential so that they
     ; are generated individually
     for i=0,(numElectrodePairs-1) do
+    	print(i, i*electrodePattern + shutterElectrodePattern, electrodeLengthShort, electrodeHeight)
 	    electrode(4*i+1+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern + shutterElectrodePattern,0, electrodeLengthShort,electrodeHeight) } } }
 	    electrode(4*i+2+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern + shutterElectrodePattern,electrodeYPosition, electrodeLengthShort,electrodeHeight) } } }
 	    electrode(4*i+3+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern ,0, electrodeLengthLong,electrodeHeight) } } }

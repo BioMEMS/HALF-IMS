@@ -40,9 +40,9 @@ function get_grid_min_spacing()
 	 return spacing
 end
 
--- Local variables for grid x spacing in meters
+-- Local variables for grid x spacing in millimeters
 local default_grid_x_spacing_file_name = "grid_x_spacing"
-local default_grid_x_spacing = 5E-9
+local default_grid_x_spacing = 5E-3
 
 -- Functions to get/set grid spacing
 function get_grid_x_spacing()
@@ -56,9 +56,9 @@ function set_grid_x_spacing(spacing)
 	 return
 end
 
--- Local variables for grid y spacing in meters
+-- Local variables for grid y spacing in millimeters
 local default_grid_y_spacing_file_name = "grid_y_spacing"
-local default_grid_y_spacing = 5E-9
+local default_grid_y_spacing = 5E-3
 
 -- Functions to get/set grid spacing
 function get_grid_y_spacing()
@@ -72,7 +72,7 @@ function set_grid_y_spacing(spacing)
 	 return
 end
 
--- Local variables for grid z spacing in meters
+-- Local variables for grid z spacing in millimeters
 local default_grid_z_spacing_file_name = "grid_z_spacing"
 local default_grid_z_spacing = 1
 
@@ -90,7 +90,7 @@ end
 
 -- Local variables for electrode height
 local default_electrode_height_file_name = "electrode_height"
-local default_electrode_height = 20E-9
+local default_electrode_height = 20E-6
 
 -- Functions to get/set universal electrode height
 function get_electrode_height()
@@ -106,7 +106,7 @@ end
 
 -- Local variables for flow channel offset
 local default_flow_channel_file_name = "flow_channel_offset"
-local default_flow_channel_offset = 10E-6
+local default_flow_channel_offset = 10E-3
 
 -- Functions to get/set flow channel offset
 function get_flow_channel_offset()
@@ -134,7 +134,7 @@ end
 
 -- Local variables for shutter electrode length
 local default_shutter_electrode_length_file_name = "shutter_electrode_length"
-local default_shutter_electrode_length = 10E-5
+local default_shutter_electrode_length = 10E-2
 
 -- Functions to get/set shutter electrode length
 function get_shutter_electrode_length()
@@ -148,7 +148,7 @@ end
 
 -- Local variables for shutter electrode spacing
 local default_shutter_electrode_spacing_file_name = "shutter_electrode_spacing"
-local default_shutter_electrode_spacing = 100E-6
+local default_shutter_electrode_spacing = 100E-3
 
 -- Functions to get/set shutter electrode spacing
 function get_shutter_electrode_spacing()
@@ -161,8 +161,8 @@ function set_shutter_electrode_spacing(spacing)
 end
 
 -- Local variables for long & short electrode spacing
-local default_electrode_spacing_file_name = "electrode_spacing"
-local default_electrode_spacing = 10E-6
+local default_electrode_spacing_file_name = "drift_electrode_spacing"
+local default_electrode_spacing = 10E-3
 
 -- Functions to get/set long & short electrode spacing
 function get_electrode_spacing()
@@ -176,7 +176,7 @@ end
 
 -- Local variables for short electrode length
 local default_short_electrode_length_file_name = "short_electrode_length"
-local default_short_electrode_length = 10E-6
+local default_short_electrode_length = 10E-3
 
 -- Functions to get/set short electrode length
 function get_short_electrode_length()
@@ -190,7 +190,7 @@ end
 
 -- Local variables for long electrode length
 local default_long_electrode_length_file_name = "long_electrode_length"
-local default_long_electrode_length = 50E-6
+local default_long_electrode_length = 50E-3
 
 -- Functions to get/set long electrode length
 function get_long_electrode_length()
@@ -204,7 +204,7 @@ end
 
 -- Local variables for bias ring spacing
 local default_bias_ring_spacing_file_name = "bias_ring_spacing"
-local default_bias_ring_spacing = 20E-6
+local default_bias_ring_spacing = 20E-3
 
 -- Functions to get/set bias ring spacing
 function get_bias_ring_spacing()
@@ -218,7 +218,7 @@ end
 
 -- Local variables for bias ring length
 local default_bias_ring_length_file_name = "bias_ring_length"
-local default_bias_ring_length = 10E-6
+local default_bias_ring_length = 10E-3
 
 -- Functions to get/set bias ring length
 function get_bias_ring_length()
@@ -232,7 +232,7 @@ end
 
 -- Local variables for detector pad spacing
 local default_detector_pad_spacing_file_name = "detector_pad_spacing"
-local default_detector_pad_spacing = 100E-6
+local default_detector_pad_spacing = 100E-3
 
 -- Functions to get/set detector pad spacing
 function get_detector_pad_spacing()
@@ -246,7 +246,7 @@ end
 
 -- Local variables for detector pad length
 local default_detector_pad_length_file_name = "detector_pad_length"
-local default_detector_pad_length = 1E-3
+local default_detector_pad_length = 1
 
 -- Functions to get/set detector pad length
 function get_detector_pad_length()
@@ -300,7 +300,7 @@ end
 
 -- Local variables for Y-direction dimension
 local default_y_direction_file_name = "y_direction_length"
-local default_y_direction = 50E-6
+local default_y_direction = 50E-3
 
 -- Functions to get/set the number of grid units in the Y-direction
 function get_device_y_length()
@@ -316,7 +316,7 @@ end
 
 -- Local variables for Z-direction dimension
 local default_z_direction_file_name = "z_direction_length"
-local default_z_direction = 1E-3
+local default_z_direction = 1
 
 -- Functions to get/set the number of grid units in the Z-direction
 function get_device_z_length()
