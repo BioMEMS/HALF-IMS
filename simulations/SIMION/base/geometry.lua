@@ -19,8 +19,8 @@ end
 -- Function to get the minimum grid spacing
 function get_grid_min_spacing()
 	 -- Get known x and y grid spacing
-	 local temp = tonumber(get_grid_y_spacing())
-	 local spacing = tonumber(get_grid_x_spacing())
+	 local temp = get_grid_y_spacing()
+	 local spacing = get_grid_x_spacing()
 
 	 -- Determine if y spacing is smaller than x spacing
 	 if(temp < spacing) then
@@ -29,7 +29,7 @@ function get_grid_min_spacing()
 	 end	 
 
 	 -- Get known z grid spacing
-	 temp = tonumber(get_grid_z_spacing())
+	 temp = get_grid_z_spacing()
 
 	 -- Determine if z spacing is smaller than x/y spacing
 	 if(temp < spacing) then

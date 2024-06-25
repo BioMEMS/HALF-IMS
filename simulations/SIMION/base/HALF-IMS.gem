@@ -31,7 +31,7 @@ simion.import("geometry.lua")
 # local shutterElectrodeSpacing = get_shutter_electrode_spacing()
 
 ; Total shutter gate grid units
-# local shutterElectrodePattern = shutterElectrodeLength + shutterElectrodeSpacing + flowChannelOffset
+# local shutterElectrodePattern = get_shutter_pattern_length()
 
 ; Define parameters for the long and short electrodes which make up the HALF-IMS channel
 ; Should equate to 10 um per paper, but set in grid units
@@ -59,33 +59,29 @@ simion.import("geometry.lua")
 ; Unclear what this should be per paper, but set in grid units
 # local detectorPadSpacing = get_detector_pad_spacing()
 
-; Unclear what this should be per paper, but set in grid units
-# local detectorPatternSpacing = biasRingLength + biasRingSpacing + detectorPadLength + detectorPadSpacing
-
 # local xPoints = get_device_x_length()
 # local yPoints = get_device_y_length()
 # local zPoints = get_device_z_length()
 
 # local electrodeYPosition = yPoints-electrodeHeight
 
-; Create a grid scaled to dx value
+; Create a grid scaled to dx, dy, and dz values
 pa_define(xPoints+1,yPoints+1,zPoints+1, planar, none, electrostatic,,dx,dy,dz)
- 
-; Create all geometries scaled to dx value
-locate (0,0,0,dx,dy,dz){
+
+;Center at (0,0,0) with no isotropic scaling parameter provided, 0 azimuth, 0 elevation, 0 rotation angles applied, and anisotropic scaling parameters provided
+locate (0,0,0,,0,0,0,dx,dy,dz){
 
     ; Generate the shutter electrodes
-    electrode(1) { fill { within { corner_box(flowChannelOffset, 0, shutterElectrodeLength, electrodeHeight) } } }
-    electrode(2) { fill { within { corner_box(flowChannelOffset, electrodeYPosition, shutterElectrodeLength, electrodeHeight) } } }
+    electrode(1) { corner_box(flowChannelOffset, 0, shutterElectrodeLength, electrodeHeight) }
+    electrode(2) { corner_box(flowChannelOffset, electrodeYPosition, shutterElectrodeLength, electrodeHeight) } 
 
     ; Loop to generate the electrodes along the channel using a row-major format for the electrode potential so that they
     ; are generated individually
     for i=0,(numElectrodePairs-1) do
-    	print(i, i*electrodePattern + shutterElectrodePattern, electrodeLengthShort, electrodeHeight)
-	    electrode(4*i+1+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern + shutterElectrodePattern,0, electrodeLengthShort,electrodeHeight) } } }
-	    electrode(4*i+2+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern + shutterElectrodePattern,electrodeYPosition, electrodeLengthShort,electrodeHeight) } } }
-	    electrode(4*i+3+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern ,0, electrodeLengthLong,electrodeHeight) } } }
-	    electrode(4*i+4+shutterElectrodeCount) { fill { within { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern,electrodeYPosition, electrodeLengthLong,electrodeHeight) } } }
+	    electrode(4*i+1+shutterElectrodeCount) { corner_box(i*electrodePattern + shutterElectrodePattern,0, electrodeLengthShort,electrodeHeight) }
+	    electrode(4*i+2+shutterElectrodeCount) { corner_box(i*electrodePattern + shutterElectrodePattern,electrodeYPosition, electrodeLengthShort,electrodeHeight) }
+	    electrode(4*i+3+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern ,0, electrodeLengthLong,electrodeHeight) }
+	    electrode(4*i+4+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern,electrodeYPosition, electrodeLengthLong,electrodeHeight) }
     end
 
     ; Calculate the total number of electrodes to offset final electrodes
@@ -93,11 +89,11 @@ locate (0,0,0,dx,dy,dz){
     # local totalElectrodeOffset = (numElectrodePairs-1)*electrodePattern + shutterElectrodePattern + electrodePattern
 
     ; Generate the bias ring electrodes
-    electrode(totalElectrodes + 1) { fill { within { corner_box( totalElectrodeOffset + biasRingSpacing, 0, biasRingLength, electrodeHeight) } } }
-    electrode(totalElectrodes + 2) { fill { within { corner_box( totalElectrodeOffset + biasRingSpacing, electrodeYPosition, biasRingLength, electrodeHeight) } } }
+    electrode(totalElectrodes + 1) { corner_box( totalElectrodeOffset + biasRingSpacing, 0, biasRingLength, electrodeHeight) }
+    electrode(totalElectrodes + 2) { corner_box( totalElectrodeOffset + biasRingSpacing, electrodeYPosition, biasRingLength, electrodeHeight) }
 
     ; Generate detector pad electrodes
-    electrode(totalElectrodes + 3) { fill { within { corner_box( totalElectrodeOffset + biasRingSpacing + biasRingLength + detectorPadSpacing, 0, detectorPadLength, electrodeHeight) } } }
-    electrode(totalElectrodes + 4) { fill { within { corner_box( totalElectrodeOffset + biasRingSpacing + biasRingLength + detectorPadSpacing, electrodeYPosition, detectorPadLength, electrodeHeight) } } }
+    electrode(totalElectrodes + 3) { corner_box( totalElectrodeOffset + detectorPadSpacing, 0, detectorPadLength, electrodeHeight) }
+    electrode(totalElectrodes + 4) { corner_box( totalElectrodeOffset + detectorPadSpacing, electrodeYPosition, detectorPadLength, electrodeHeight) }
 
 }
