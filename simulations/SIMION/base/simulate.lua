@@ -47,5 +47,7 @@ for file in string.gmatch(get_results_files(),"([^,]+)") do
     end
 end
 
+-- Clean up simulation
+set_results_file_name("output.csv")
 set_short_electrode_potential(0)
 set_long_electrode_potential(0)

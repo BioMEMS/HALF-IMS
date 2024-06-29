@@ -2,6 +2,7 @@
 simion.import("file_io.lua")
 simion.import("geometry.lua")
 simion.import("electrode_potentials.lua")
+simion.import("ions.lua")
 
 -- Adjust geometry parameters from defaults for conversion
 -- and to keep memory usage low
@@ -10,6 +11,7 @@ set_grid_x_spacing(2E-3)
 set_grid_y_spacing(1E-3)
 set_grid_z_spacing(1E-2)
 set_device_z_length(0)
+set_simulated_device_z_length(3)
 
 -- Generate HALF-IMS potential arrays from geometry file
 simion.command("--noprompt gem2pa HALF-IMS.gem HALF-IMS.pa#")

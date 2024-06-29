@@ -134,7 +134,7 @@ end
 
 -- Local variables for shutter electrode length
 local default_shutter_electrode_length_file_name = "shutter_electrode_length"
-local default_shutter_electrode_length = 10E-2
+local default_shutter_electrode_length = 2
 
 -- Functions to get/set shutter electrode length
 function get_shutter_electrode_length()
@@ -148,7 +148,7 @@ end
 
 -- Local variables for shutter electrode spacing
 local default_shutter_electrode_spacing_file_name = "shutter_electrode_spacing"
-local default_shutter_electrode_spacing = 100E-3
+local default_shutter_electrode_spacing = 1
 
 -- Functions to get/set shutter electrode spacing
 function get_shutter_electrode_spacing()
@@ -204,7 +204,7 @@ end
 
 -- Local variables for bias ring spacing
 local default_bias_ring_spacing_file_name = "bias_ring_spacing"
-local default_bias_ring_spacing = 20E-3
+local default_bias_ring_spacing = 1
 
 -- Functions to get/set bias ring spacing
 function get_bias_ring_spacing()
@@ -218,7 +218,7 @@ end
 
 -- Local variables for bias ring length
 local default_bias_ring_length_file_name = "bias_ring_length"
-local default_bias_ring_length = 10E-3
+local default_bias_ring_length = 0.1
 
 -- Functions to get/set bias ring length
 function get_bias_ring_length()
@@ -232,7 +232,7 @@ end
 
 -- Local variables for detector pad spacing
 local default_detector_pad_spacing_file_name = "detector_pad_spacing"
-local default_detector_pad_spacing = 100E-3
+local default_detector_pad_spacing = 0.25
 
 -- Functions to get/set detector pad spacing
 function get_detector_pad_spacing()
@@ -246,7 +246,7 @@ end
 
 -- Local variables for detector pad length
 local default_detector_pad_length_file_name = "detector_pad_length"
-local default_detector_pad_length = 1
+local default_detector_pad_length = 6
 
 -- Functions to get/set detector pad length
 function get_detector_pad_length()

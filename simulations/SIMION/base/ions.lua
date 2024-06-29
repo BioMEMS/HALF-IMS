@@ -70,7 +70,7 @@ end
 --Functions to set/get simulated Z-device size
 local simulated_z_device_length_file_name = "simulated_z_device_length"
 function get_simulated_z_device_length()
-	 return get_file_value(simulated_z_device_length_file_name, 3E-3)
+	 return get_file_value(simulated_z_device_length_file_name, 3)
 end
 
 function set_simulated_z_device_length(value)
@@ -106,7 +106,10 @@ function set_carrier_gas_rate(value)
 
 	 -- Calculate velocity by converting area from mL/(min-m^2) to m/s
 	 local velocity = (value/channelArea)*(1/1E6)*(1/60)
-	 
+
+	 -- Convert to millimeters per microsecond to align with SIMION interface
+	 velocity = velocity * (1000 / 1E6)
+
 	 -- Set ion X velocity under assumption of X-axis flow
 	 set_ion_x_velocity(velocity)
 	 
