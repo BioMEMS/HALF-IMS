@@ -90,7 +90,7 @@ end
 
 -- Local variables for electrode height
 local default_electrode_height_file_name = "electrode_height"
-local default_electrode_height = 20E-6
+local default_electrode_height = 50E-6
 
 -- Functions to get/set universal electrode height
 function get_electrode_height()

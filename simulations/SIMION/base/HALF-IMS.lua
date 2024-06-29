@@ -69,7 +69,6 @@ function segment.fast_adjust()
   
 end
 
-
 -- Adjust acceleration every cycle
 function segment.accel_adjust()
 
@@ -134,5 +133,12 @@ end
 
 -- Helper functions
 function hit_detector(x_pos, y_pos)
-  return (x_pos > get_detector_pad_start()) and (x_pos < get_detector_pad_end())
+  local xScale = get_grid_x_spacing()
+  local padStart = get_detector_pad_start() * xScale
+  local padStop = get_detector_pad_end() * xScale
+  if ((x_pos > padStart) and (x_pos < padStop)) then
+      return 1
+  else
+      return 0
+  end    
 end
