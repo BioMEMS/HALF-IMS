@@ -41,7 +41,7 @@ local output_log_file_name = get_results_file_name()
 local deviceXLength = get_device_x_length()*get_grid_x_spacing()
 local deviceYLength = get_device_y_length()*get_grid_y_spacing()
 local deviceZLength = get_device_z_length()*get_grid_z_spacing()
-local deviceZLengthSimulated = get_simulated_device_z_length()
+local deviceZLengthSimulated = get_simulated_z_device_length()
 
 function segment.initialize()
    -- Unclear when this gets called, but it never seems to output a log message...
