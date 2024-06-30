@@ -19,5 +19,7 @@ simion.command("--noprompt gem2pa HALF-IMS.gem HALF-IMS.pa#")
 -- Refine geometry
 simion.command("--noprompt refine HALF-IMS.pa#")
 
+os.remove("HALF-IMS.iob")
+
 print("\n\n------------------------------------------------------------------")
 print("Before running the 'simulate.lua' program, please load the generated PA, \nopen a workbench with the refined PA and save as 'HALF-IMS.iob' to \ncomply with the SIMION workflow.")

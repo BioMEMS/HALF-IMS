@@ -35,9 +35,13 @@ local initial_z_pos = 0
 -- Flag tracking if the particular ion has been scaled
 local initial_scaled = 0
 
--- Variable to hold the log string and log file name
+-- Variable to hold the log string, log file name, and other logged values
 local output_log_line = ""
 local output_log_file_name = get_results_file_name()
+local deviceXLength = get_device_x_length()*get_grid_x_spacing()
+local deviceYLength = get_device_y_length()*get_grid_y_spacing()
+local deviceZLength = get_device_z_length()*get_grid_z_spacing()
+local deviceZLengthSimulated = get_simulated_device_z_length()
 
 function segment.initialize()
    -- Unclear when this gets called, but it never seems to output a log message...
@@ -101,7 +105,11 @@ function segment.other_actions()
    if (ion_splat ~= 0) then
      -- Log final position, hit metric, and simulation parameters
      output_log_line = ""
-     output_log_line = output_log_line .. num_electrode_pairs .. ","
+     output_log_line = output_log_line .. num_electrode_pairs .. ","     
+     output_log_line = output_log_line .. deviceXLength .. ","
+     output_log_line = output_log_line .. deviceYLength .. ","
+     output_log_line = output_log_line .. deviceZLength .. ","
+     output_log_line = output_log_line .. deviceZLengthSimulated .. ","     
      output_log_line = output_log_line .. cur_ion_file .. ","
      output_log_line = output_log_line .. ion_mass .. ","
      output_log_line = output_log_line .. cur_carrier_gas .. ","
