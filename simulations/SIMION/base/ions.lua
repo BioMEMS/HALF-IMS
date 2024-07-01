@@ -21,13 +21,52 @@ end
 
 function set_current_ion_file(file_name)
 	 local temp = ""
-
+	 local tempFileName = "temp.fly2"
+	 
 	 -- Split the input 
-	 for name in string.gmatch(file_name,"([^\\]+)") do
+	 for name in string.gmatch(file_name,"([^/]+)") do
 	     -- Assign each segment to eventually get the file name itself
 	     temp = name
 	 end
+
+	 -- Copy file to local directory
+	 copy_file(file_name, tempFileName)
+
+	 -- Modify file to account for current geometry
+	 local electrodeHeight = 2*math.ceil(get_electrode_height())
+	 local yDimension = get_device_y_length()
+	 local zDimension = get_device_z_length()
 	 
+	 -- Open file with read/write
+	 local tempID = io.open(tempFileName,"r")
+	 local fileID = io.open(temp,"w")
+
+	 -- For every line in the file
+	 for line in tempID:lines() do
+	     -- If it matches the first position vector
+	     if (string.match(tostring(line), " *first =.*")) then
+	     	 -- Updating Y position
+	     	 fileID:write("      first = vector(0," .. tostring(electrodeHeight) .. ",0)")
+	     elseif (string.match(tostring(line), " *last =.*")) then
+	     	 
+     	     	 fileID:write("      last = vector(0," .. tostring(yDimension - electrodeHeight) .. ",0)")
+	     else
+	         fileID:write(line)
+	     end
+	     
+	     -- Write newline for readability
+	     fileID:write("\n")
+	 end
+
+	 
+	 -- Close file handles
+	 fileID:close()
+	 tempID:close()
+
+	 -- Delete temporary file
+	 os.remove(tempFileName)
+
+	 -- Set file name in configuration
 	 set_file_value(simulation_current_ion_file_name, temp)
 end
 

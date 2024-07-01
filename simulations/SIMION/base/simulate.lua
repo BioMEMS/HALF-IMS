@@ -41,7 +41,7 @@ for file in string.gmatch(get_results_files(),"([^,]+)") do
 		-- Set short electrode voltage
 		set_short_electrode_potential(sep)
 
-		simion.command("--noprompt fly HALF-IMS.iob --particles=" .. file)
+		simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file())
 	     end
 	end
     end
