@@ -46,10 +46,10 @@ function set_current_ion_file(file_name)
 	     -- If it matches the first position vector
 	     if (string.match(tostring(line), " *first =.*")) then
 	     	 -- Updating Y position
-	     	 fileID:write("      first = vector(0," .. tostring(electrodeHeight) .. ",0)")
+	     	 fileID:write("      first = vector(0, " .. tostring(electrodeHeight) .. ", 0),")
 	     elseif (string.match(tostring(line), " *last =.*")) then
 	     	 
-     	     	 fileID:write("      last = vector(0," .. tostring(yDimension - electrodeHeight) .. ",0)")
+     	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " ,0)")
 	     else
 	         fileID:write(line)
 	     end
