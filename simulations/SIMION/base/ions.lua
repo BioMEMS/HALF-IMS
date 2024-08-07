@@ -36,7 +36,7 @@ function set_current_ion_file(file_name)
 	 local electrodeHeight = 2*math.ceil(get_electrode_height())
 	 local yDimension = get_device_y_length()
 	 local zDimension = get_device_z_length()
-	 
+
 	 -- Open file with read/write
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
@@ -57,17 +57,25 @@ function set_current_ion_file(file_name)
 	     -- Write newline for readability
 	     fileID:write("\n")
 	 end
-
 	 
 	 -- Close file handles
 	 fileID:close()
 	 tempID:close()
-
+	 	 
 	 -- Delete temporary file
 	 os.remove(tempFileName)
 
 	 -- Set file name in configuration
 	 set_file_value(simulation_current_ion_file_name, temp)
+end
+
+--Function to calculate the X-axis ion acceleration from the carrier gas
+function calculate_ion_acceleration(mass)
+	 local area = calculate_ion_area(mass)
+	 local pressure = get_carrier_gas_pressure()
+
+	 -- Calculate acceleration due to the pressure, scaling to mm/usec^2
+	 return ((area * pressure) / mass) * (1000) * (1E-12)
 end
 
 --Functions to get/set the X-axis velocity of the new ions
@@ -115,6 +123,18 @@ end
 function set_simulated_z_device_length(value)
 	 set_file_value(simulated_z_device_length_file_name, value)
 	 return
+end
+
+--Functions to get/set the carrier gas pressure
+local carrier_gas_upstream_pressure_file_name = "carrier_gas_upstream_pressure"
+
+function get_carrier_gas_pressure()
+	 return get_file_value(carrier_gas_upstream_pressure_file_name, 137895)
+end
+
+function set_carrier_gas_pressure(value)
+	 -- Accept PSI value and convert to N/m^2
+	 set_file_value(carrier_gas_upstream_pressure_file_name, value * 6894.76)
 end
 
 --Functions to get/set the carrier gas flow rate

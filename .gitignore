@@ -5,6 +5,7 @@
 *.processed.gem
 *.tmp
 *.iob
+*#*#
 m_defs.dat
 
 #Ignore ion library files in the base directory
