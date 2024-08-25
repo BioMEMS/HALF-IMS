@@ -186,3 +186,62 @@ function set_carrier_gas_step_flow_rate(value)
 	 set_file_value(carrier_gas_step_file_name, value)
 	 return
 end
+
+-- Functions to get/set the current ion's diameter
+local current_ion_diameter_file_name = "current_ion_diameter"
+
+function get_current_ion_area()
+	 return get_file_value(current_ion_diameter_file_name, 0.50)
+end
+
+function set_current_ion_area(mass)
+	 -- Open the SIMION 
+	 local mDefsFile = os.open("m_defs.dat", "r")
+	 local massLine = ""
+	 local area = 0
+	 local diameter = 0.5E-9
+	 
+	 -- For every line in the file
+	 for line in mDefsFile:lines() do
+	     -- If the mass is in the line
+	     if (string.match(mass, line)) then
+	     	-- Save the line for later parsing
+	     	massLine = line       
+	     end
+	 end
+
+	 -- If unable to find the ion in the m_defs file
+	 if (massLine == "") then
+	    print("Unable to find current ion within file. Using diameter of " .. tostring(diameter) >> "m to calculate cross-sectional area.")
+	 else
+	    local index = 1
+	    local lineValues = {}
+	    
+	    for value in string.gmatch(massLine,"([^,]+)") do
+	    	lineValues[index] = value
+		index = index + 1
+	    end
+
+	    -- Get the diamater from the line values array in meters
+	    diameter = lineValues[2] * 1E-9
+	 end
+	 
+	 -- Calculate total area and save to config file
+	 set_file_value(current_ion_diamater_file_name, math.pow(diameter/2,2) * math.pi)
+
+	 return
+end
+
+-- Functions to get/set the upstream pressure
+local upstream_pressure_file_value = "upstream_pressure_si_units"
+
+function get_upstream_pressure()
+	 -- Default is 20 PSI in N/m^2
+	 return get_file_value(upstream_pressure_file_value, 137895.14586)
+end
+
+function set_upstream_pressure(pressure_psi)
+	 -- Convert PSI to N/m^2
+	 set_file_value(upstream_pressure_file_value, pressure_psi * 6894.75729)
+	 return
+end

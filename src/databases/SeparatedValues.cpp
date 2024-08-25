@@ -88,7 +88,7 @@ std::string& SeparatedValues::operator()(unsigned row, unsigned column){
   return content[locRow][locColumn];
 }
 
-std::unique_ptr<std::vector<std::string>> SeparatedValues::operator[](unsigned row){
+std::vector<std::string>* SeparatedValues::operator[](unsigned row){
   
   unsigned maxIndex = 0;
   //If matrix is transposed
@@ -103,7 +103,7 @@ std::unique_ptr<std::vector<std::string>> SeparatedValues::operator[](unsigned r
   }
 
   //Allocate enough memory to hold the desired values
-  std::unique_ptr<std::vector<std::string>> values = std::make_unique<std::vector<std::string>>(maxIndex);
+  std::vector<std::string>* values = new std::vector<std::string>(maxIndex);
   //values->resize(maxIndex);
   
   //For every desired item

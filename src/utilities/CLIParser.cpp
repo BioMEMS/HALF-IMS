@@ -2,6 +2,9 @@
 
 namespace Utilities{
   
+  const std::string CLIParser::description = "DESCRIPTION";
+  const std::string CLIParser::help = "HELP";
+  
   CLIParser::CLIParser(){
 
   }
@@ -207,9 +210,68 @@ namespace Utilities{
     return status;
   }
 
-  void CLIParser::Help(){
-    std::cout << "Help called!" << std::endl;
-    return;
+  bool CLIParser::Help(){
+    
+    //Instantiate flags indicating message printed and dashes
+    bool emptyInput = true, helpPrinted = false;
+
+    //Determine if the default help flag is present
+    helpPrinted = this->Present(help);
+
+    //For every element within the flags map so long as a flag was not found
+    for(auto it = this->present.begin(); !helpPrinted && emptyInput && (it != this->present.end()); it++){
+      //Update help printed flag
+      emptyInput &= !it->second;
+    }
+    
+    //If the help flag is present or the flags provided are empty
+    if(helpPrinted || emptyInput){
+
+      //If a description is present
+      if(this->Present(description)){
+	//Output description
+	std::cout << this->descriptions[description] << std::endl << std::endl;
+      }
+
+      //Print out arguments header
+      std::cout << "Options/Arguments" << std::endl;
+      
+      //For every key in the descriptions mapping
+      for(auto it = this->descriptions.begin(); it != this->descriptions.end(); ++it){
+	
+	//If the key is not the description
+	if(it->first != description){
+	  //Tab over
+	  std::cout << ' ';
+	  
+	  //Print a UNIX-style description line
+	  for(unsigned i = 0, size = this->flags[it->first].size(); i < size; i++){
+
+	    //Print the appropriate number of dashes depending upon the flags
+	    for(unsigned dashes = this->types[this->flags[it->first][i]] & (Types::Dash | Types::DoubleDash); dashes != 0; dashes = (dashes >> 1) & (Types::Dash | Types::DoubleDash)){	      
+	      std::cout << '-';
+	    }
+
+	    //Print out flag
+	    std::cout << this->flags[it->first][i];
+
+	    //If not the last flag
+	    if((i+1) < size){
+	      //Separate by slash
+	      std::cout << '/';
+	    }
+	  }
+
+	  //Print out descript separated by a tab
+	  std::cout << "\t" << it->second << std::endl;
+	}
+      }
+
+      //Separate next line
+      std::cout << std::endl;
+    }
+    
+    return helpPrinted || emptyInput;
   }
   
   std::regex CLIParser::GenerateRegularExpression(std::string flag, int type){

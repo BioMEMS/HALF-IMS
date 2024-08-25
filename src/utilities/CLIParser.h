@@ -26,8 +26,9 @@ namespace Utilities{
       DoubleDash = 16
     };
 
-    //Constant string to be used during additions for help message displays
-    const std::string description = "description";
+    //Constant strings to be used during additions for help message displays
+    static const std::string description;
+    static const std::string help;
     
     /*
       Name:    Add
@@ -102,12 +103,12 @@ namespace Utilities{
       Name:    Help
       Purpose: Print a help message to standard console.
       Inputs:  None
-      Outputs: None
+      Outputs: exit (bool) - A flag indicating if the help routine was printed.
       Notes:   This should later be expanded to allow for sending values to an arbitrary file stream.
                If the name string provided is the publicly available "description" value from this class, the description
 	       will be printed out without the flags to allow a program summary.
     */
-    void Help();
+    bool Help();
 
   private:
     /*
