@@ -27,8 +27,9 @@ namespace Utilities{
     };
 
     //Constant strings to be used during additions for help message displays
-    static const std::string description;
-    static const std::string help;
+    static const std::string DESCRIPTION;
+    static const std::string HELP;
+    static const std::string VERBOSE;
     
     /*
       Name:    Add
@@ -109,6 +110,17 @@ namespace Utilities{
 	       will be printed out without the flags to allow a program summary.
     */
     bool Help();
+
+    /*
+      Name:    Help
+      Purpose: Print a help message to standard console.
+      Inputs:  force (bool) - A flag indicating if the help routine should be printed regardless of other parameters.
+      Outputs: exit (bool) - A flag indicating if the help routine was printed.
+      Notes:   This should later be expanded to allow for sending values to an arbitrary file stream.
+               If the name string provided is the publicly available "description" value from this class, the description
+	       will be printed out without the flags to allow a program summary.
+    */
+    bool Help(bool force);
 
   private:
     /*

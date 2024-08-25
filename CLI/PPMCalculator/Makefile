@@ -8,7 +8,7 @@ SOURCEDIRECTORIES+=../../src/databases/
 SOURCEDIRECTORIES+=../../src/utilities/
 SOURCEDIRECTORIES+=../../src/signal-processing/
 #Declare output file
-OUTFILE=ppm-calculator.x
+OUTFILE=chem-calculator.x
 #Declare output directory
 OUTDIRECTORY=bin/
 
@@ -21,9 +21,9 @@ OBJTGT=$(SRCFILES:.cpp=.o)
 #Convert object file targets into object file outputs
 OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 
-all: ppm-calculator
+all: calculator
 
-ppm-calculator: main.cpp $(OBJTGT)
+calculator: main.cpp $(OBJTGT)
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) main.cpp -o $(OUTDIRECTORY)$(OUTFILE)
 
 %.o: %.cpp %.h

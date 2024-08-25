@@ -2,8 +2,9 @@
 
 namespace Utilities{
   
-  const std::string CLIParser::description = "DESCRIPTION";
-  const std::string CLIParser::help = "HELP";
+  const std::string CLIParser::DESCRIPTION = "DESCRIPTION";
+  const std::string CLIParser::HELP = "HELP";
+  const std::string CLIParser::VERBOSE = "VERBOSE";
   
   CLIParser::CLIParser(){
 
@@ -199,24 +200,42 @@ namespace Utilities{
   }
 
   bool CLIParser::Present(std::string name){
-    std::vector<std::string> tempFlags = this->flags[name];
+    
+    bool status = false, valid = (this->descriptions.count(name) != 0);
 
-    bool status = false;
-    
-    for(unsigned i = 0; i < tempFlags.size(); i++){
-      status |= this->present[tempFlags[i]];
+    //If the request field is the description keyword
+    if(name == DESCRIPTION){
+      //Set status to valid bit
+      status = valid;
     }
-    
+
+    //If field is present
+    if(valid){
+      //Extract the flags
+      std::vector<std::string> tempFlags = this->flags[name];
+
+      //Determine if the flags were located during parsing
+      for(unsigned i = 0; i < tempFlags.size(); i++){
+	status |= this->present[tempFlags[i]];
+      }
+    }
+
+    //Return calculated status flag
     return status;
   }
 
   bool CLIParser::Help(){
+    //Call help return and set input flag to false
+    return this->Help(false);
+  }
+  
+  bool CLIParser::Help(bool force){
     
     //Instantiate flags indicating message printed and dashes
     bool emptyInput = true, helpPrinted = false;
 
     //Determine if the default help flag is present
-    helpPrinted = this->Present(help);
+    helpPrinted = force || this->Present(HELP);
 
     //For every element within the flags map so long as a flag was not found
     for(auto it = this->present.begin(); !helpPrinted && emptyInput && (it != this->present.end()); it++){
@@ -228,9 +247,9 @@ namespace Utilities{
     if(helpPrinted || emptyInput){
 
       //If a description is present
-      if(this->Present(description)){
+      if(this->Present(DESCRIPTION)){
 	//Output description
-	std::cout << this->descriptions[description] << std::endl << std::endl;
+	std::cout << this->descriptions[DESCRIPTION] << std::endl << std::endl;
       }
 
       //Print out arguments header
@@ -240,7 +259,7 @@ namespace Utilities{
       for(auto it = this->descriptions.begin(); it != this->descriptions.end(); ++it){
 	
 	//If the key is not the description
-	if(it->first != description){
+	if(it->first != DESCRIPTION){
 	  //Tab over
 	  std::cout << ' ';
 	  
