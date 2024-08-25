@@ -142,10 +142,10 @@ function read_all_file_lines(file_name)
 end
 
 -- Copy all Ion Library files into current project
+local simion_defs = "m_defs.dat"
 function initialize_ion_library()
 	 -- Initialize file locations
 	 local source_dir = "../ion-library/SIMION Files/"
-	 local simion_defs = "m_defs.dat"
 	 local source_file = source_dir .. simion_defs
 	 local destination_file = simion_defs
 
@@ -153,6 +153,39 @@ function initialize_ion_library()
 	 copy_file(source_file, destination_file)
 
 	 return	 
+end
+
+-- Get the ion cross-sectional area based upon the mass
+function calculate_ion_area(mass)
+	 -- Open defs file to read
+	 local fileID = io.open(simion_defs, "r")
+	 local target = "^" .. tostring(mass) .. ",.*"
+	 local value = 0
+	 
+	 -- For each line in the file
+	 for line in fileID:lines() do
+ 	     -- If the line matches the mass provided
+	     if (string.match(tostring(line), target)) then
+	     	-- Split the line and get the diameter value
+		local elements =  { }
+		local i = 0
+		for value in string.gmatch(line, "([^,]+)") do
+		    elements[i] = value
+		    i = i + 1
+		end
+
+		-- Return second element which is the diameter
+		value = tonumber(elements[1])
+	     end
+	 end
+
+	 -- Convert from nanometers to meters
+	 value = value * 1E-9
+
+	 -- Assume ion is a perfect sphere for area calculations
+	 value = math.pi * value * value
+	 
+	 return value;
 end
 
 -- Copy a file from the source to a destination

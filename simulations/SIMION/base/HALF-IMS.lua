@@ -15,6 +15,9 @@ local ion_x_velocity = get_ion_x_velocity()
 local ion_y_velocity = get_ion_y_velocity()
 local ion_z_velocity = get_ion_z_velocity()
 
+-- Ion Acceleration
+local ion_x_acceleration = 0
+
 -- Variables to hold file values
 local long_electrode_voltage = get_long_electrode_potential()
 local short_electrode_voltage = get_short_electrode_potential()
@@ -78,6 +81,19 @@ function segment.accel_adjust()
 
 end
 
+function segment.accel_adjust()
+
+   -- If the carrier gas velocity has been reached
+   if( ion_vx_mm >= ion_x_velocity ) then
+       -- Remove all acceleration
+        ion_ax_mm = 0
+   else
+	-- Set debug acceleration
+	ion_ax_mm = ion_x_acceleration
+   end
+
+end
+
 -- Segment called after each time-step.
 function segment.other_actions()
 
@@ -95,7 +111,10 @@ function segment.other_actions()
      initial_x_pos = ion_px_mm
      initial_y_pos = ion_py_mm
      initial_z_pos = ion_pz_mm
-     
+
+     -- Calculate and save the ion acceleration due to the carrier gas
+     ion_x_acceleration = calculate_ion_acceleration(ion_mass)
+
      -- Set flag to prevent this section from being called again for the current ion
      initial_scaled = 1
    end
