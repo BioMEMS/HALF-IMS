@@ -8,7 +8,7 @@ SOURCEDIRECTORIES+=../../src/databases/
 SOURCEDIRECTORIES+=../../src/utilities/
 SOURCEDIRECTORIES+=../../src/signal-processing/
 #Declare output file
-OUTFILE=peakprocessing.x
+OUTFILE=processing.x
 #Declare output directory
 OUTDIRECTORY=bin/
 
@@ -21,10 +21,15 @@ OBJTGT=$(SRCFILES:.cpp=.o)
 #Convert object file targets into object file outputs
 OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 
-all: peak-processing
+all: 
+	make peak-processing OUTFILE=peak-processing.x
+	make labview-processing OUTFILE=labview-processing.x
 
-peak-processing: main.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) main.cpp -o $(OUTDIRECTORY)$(OUTFILE)
+peak-processing: peakProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) peakProcessing.cpp -o $(OUTDIRECTORY)$(OUTFILE)
+
+labview-processing: labViewProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) labViewProcessing.cpp -o $(OUTDIRECTORY)$(OUTFILE)
 
 %.o: %.cpp %.h
 	@mkdir -p $(OUTDIRECTORY)
