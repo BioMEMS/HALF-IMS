@@ -14,6 +14,7 @@
 #define OUTPUT_FILE "output"
 #define INPUT_FILE "input"
 #define SAMPLE_COMPRESSION_COUNT "sample_compression"
+#define SAMPLE_PER_SEGMENT "samples_per_segment"
 #define LABVIEW_DATA_COLUMNS 7
 
 //Split the provided CSV line into numeric values
@@ -72,7 +73,8 @@ int main(int argc, char *argv[]){
   //Add user flags
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of input files to process. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
-  cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "samples"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
+  cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
+  cli.Add(SAMPLE_PER_SEGMENT, std::vector<std::string>{"p", "samples-per-segment"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -85,7 +87,7 @@ int main(int argc, char *argv[]){
   //Declare default output as current directory
   std::string output, input;
   bool inputFlag, outputFlag, verbose;
-  double sampleCompressionMaximum = 4;
+  double sampleCompressionMaximum = 4, samplesPerTimeSegment = 1000;
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
@@ -100,6 +102,12 @@ int main(int argc, char *argv[]){
     if(cli.Present(SAMPLE_COMPRESSION_COUNT)){
       //Update value
       sampleCompressionMaximum = cli.GetNumeric(SAMPLE_COMPRESSION_COUNT);
+    }
+
+    //If sample per segment count was provided
+    if(cli.Present(SAMPLE_PER_SEGMENT)){
+      //Update value
+      samplesPerTimeSegment = sampleCompressionMaximum * cli.GetNumeric(SAMPLE_PER_SEGMENT);
     }
     
     //Create file streams for input and output
@@ -135,9 +143,12 @@ int main(int argc, char *argv[]){
       std::vector<double> avgLine, splitLine;
             
       //For each line of the input file
-      double avgCount = 0;
+      double avgCount = -1;
       double timeSegmentCompressionCount = 0;
       for(std::string line = ""; !inputFile.eof(); std::getline(inputFile, line)){
+	//Increment average count
+	avgCount++;
+	
 	//Split the line into numeric values
 	splitLine = SplitLine(line);
 
@@ -152,9 +163,8 @@ int main(int argc, char *argv[]){
 	  std::cout << line << std::endl;
 	}
 	
-	//If the current line has more than LabView data columns and the sample compression count has been exceeded or the end of file has been reached
-	if(((splitLine.size() > LABVIEW_DATA_COLUMNS) && (timeSegmentCompressionCount >= sampleCompressionMaximum)) || (inputFile.eof())){
-	  
+	//If average count has been reached and the sample compression count has been exceeded or the end of file has been reached
+	if(((avgCount == samplesPerTimeSegment) && (timeSegmentCompressionCount == sampleCompressionMaximum)) || (inputFile.eof())){
 	  //Re-use line variable
 	  line = "";
 	  
@@ -211,12 +221,8 @@ int main(int argc, char *argv[]){
 	  else{
 	    avgLine[i] += splitLine[i];
 	  }
-	}
-
-	//Increment average count
-	avgCount++;
+	}	
       }
-
       //Close file streams
       inputFile.close();
       outputFile.close();
