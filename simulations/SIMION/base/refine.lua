@@ -6,7 +6,7 @@ simion.import("ions.lua")
 
 -- Adjust geometry parameters from defaults for conversion
 -- and to keep memory usage low
-set_electrode_pair_count(220)
+-- set_electrode_pair_count(220)
 set_grid_x_spacing(2E-3)
 set_grid_y_spacing(1E-3)
 set_grid_z_spacing(1E-2)
