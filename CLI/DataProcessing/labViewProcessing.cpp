@@ -15,11 +15,12 @@
 #define INPUT_FILE "input"
 #define SAMPLE_COMPRESSION_COUNT "sample_compression"
 #define SAMPLE_PER_SEGMENT "samples_per_segment"
+#define CHEMICAL_COLUMN_INDEX "chemical_index"
 #define LABVIEW_DATA_COLUMNS 7
 
 //Split the provided CSV line into numeric values
-std::vector<double> SplitLine(std::string line){
-  std::vector<double> results;
+std::vector<std::string> SplitLine(std::string line){
+  std::vector<std::string> results;
   std::string temp;
   
   //For each character in the line
@@ -32,23 +33,41 @@ std::vector<double> SplitLine(std::string line){
 
     //If the stop and start are not equal
     if(stop != start){
+      //Take substring      
       temp = line.substr(start, stop-start);
-      //Take substring
-      try{
-	results.push_back(std::stod(temp));
-      }
-      catch(std::invalid_argument const& ex){
-	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to grab characters " << start << " through " << stop << " from:"<< std::endl;
-	std::cerr << line << std::endl;
-	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
 
-	//Push minimum double value
-	results.push_back(std::numeric_limits<double>::min());
-      }
+      //Add substring to list
+      results.push_back(temp);
       
       //Update indices to be one character beyond current
       stop += 1;
       start = stop;
+    }
+  }
+
+  return results;
+}
+
+//Convert provided vect
+std::vector<double> ConvertLine(std::vector<std::string> line, unsigned chemicalIndex){
+  std::vector<double> results;
+
+  //For each element in the line
+  for(unsigned i = 0; i < line.size(); i++){
+    //Attempt to convert element to a double
+    try{
+      results.push_back(std::stod(line[i]));
+    }
+    catch(std::invalid_argument const& ex){
+      //If the current index is not the known chemical index
+      if(i != chemicalIndex){
+	//Print message to error stream
+	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert " << line[i] << " at position " << i << ". ";
+	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
+      }
+      
+      //Push minimum double value
+      results.push_back(std::numeric_limits<double>::min());
     }
   }
 
@@ -74,7 +93,8 @@ int main(int argc, char *argv[]){
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of input files to process. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
-  cli.Add(SAMPLE_PER_SEGMENT, std::vector<std::string>{"p", "samples-per-segment"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
+  cli.Add(SAMPLE_PER_SEGMENT, std::vector<std::string>{"p", "samples-per-segment"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView time sections to average together. Default is 250.");
+  cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -87,7 +107,7 @@ int main(int argc, char *argv[]){
   //Declare default output as current directory
   std::string output, input;
   bool inputFlag, outputFlag, verbose;
-  double sampleCompressionMaximum = 4, samplesPerTimeSegment = 1000;
+  unsigned sampleCompressionMaximum = 4, samplesPerLabViewOutput = 250, samplesPerTimeSegment = 1000, chemicalIndex = 23;
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
@@ -107,7 +127,16 @@ int main(int argc, char *argv[]){
     //If sample per segment count was provided
     if(cli.Present(SAMPLE_PER_SEGMENT)){
       //Update value
-      samplesPerTimeSegment = sampleCompressionMaximum * cli.GetNumeric(SAMPLE_PER_SEGMENT);
+      samplesPerLabViewOutput = cli.GetNumeric(SAMPLE_PER_SEGMENT);
+    }
+
+    //Calculate samples per time segment
+    samplesPerTimeSegment = sampleCompressionMaximum * samplesPerLabViewOutput;
+    
+    //If the chemical column index is provided
+    if(cli.Present(CHEMICAL_COLUMN_INDEX)){
+      //Update value
+      chemicalIndex = cli.GetNumeric(CHEMICAL_COLUMN_INDEX);
     }
     
     //Create file streams for input and output
@@ -135,23 +164,25 @@ int main(int argc, char *argv[]){
 	outputFile << "MIPS Read Ch. " << i << " (V), ";
       }
 
-      outputFile << "MFC Setting (mL/min), Syringe Pump (mL/hr), Syringe Volume (mL), Analyte Concentration (ppm)" << std::endl;
+      outputFile << "Chemical, Analyte Concentration (ppm), Syringe Volume (mL), Syringe Pump (mL/hr), MFC Setting (mL/min)" << std::endl;
       
       //Read the file until the LabView header line is found
       for(std::string line = "", column = ""; !inputFile.eof() && column != "X_Value"; std::getline(inputFile, line), column = line.substr(0,7)){}
-      
-      std::vector<double> avgLine, splitLine;
+
+      std::vector<std::string> splitLine;
+      std::vector<double> avgLine, numericLine;
             
       //For each line of the input file
       double avgCount = -1;
       double timeSegmentCompressionCount = 0;
-      for(std::string line = ""; !inputFile.eof(); std::getline(inputFile, line)){
+      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line)){
 	//Increment average count
 	avgCount++;
 	
 	//Split the line into numeric values
 	splitLine = SplitLine(line);
-
+	numericLine = ConvertLine(splitLine, chemicalIndex);
+	
 	//Initialize average line with zeroes
 	for(unsigned i = avgLine.size(); i < splitLine.size(); i++){
 	  avgLine.push_back(0.0);
@@ -162,12 +193,18 @@ int main(int argc, char *argv[]){
 	  //Print the line being processed
 	  std::cout << line << std::endl;
 	}
+
+	//If line has at least 24 elements
+	if(splitLine.size() >= 24){
+	  //Grab the 24th element which should be the chemical name	  
+	  chemical = splitLine[23];
+	}
 	
 	//If average count has been reached and the sample compression count has been exceeded or the end of file has been reached
 	if(((avgCount == samplesPerTimeSegment) && (timeSegmentCompressionCount == sampleCompressionMaximum)) || (inputFile.eof())){
 	  //Re-use line variable
 	  line = "";
-	  
+
 	  //Build a string from the line
 	  for(unsigned i = 0; i < avgLine.size(); i++){
 	    //If within LabView data columns
@@ -185,7 +222,13 @@ int main(int argc, char *argv[]){
 	    }
 
 	    //Convert value to a string and append to output line
-	    line = line + std::to_string(trunc(avgLine[i]*100)/100) + ',';	      
+	    if(i == 23){
+	      convertedVal = chemical;
+	    }
+	    else{
+	      convertedVal = std::to_string(trunc(avgLine[i]*100)/100);
+	    }
+	    line = line + convertedVal + ',';	      
 
 	    //Reset value to zero
 	    avgLine[i] = 0.0;
@@ -196,8 +239,8 @@ int main(int argc, char *argv[]){
 	  
 	  //If verbose output and line has values
 	  if(verbose){
-	    //Print the line being processed
-	    std::cout << line;
+	    //Print the processed line
+	    std::cout << line << std::endl;
 	  }
 
 	  //Write line to the file
@@ -216,13 +259,14 @@ int main(int argc, char *argv[]){
 	//Add current line to the growing average
 	for(unsigned i = 0; i < splitLine.size(); i++){
 	  if(i == 0){
-	    avgLine[i] = splitLine[i];
+	    avgLine[i] = numericLine[i];
 	  }
 	  else{
-	    avgLine[i] += splitLine[i];
+	    avgLine[i] += numericLine[i];
 	  }
-	}	
+	}
       }
+      
       //Close file streams
       inputFile.close();
       outputFile.close();
