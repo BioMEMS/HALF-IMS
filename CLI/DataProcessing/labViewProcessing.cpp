@@ -49,7 +49,7 @@ std::vector<std::string> SplitLine(std::string line){
 }
 
 //Convert provided vect
-std::vector<double> ConvertLine(std::vector<std::string> line, unsigned chemicalIndex){
+std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> line, unsigned chemicalIndex){
   std::vector<double> results;
 
   //For each element in the line
@@ -62,7 +62,7 @@ std::vector<double> ConvertLine(std::vector<std::string> line, unsigned chemical
       //If the current index is not the known chemical index
       if(i != chemicalIndex){
 	//Print message to error stream
-	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert " << line[i] << " at position " << i << ". ";
+	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert '" << line[i] << "' at position " << i << " for line " << lineNumber << ". ";
 	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
       }
       
@@ -167,7 +167,8 @@ int main(int argc, char *argv[]){
       outputFile << "Chemical, Analyte Concentration (ppm), Syringe Volume (mL), Syringe Pump (mL/hr), MFC Setting (mL/min)" << std::endl;
       
       //Read the file until the LabView header line is found
-      for(std::string line = "", column = ""; !inputFile.eof() && column != "X_Value"; std::getline(inputFile, line), column = line.substr(0,7)){}
+      unsigned lineCount = 0;
+      for(std::string line = "", column = ""; !inputFile.eof() && (column != "X_Value"); std::getline(inputFile, line), column = line.substr(0,7), lineCount++){}
 
       std::vector<std::string> splitLine;
       std::vector<double> avgLine, numericLine;
@@ -175,13 +176,13 @@ int main(int argc, char *argv[]){
       //For each line of the input file
       double avgCount = -1;
       double timeSegmentCompressionCount = 0;
-      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line)){
+      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line), lineCount++){
 	//Increment average count
 	avgCount++;
 	
 	//Split the line into numeric values
 	splitLine = SplitLine(line);
-	numericLine = ConvertLine(splitLine, chemicalIndex);
+	numericLine = ConvertLine(lineCount, splitLine, chemicalIndex);
 	
 	//Initialize average line with zeroes
 	for(unsigned i = avgLine.size(); i < splitLine.size(); i++){
@@ -199,7 +200,7 @@ int main(int argc, char *argv[]){
 	  //Grab the 24th element which should be the chemical name	  
 	  chemical = splitLine[23];
 	}
-	
+
 	//If average count has been reached and the sample compression count has been exceeded or the end of file has been reached
 	if(((avgCount == samplesPerTimeSegment) && (timeSegmentCompressionCount == sampleCompressionMaximum)) || (inputFile.eof())){
 	  //Re-use line variable
