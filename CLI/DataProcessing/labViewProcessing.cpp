@@ -9,6 +9,7 @@
 //HALF-IMS libraries
 #include "CLIParser.h"
 #include "CommaSeparatedValues.h"
+#include "Checker.h"
 
 //Pre-processor Variables
 #define OUTPUT_FILE "output"
@@ -16,7 +17,12 @@
 #define SAMPLE_COMPRESSION_COUNT "sample_compression"
 #define SAMPLE_PER_SEGMENT "samples_per_segment"
 #define CHEMICAL_COLUMN_INDEX "chemical_index"
+#define RELATIVE_CALCULATION "rel_calc"
 #define LABVIEW_DATA_COLUMNS 7
+#define LABVIEW_TIME_COLUMN_INDEX 0
+#define CSV_SHUTTER_COLUMN_INDEX 11
+#define CSV_DET_ONE_COLUMN_INDEX 5
+#define CSV_DET_TWO_COLUMN_INDEX 6
 
 //Split the provided CSV line into numeric values
 std::vector<std::string> SplitLine(std::string line){
@@ -95,6 +101,7 @@ int main(int argc, char *argv[]){
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
   cli.Add(SAMPLE_PER_SEGMENT, std::vector<std::string>{"p", "samples-per-segment"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView time sections to average together. Default is 250.");
   cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
+  cli.Add(RELATIVE_CALCULATION, std::vector<std::string>{"nrc", "no-relative-calculation"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Stop the execution of the relative calculation step.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -106,7 +113,7 @@ int main(int argc, char *argv[]){
 
   //Declare default output as current directory
   std::string output, input;
-  bool inputFlag, outputFlag, verbose;
+  bool inputFlag, outputFlag, verbose, firstCompression;
   unsigned sampleCompressionMaximum = 4, samplesPerLabViewOutput = 250, samplesPerTimeSegment = 1000, chemicalIndex = 23;
   
   //Determine output verbosity
@@ -123,7 +130,10 @@ int main(int argc, char *argv[]){
       //Update value
       sampleCompressionMaximum = cli.GetNumeric(SAMPLE_COMPRESSION_COUNT);
     }
-
+    
+    //sampleCompressionMaximum += 1;
+    //firstCompression = true;    
+    
     //If sample per segment count was provided
     if(cli.Present(SAMPLE_PER_SEGMENT)){
       //Update value
@@ -132,7 +142,7 @@ int main(int argc, char *argv[]){
 
     //Calculate samples per time segment
     samplesPerTimeSegment = sampleCompressionMaximum * samplesPerLabViewOutput;
-    
+
     //If the chemical column index is provided
     if(cli.Present(CHEMICAL_COLUMN_INDEX)){
       //Update value
@@ -164,7 +174,7 @@ int main(int argc, char *argv[]){
 	outputFile << "MIPS Read Ch. " << i << " (V), ";
       }
 
-      outputFile << "Chemical, Analyte Concentration (ppm), Syringe Volume (mL), Syringe Pump (mL/hr), MFC Setting (mL/min)" << std::endl;
+      outputFile << "Chemical, Analyte Concentration (ppm), Syringe Volume (mL), Syringe Pump (mL/hr), MFC Setting (mL/min), Long Electrode Setting (V), Short Electrode Setting (V)" << std::endl;
       
       //Read the file until the LabView header line is found
       unsigned lineCount = 0;
@@ -209,7 +219,7 @@ int main(int argc, char *argv[]){
 	  //Build a string from the line
 	  for(unsigned i = 0; i < avgLine.size(); i++){
 	    //If within LabView data columns
-	    if(i == 0){
+	    if(i == LABVIEW_TIME_COLUMN_INDEX){
 	      //Do nothing as this is the time value
 	    }
 	    else if(i < LABVIEW_DATA_COLUMNS){
@@ -250,6 +260,15 @@ int main(int argc, char *argv[]){
 	  //Reset average counts
 	  avgCount = 0;
 	  timeSegmentCompressionCount = 0;
+
+	  //If first compression
+	  if(firstCompression){
+	    //Reset flag and reduce compression maximum by one
+	    firstCompression = false;
+	    sampleCompressionMaximum -= 1;
+	    samplesPerTimeSegment = sampleCompressionMaximum * samplesPerLabViewOutput;
+	  }
+      
 	}
 	//If not at compression maximum
 	else if(splitLine.size() > LABVIEW_DATA_COLUMNS){
@@ -271,24 +290,70 @@ int main(int argc, char *argv[]){
       //Close file streams
       inputFile.close();
       outputFile.close();
+
+      //If relative calculation flag is not present
+      if(!cli.Present(RELATIVE_CALCULATION)){       
+	//Open output file as a CSV
+	CommaSeparatedValues csvOutput = CommaSeparatedValues(output);
+	csvOutput.Read();
+
+	//Get size of output for indexing
+	Utilities::Limits outputSize = csvOutput.Size();
+	
+	//For every other row in the output file
+	for(unsigned i = outputSize.Rows - 1; i > 1; i-=2){
+	  //For every column in the pair of rows
+	  for(unsigned j = 0; j < outputSize.Columns; j++){
+	    //If either of the detector columns
+	    if((j == CSV_DET_ONE_COLUMN_INDEX) || (j == CSV_DET_TWO_COLUMN_INDEX)){
+	      //Subtract background detector measurement from analyte detector measurement
+	      csvOutput(i-1, j) = std::to_string(std::stod(csvOutput(i-1,j)) - std::stod(csvOutput(i,j)));
+	    }
+	    //Otherwise
+	    else{
+	      //Copy value
+	      csvOutput(i-1, j) = csvOutput(i,j);
+	    }
+	    
+	    //Delete value from column
+	    csvOutput(i, j) = "";
+	  }
+
+	  //Calculate long and short electrode voltage settings	  
+	  csvOutput(i-1, outputSize.Columns-2) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
+	  csvOutput(i-1, outputSize.Columns-1) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));	  
+	  
+	  //For all previous rows
+	  for(unsigned j = i; j < outputSize.Rows; j++){
+	    //For all columns
+	    for(unsigned k = 0; k < outputSize.Columns; k++){
+	      //Move previous row to current index
+	      csvOutput(i,k) = csvOutput(i+1,k);
+	    }
+	  }
+	  
+	}
+		
+	csvOutput.Write();
+      }
     }
     //Indicate which file had trouble
     else{
-      std::cout << "Unable to open ";
+      std::cerr << "Unable to open ";
       
       if(!inputFlag && outputFlag){
-	std::cout << "input file.";
+	std::cerr << "input file.";
 	outputFile.close();
       }
       else if(inputFlag && !outputFlag){
-	std::cout << "output file.";
+	std::cerr << "output file.";
 	inputFile.close();
       }
       else{
-	std::cout << "input and output files.";
+	std::cerr << "input and output files.";
       }
 
-      std::cout << std::endl;
+      std::cerr << std::endl;
     }
 
     
