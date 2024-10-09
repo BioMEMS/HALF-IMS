@@ -99,7 +99,6 @@ int main(int argc, char *argv[]){
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of input files to process. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
-  cli.Add(SAMPLE_PER_SEGMENT, std::vector<std::string>{"p", "samples-per-segment"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView time sections to average together. Default is 250.");
   cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
   cli.Add(RELATIVE_CALCULATION, std::vector<std::string>{"nrc", "no-relative-calculation"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Stop the execution of the relative calculation step.");
   
@@ -113,8 +112,8 @@ int main(int argc, char *argv[]){
 
   //Declare default output as current directory
   std::string output, input;
-  bool inputFlag, outputFlag, verbose, firstCompression;
-  unsigned sampleCompressionMaximum = 4, samplesPerLabViewOutput = 250, samplesPerTimeSegment = 1000, chemicalIndex = 23;
+  bool inputFlag, outputFlag, verbose;
+  unsigned sampleCompressionMaximum = 4, chemicalIndex = 23;
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
@@ -125,23 +124,24 @@ int main(int argc, char *argv[]){
     input = cli.Get(INPUT_FILE);
     output = cli.Get(OUTPUT_FILE);
 
+    //If verbose
+    if(verbose){
+      //Report input and output file
+      std::cout << "Input File: " << input << std::endl;
+      std::cout << "Output File: " << output << std::endl;
+    }
+    
     //If compression count maximum was provided
     if(cli.Present(SAMPLE_COMPRESSION_COUNT)){
       //Update value
       sampleCompressionMaximum = cli.GetNumeric(SAMPLE_COMPRESSION_COUNT);
-    }
-    
-    //sampleCompressionMaximum += 1;
-    //firstCompression = true;    
-    
-    //If sample per segment count was provided
-    if(cli.Present(SAMPLE_PER_SEGMENT)){
-      //Update value
-      samplesPerLabViewOutput = cli.GetNumeric(SAMPLE_PER_SEGMENT);
-    }
 
-    //Calculate samples per time segment
-    samplesPerTimeSegment = sampleCompressionMaximum * samplesPerLabViewOutput;
+      //If user passed in a bad value
+      if(sampleCompressionMaximum <= 0){
+	//Reset to one
+	sampleCompressionMaximum = 1;
+      }
+    }
 
     //If the chemical column index is provided
     if(cli.Present(CHEMICAL_COLUMN_INDEX)){
@@ -186,10 +186,7 @@ int main(int argc, char *argv[]){
       //For each line of the input file
       double avgCount = -1;
       double timeSegmentCompressionCount = 0;
-      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line), lineCount++){
-	//Increment average count
-	avgCount++;
-	
+      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line), lineCount++){	
 	//Split the line into numeric values
 	splitLine = SplitLine(line);
 	numericLine = ConvertLine(lineCount, splitLine, chemicalIndex);
@@ -198,12 +195,6 @@ int main(int argc, char *argv[]){
 	for(unsigned i = avgLine.size(); i < splitLine.size(); i++){
 	  avgLine.push_back(0.0);
 	}
- 
-	//If verbose output and line has values
-	if(verbose && (splitLine.size() > 0)){
-	  //Print the line being processed
-	  std::cout << line << std::endl;
-	}
 
 	//If line has at least 24 elements
 	if(splitLine.size() >= 24){
@@ -211,8 +202,14 @@ int main(int argc, char *argv[]){
 	  chemical = splitLine[23];
 	}
 
-	//If average count has been reached and the sample compression count has been exceeded or the end of file has been reached
-	if(((avgCount == samplesPerTimeSegment) && (timeSegmentCompressionCount == sampleCompressionMaximum)) || (inputFile.eof())){
+	//If line exceeds LAB View column count
+	if(splitLine.size() > LABVIEW_DATA_COLUMNS){
+	  //Increase compression count
+	  timeSegmentCompressionCount++;
+	}
+	
+	//If the sample compression count has been exceeded or the end of file has been reached
+	if((timeSegmentCompressionCount > sampleCompressionMaximum) || (inputFile.eof())){
 	  //Re-use line variable
 	  line = "";
 
@@ -229,7 +226,7 @@ int main(int argc, char *argv[]){
 	    //If not within LabView data columns
 	    else{
 	      //Use time segment compression count for averaging	      
-	      avgLine[i] /= timeSegmentCompressionCount;
+	      avgLine[i] /= (timeSegmentCompressionCount - 1);
 	    }
 
 	    //Convert value to a string and append to output line
@@ -247,35 +244,18 @@ int main(int argc, char *argv[]){
 
 	  //Add newline character
 	  line += '\n';
-	  
-	  //If verbose output and line has values
-	  if(verbose){
-	    //Print the processed line
-	    std::cout << line << std::endl;
-	  }
 
 	  //Write line to the file
 	  outputFile << line;
 	  
 	  //Reset average counts
 	  avgCount = 0;
-	  timeSegmentCompressionCount = 0;
-
-	  //If first compression
-	  if(firstCompression){
-	    //Reset flag and reduce compression maximum by one
-	    firstCompression = false;
-	    sampleCompressionMaximum -= 1;
-	    samplesPerTimeSegment = sampleCompressionMaximum * samplesPerLabViewOutput;
-	  }
-      
-	}
-	//If not at compression maximum
-	else if(splitLine.size() > LABVIEW_DATA_COLUMNS){
-	  //Increase compression count
-	  timeSegmentCompressionCount++;
+	  timeSegmentCompressionCount = 1;      
 	}
 
+	//Increment average count after potential write to preserve row found
+	avgCount++;
+	
 	//Add current line to the growing average
 	for(unsigned i = 0; i < splitLine.size(); i++){
 	  if(i == 0){
@@ -299,7 +279,7 @@ int main(int argc, char *argv[]){
 
 	//Get size of output for indexing
 	Utilities::Limits outputSize = csvOutput.Size();
-	
+
 	//For every other row in the output file
 	for(unsigned i = outputSize.Rows - 1; i > 1; i-=2){
 	  //For every column in the pair of rows
@@ -307,10 +287,10 @@ int main(int argc, char *argv[]){
 	    //If either of the detector columns
 	    if((j == CSV_DET_ONE_COLUMN_INDEX) || (j == CSV_DET_TWO_COLUMN_INDEX)){
 	      //Subtract background detector measurement from analyte detector measurement
-	      csvOutput(i-1, j) = std::to_string(std::stod(csvOutput(i-1,j)) - std::stod(csvOutput(i,j)));
+	      csvOutput(i-1, j) = std::to_string(std::abs(std::stod(csvOutput(i-1,j)) - std::stod(csvOutput(i,j))));
 	    }
-	    //Otherwise
-	    else{
+	    //If the time column index
+	    else if (j == LABVIEW_TIME_COLUMN_INDEX){
 	      //Copy value
 	      csvOutput(i-1, j) = csvOutput(i,j);
 	    }
@@ -318,22 +298,22 @@ int main(int argc, char *argv[]){
 	    //Delete value from column
 	    csvOutput(i, j) = "";
 	  }
-
+	  
 	  //Calculate long and short electrode voltage settings	  
 	  csvOutput(i-1, outputSize.Columns-2) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
 	  csvOutput(i-1, outputSize.Columns-1) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));	  
 	  
 	  //For all previous rows
-	  for(unsigned j = i; j < outputSize.Rows; j++){
+	  for(unsigned j = i; j < outputSize.Rows; j++){ 
 	    //For all columns
 	    for(unsigned k = 0; k < outputSize.Columns; k++){
 	      //Move previous row to current index
 	      csvOutput(i,k) = csvOutput(i+1,k);
 	    }
-	  }
-	  
+	  }	  
 	}
-		
+
+	//Write contents back to disk
 	csvOutput.Write();
       }
     }

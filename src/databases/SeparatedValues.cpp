@@ -314,6 +314,11 @@ void SeparatedValues::Write(){
     //Close file after writing
     file.close();
   }
+  //Otherwise
+  else{
+    //Report an error message
+    std::cerr << "Unable to open '" << filename << "' during write operation." << std::endl;
+  }
   
   return;
 }
