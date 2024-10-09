@@ -54,7 +54,7 @@ end
 function segment.fast_adjust()
 
   -- Set all electrodes to 0
-  for i = 1,num_electrode_pairs do
+  for i = 1,(num_shutter_electrodes + 4*num_electrode_pairs + 2) do
     adj_elect[i] = 0
   end
   
@@ -71,26 +71,12 @@ function segment.fast_adjust()
   end
 
   -- Set bias ring electrodes to desired voltages
-  adj_elect[4*num_electrode_pairs+3] = bias_ring_voltage
-  adj_elect[4*num_electrode_pairs+4] = -bias_ring_voltage
-  
+  adj_elect[4*num_electrode_pairs+3] = -bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+4] = bias_ring_voltage
 end
 
 -- Adjust acceleration every cycle
 function segment.accel_adjust()
-
-end
-
-function segment.accel_adjust()
-
-   -- If the carrier gas velocity has been reached
-   if( ion_vx_mm >= ion_x_velocity ) then
-       -- Remove all acceleration
-        ion_ax_mm = 0
-   else
-	-- Set debug acceleration
-	ion_ax_mm = ion_x_acceleration
-   end
 
 end
 

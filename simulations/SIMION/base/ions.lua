@@ -232,7 +232,7 @@ function set_current_ion_area(mass)
 
 	 -- If unable to find the ion in the m_defs file
 	 if (massLine == "") then
-	    print("Unable to find current ion within file. Using diameter of " .. tostring(diameter) >> "m to calculate cross-sectional area.")
+	    print("Unable to find current ion within file. Using diameter of " .. tostring(diameter) .. "m to calculate cross-sectional area.")
 	 else
 	    local index = 1
 	    local lineValues = {}
