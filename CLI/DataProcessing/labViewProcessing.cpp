@@ -304,11 +304,11 @@ int main(int argc, char *argv[]){
 	  csvOutput(i-1, outputSize.Columns-1) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));	  	  
 	}
 
-	//For every row
-	for(unsigned i = 2, tgt = 3; i < outputSize.Rows - 1; i++, tgt += 2){
+	//First row already copied, so for every row after first 
+	for(unsigned i = 2, tgt = 3; i < (outputSize.Rows - 1); i++, tgt += 2){
 	  //For all columns
 	    for(unsigned j = 0; j < outputSize.Columns; j++){
-	      //Move previous row to current index
+	      //Move target row to current open row
 	      csvOutput(i,j) = csvOutput(tgt,j);
 
 	      //Delete old value
