@@ -37,6 +37,9 @@ function set_current_ion_file(file_name)
 	 local yDimension = get_device_y_length()
 	 local zDimension = get_device_z_length()
 
+	 -- Determine ion count
+	 ionCount = calculate_ion_count()
+
 	 -- Open file with read/write
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
@@ -46,11 +49,14 @@ function set_current_ion_file(file_name)
 	     -- If it matches the first position vector
 	     if (string.match(tostring(line), " *first =.*")) then
 	     	 -- Updating Y position
-	     	 fileID:write("      first = vector(0, " .. tostring(electrodeHeight) .. ", 0),")
+	     	 fileID:write("      first = vector(0, " .. tostring(electrodeHeight) .. ", " .. tostring(0.2*zDimension) .. "),")
 	     elseif (string.match(tostring(line), " *last =.*")) then
-	     	 
-     	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " ,0)")
-	     else
+	     	 -- Updating Y position end
+     	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
+	     elseif (string.match(tostring(line), " *n = .*")) then
+	         -- Updating ion count
+		 fileID:write("    n = " .. tostring(ionCount) .. ",")
+             else
 	         fileID:write(line)
 	     end
 	     
@@ -67,6 +73,22 @@ function set_current_ion_file(file_name)
 
 	 -- Set file name in configuration
 	 set_file_value(simulation_current_ion_file_name, temp)
+end
+
+--Function to calculate the total number of ions based upon concentration
+function calculate_ion_count()
+	 return 50
+end
+
+--Functions to set/get the current chemical concentration
+local chemical_concentration="drift_region_chemical_concentration"
+function get_chemical_concentration()
+	 return get_file_value(chemical_concentration, 0)
+end
+
+function set_chemical_concentration(value)
+	 set_file_value(chemical_concentration, value)
+	 return
 end
 
 --Function to calculate the X-axis ion acceleration from the carrier gas
@@ -156,19 +178,18 @@ function set_carrier_gas_rate(value)
 	     -- Get the simulated Z-axis dimension instead to calculate velocity properly
 	     z_dimension = get_simulated_z_device_length()
 	 else
-		-- Otherwise, use grid units to calculate real-world area
-		z_dimension = z_dimension*get_grid_z_spacing()
+	     -- Otherwise, use grid units to calculate real-world area
+	     z_dimension = z_dimension*get_grid_z_spacing()
 	 end
 	 
 	 -- Calculate channel area
 	 local channelArea = z_dimension*(get_grid_y_spacing()*get_device_y_length())
 
-	 -- Calculate velocity by converting area from mL/(min-m^2) to m/s
-	 local velocity = (value/channelArea)*(1/1E6)*(1/60)
+	 -- Calculate velocity by converting area from mL/(min-m^2) to mm/us
+	 local velocity = value/(channelArea * 60000)
 
-	 -- Convert to millimeters per microsecond to align with SIMION interface
-	 velocity = velocity * (1000 / 1E6)
-
+	 print(value, z_dimension, channelArea, velocity)
+	 
 	 -- Set ion X velocity under assumption of X-axis flow
 	 set_ion_x_velocity(velocity)
 	 
