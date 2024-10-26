@@ -53,7 +53,7 @@ function set_current_ion_file(file_name)
 	     elseif (string.match(tostring(line), " *last =.*")) then
 	     	 -- Updating Y position end
      	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
-	     elseif (string.match(tostring(line), " *n = .*")) then
+	     elseif (string.match(tostring(line), "^ *n = .*")) then
 	         -- Updating ion count
 		 fileID:write("    n = " .. tostring(ionCount) .. ",")
              else
