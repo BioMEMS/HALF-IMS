@@ -1,4 +1,4 @@
-simion.import("file_io.lua")
+`simion.import("file_io.lua")
 
 -- Local variables for electrode pairs
 local default_electrode_file_name = "electrodes_count"
@@ -124,7 +124,8 @@ local default_shutter_electrode_count = 2
 
 -- Functions to get/set shutter electrode count
 function get_shutter_electrode_count()
-	 return get_file_value(default_shutter_electrode_count_file_name, default_shutter_electrode_count)
+	 -- Increase shutter electrode count by 2 to account for ground ring
+	 return get_file_value(default_shutter_electrode_count_file_name, default_shutter_electrode_count) + 2
 end
 
 function set_shutter_electrode_count(count)
@@ -148,7 +149,7 @@ end
 
 -- Local variables for shutter electrode spacing
 local default_shutter_electrode_spacing_file_name = "shutter_electrode_spacing"
-local default_shutter_electrode_spacing = 1
+local default_shutter_electrode_spacing = 0.5
 
 -- Functions to get/set shutter electrode spacing
 function get_shutter_electrode_spacing()
@@ -258,6 +259,29 @@ function set_detector_pad_length(length)
 	 return
 end
 
+-- Local variables for ground pad lengths
+local default_first_ground_pad_length_file_name = "first_ground_length"
+local default_second_ground_pad_length_file_name = "second_ground_length"
+local default_first_ground_pad_length = 1E-3
+local default_second_ground_pad_length = 2E-3
+
+-- Functions to get/set the ground pad lengths
+function get_first_ground_pad_length()
+	 return get_file_value(default_first_ground_pad_length_file_name, default_first_ground_pad_length)/get_grid_x_spacing()
+end
+
+function set_first_ground_pad_length(length)
+	 set_file_value(default_first_ground_pad_length_file_name, length)
+end	 
+
+function get_second_ground_pad_length()
+	 return get_file_value(default_second_ground_pad_length_file_name, default_second_ground_pad_length)/get_grid_x_spacing()
+end
+
+function set_second_ground_pad_length(length)
+	 set_file_value(default_second_ground_pad_length_file_name, length)
+end	 
+
 -- Function to get the position of the detector pads
 function get_detector_pad_start()
 	 return (get_device_x_length() - get_flow_channel_offset() - get_detector_pad_length())
@@ -269,7 +293,7 @@ end
 
 -- Functions to get the number of grid units in the X-direction
 function get_shutter_pattern_length()
-	 return get_shutter_electrode_count()*(get_shutter_electrode_length() + get_shutter_electrode_spacing())/2 + get_flow_channel_offset()
+	 return get_shutter_electrode_count()*(get_shutter_electrode_length() + get_shutter_electrode_spacing())/2 + get_flow_channel_offset() + get_shutter_electrode_spacing() + get_fist_ground_pad_length()
 end
 
 function get_electrode_pattern_length()
