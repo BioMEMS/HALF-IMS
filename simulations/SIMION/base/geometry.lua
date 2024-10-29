@@ -1,4 +1,4 @@
-`simion.import("file_io.lua")
+simion.import("file_io.lua")
 
 -- Local variables for electrode pairs
 local default_electrode_file_name = "electrodes_count"
@@ -262,8 +262,8 @@ end
 -- Local variables for ground pad lengths
 local default_first_ground_pad_length_file_name = "first_ground_length"
 local default_second_ground_pad_length_file_name = "second_ground_length"
-local default_first_ground_pad_length = 1E-3
-local default_second_ground_pad_length = 2E-3
+local default_first_ground_pad_length = 1
+local default_second_ground_pad_length = 2
 
 -- Functions to get/set the ground pad lengths
 function get_first_ground_pad_length()
@@ -293,7 +293,7 @@ end
 
 -- Functions to get the number of grid units in the X-direction
 function get_shutter_pattern_length()
-	 return get_shutter_electrode_count()*(get_shutter_electrode_length() + get_shutter_electrode_spacing())/2 + get_flow_channel_offset() + get_shutter_electrode_spacing() + get_fist_ground_pad_length()
+	 return get_shutter_electrode_count()*(get_shutter_electrode_length() + get_shutter_electrode_spacing())/2 + get_flow_channel_offset() + get_shutter_electrode_spacing() + get_first_ground_pad_length()
 end
 
 function get_electrode_pattern_length()
@@ -301,7 +301,7 @@ function get_electrode_pattern_length()
 end
 
 function get_detector_pattern_length()
-	 return get_bias_ring_length() + get_bias_ring_spacing() + get_detector_pad_length() + get_detector_pad_spacing() + get_flow_channel_offset()
+	 return get_bias_ring_length() + 2*get_bias_ring_spacing() + get_detector_pad_length() + get_detector_pad_spacing() + get_flow_channel_offset() + get_second_ground_pad_length()
 end
 
 function get_device_x_length()

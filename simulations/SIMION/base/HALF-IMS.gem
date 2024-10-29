@@ -63,7 +63,7 @@ simion.import("geometry.lua")
 # local detectorPadLength = get_detector_pad_length()
 
 ; Unclear what this should be per paper, but set in grid units
-# local detectorPadSpacing = get_detector_pad_spacing() + biasRingLength + biasRingSpacing
+# local detectorPadSpacing = get_detector_pad_spacing() + biasRingLength + 2*biasRingSpacing
 
 # local xPoints = get_device_x_length()
 # local yPoints = get_device_y_length()
@@ -103,8 +103,8 @@ locate (0,0,0,,0,0,0,dx,dy,dz){
     electrode(totalElectrodes + 2) { corner_box( totalElectrodeOffset + biasRingSpacing, electrodeYPosition, secondGroundLength, electrodeHeight) } 
 
     ; Generate the bias ring electrodes
-    electrode(totalElectrodes + 3) { corner_box( totalElectrodeOffset + biasRingSpacing + secondGroundLength, 0, biasRingLength, electrodeHeight) }
-    electrode(totalElectrodes + 4) { corner_box( totalElectrodeOffset + biasRingSpacing + secondGroundLength, electrodeYPosition, biasRingLength, electrodeHeight) }
+    electrode(totalElectrodes + 3) { corner_box( totalElectrodeOffset + 2*biasRingSpacing + secondGroundLength, 0, biasRingLength, electrodeHeight) }
+    electrode(totalElectrodes + 4) { corner_box( totalElectrodeOffset + 2*biasRingSpacing + secondGroundLength, electrodeYPosition, biasRingLength, electrodeHeight) }
 
     ; Generate detector pad electrodes
     electrode(totalElectrodes + 5) { corner_box( totalElectrodeOffset + detectorPadSpacing + secondGroundLength, 0, detectorPadLength, electrodeHeight) }
