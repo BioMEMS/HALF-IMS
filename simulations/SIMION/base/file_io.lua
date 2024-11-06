@@ -250,10 +250,12 @@ end
 -- Set the output log file name
 function set_results_file_name(name)
 	 local prevFile = get_results_file_name()
-	 
-	 -- Reset header line flag
-	 set_header_line_present(not(name == prevFile))
 
+	 if (not(name == prevFile)) then
+	    -- Reset header line flag
+	    set_header_line_present(0)
+	 end
+	 
 	 set_file_value(results_output_file_name, name)
 	 return
 end
