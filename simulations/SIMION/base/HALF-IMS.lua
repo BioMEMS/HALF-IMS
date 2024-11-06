@@ -41,6 +41,7 @@ local initial_scaled = 0
 -- Variable to hold the log string, log file name, and other logged values
 local output_log_line = ""
 local output_log_file_name = get_results_file_name()
+local output_log_header_line = get_header_line_present()
 local deviceXLength = get_device_x_length()*get_grid_x_spacing()
 local deviceYLength = get_device_y_length()*get_grid_y_spacing()
 local deviceZLength = get_device_z_length()*get_grid_z_spacing()
@@ -115,7 +116,43 @@ function segment.other_actions()
 
    sim_update_pe_surface = 1  -- update display
 
+   -- If the ion has stopped simulating
    if (ion_splat ~= 0) then
+     output_log_line = ""
+
+     -- If the output header line is not present
+     if (output_log_header_line == 0) then
+        output_log_line = output_log_line .. "Electrode Pairs,"     
+	output_log_line = output_log_line .. "Device X Length (mm),"
+	output_log_line = output_log_line .. "Device Y Length (mm),"
+	output_log_line = output_log_line .. "Device Z Length (mm),"
+	output_log_line = output_log_line .. "Device Z Length Simulated (mm),"     
+	output_log_line = output_log_line .. "Current Ion File,"
+	output_log_line = output_log_line .. "Ion Mass (u),"
+	output_log_line = output_log_line .. "Ion Charge (e),"
+	output_log_line = output_log_line .. "Ion Number,"
+	output_log_line = output_log_line .. "Carrier Gas Flow Rate (mL/min),"
+	output_log_line = output_log_line .. "Bias Ring (V),"
+	output_log_line = output_log_line .. "Shutter Electrode (V),"
+	output_log_line = output_log_line .. "Long Electrode (V),"
+	output_log_line = output_log_line .. "Short Electrode (V),"
+	output_log_line = output_log_line .. "Initial Ion X Position (mm),"
+	output_log_line = output_log_line .. "Initial Ion Y Position (mm),"
+	output_log_line = output_log_line .. "Initial Ion Z Position (mm),"
+	output_log_line = output_log_line .. "Final Ion X Position (mm),"
+	output_log_line = output_log_line .. "Final Ion Y Position (mm),"
+	output_log_line = output_log_line .. "Final Ion Z Position (mm),"
+	output_log_line = output_log_line .. "Detector Pad Hit"
+	output_log_line = output_log_line .. "\n"
+
+	-- Write line to CSV
+	write_to_log(output_log_file_name, output_log_line)
+
+	-- Save header line state
+	output_log_header_line = 1
+	set_header_line_present(output_log_header_line)
+     end
+
      -- Log final position, hit metric, and simulation parameters
      output_log_line = ""
      output_log_line = output_log_line .. num_electrode_pairs .. ","     
@@ -125,12 +162,13 @@ function segment.other_actions()
      output_log_line = output_log_line .. deviceZLengthSimulated .. ","     
      output_log_line = output_log_line .. cur_ion_file .. ","
      output_log_line = output_log_line .. ion_mass .. ","
+     output_log_line = output_log_line .. ion_charge .. ","
+     output_log_line = output_log_line .. ion_number .. ","
      output_log_line = output_log_line .. cur_carrier_gas .. ","
      output_log_line = output_log_line .. bias_ring_voltage .. ","
      output_log_line = output_log_line .. shutter_electrode_voltage .. ","
      output_log_line = output_log_line .. long_electrode_voltage .. ","
      output_log_line = output_log_line .. short_electrode_voltage .. ","
-     output_log_line = output_log_line .. ion_number .. ","
      output_log_line = output_log_line .. initial_x_pos .. ","
      output_log_line = output_log_line .. initial_y_pos .. ","
      output_log_line = output_log_line .. initial_z_pos .. ","

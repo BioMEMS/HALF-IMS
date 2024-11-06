@@ -227,6 +227,18 @@ function write_to_log(file, line)
 	 return
 end
 
+-- Functions to get/set if the output log header line is present
+local results_header_line_file_name = "header_line_written"
+
+function get_header_line_present()
+	 return get_file_value(results_header_line_file_name, 0)
+end
+
+function set_header_line_present(value)
+	 set_file_value(results_header_line_file_name, value)
+	 return
+end
+
 -- Functions to set/get an output log file in configuration
 local results_output_file_name = "output_log"
 
@@ -237,6 +249,11 @@ end
 
 -- Set the output log file name
 function set_results_file_name(name)
+	 local prevFile = get_results_file_name()
+	 
+	 -- Reset header line flag
+	 set_header_line_present(not(name == prevFile))
+
 	 set_file_value(results_output_file_name, name)
 	 return
 end
