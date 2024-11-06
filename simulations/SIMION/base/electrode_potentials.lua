@@ -102,3 +102,33 @@ end
 function set_short_electrode_step_potential(value)
 	 set_file_value(short_electrode_step_potential_file_name, value)
 end
+
+-- Functions to control bias electrode potential ranges during simulation
+local bias_electrode_min_potential_file_name = "bias_electrode_min_potential"
+local bias_electrode_max_potential_file_name = "bias_electrode_max_potential"
+local bias_electrode_step_potential_file_name = "bias_electrode_step_potential"
+
+function get_bias_electrode_min_potential()
+	 return get_file_value(bias_electrode_min_potential_file_name, 5)
+end
+
+function set_bias_electrode_min_potential(value)
+	 set_file_value(bias_electrode_min_potential_file_name, value)
+end
+
+function get_bias_electrode_max_potential()
+	 return get_file_value(bias_electrode_max_potential_file_name, 5)
+end
+
+function set_bias_electrode_max_potential(value)
+	 set_file_value(bias_electrode_max_potential_file_name, value)
+end
+
+function get_bias_electrode_step_potential()
+	 return get_file_value(bias_electrode_step_potential_file_name, 1)
+end
+
+function set_bias_electrode_step_potential(value)
+	 set_file_value(bias_electrode_step_potential_file_name, value)
+end
+

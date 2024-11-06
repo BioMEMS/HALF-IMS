@@ -3,11 +3,11 @@ simion.import("geometry.lua")
 
 --Functions to set/get a list of ion files to process
 local simulation_ions_file_name = "simulate_files_list"
-function get_results_files()
+function get_ion_files()
 	 return get_raw_file_value(simulation_ions_file_name, "")
 end
 
-function set_results_files(value_list)
+function set_ion_files(value_list)
 	 -- Write generated string to the file
 	 set_file_value(simulation_ions_file_name, value_list)
 	 return
