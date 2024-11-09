@@ -24,12 +24,16 @@ OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 all: 
 	make peak-processing OUTFILE=peak-processing.x
 	make labview-processing OUTFILE=labview-processing.x
+	make labview-processing OUTFILE=simion-processing.x
 
 peak-processing: peakProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) peakProcessing.cpp -o $(OUTDIRECTORY)$(OUTFILE)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
 
 labview-processing: labViewProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) labViewProcessing.cpp -o $(OUTDIRECTORY)$(OUTFILE)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
+
+simion-processing: simionProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
 
 %.o: %.cpp %.h
 	@mkdir -p $(OUTDIRECTORY)

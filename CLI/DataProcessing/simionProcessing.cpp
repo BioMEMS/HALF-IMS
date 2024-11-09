@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
 
   //Declare default output as current directory
   std::string output, input;
-  bool inputFlag, outputFlag, verbose;
+  bool verbose;
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
@@ -112,20 +112,84 @@ int main(int argc, char *argv[]){
     }
 
     //Create file streams for input and output
-    std::fstream inputFile, outputFile;
+    CommaSeparatedValues inputFile, outputFile;
 
     //Open files
-    inputFile.open(input, std::fstream::in);
-    outputFile.open(output, std::fstream::out | std::fstream::trunc);
+    inputFile.Open(input);
+    outputFile.Open(output);
 
-    //Determine if either file is open
-    inputFlag = inputFile.is_open();
-    outputFlag = outputFile.is_open();
+    //Read file contents
+    inputFile.Read();
+    outputFile.Read();
+
+    //Get the input file dimensions
+    Utilities::Limits inputSize = inputFile.Size();
+
+    //Initialize mapping for all required columns
+    std::map <std::string, int> columnToIndexMapping;
+    columnToIndexMapping[ELECTRODE_PAIRS] = -1;
+    columnToIndexMapping[X_LENGTH] = -1;
+    columnToIndexMapping[Y_LENGTH] = -1;
+    columnToIndexMapping[Z_LENGTH] = -1;
+    columnToIndexMapping[Z_LENGTH_SIM] = -1;
+    columnToIndexMapping[ION_FILE] = -1;
+    columnToIndexMapping[ION_MASS] = -1;
+    columnToIndexMapping[ION_CHARGE] = -1;
+    columnToIndexMapping[ION_NUMBER] = -1;
+    columnToIndexMapping[GAS_RATE] = -1;
+    columnToIndexMapping[BIAS_VOLTAGE] = -1;
+    columnToIndexMapping[SHUTTER_VOLTAGE] = -1;
+    columnToIndexMapping[LONG_VOLTAGE] = -1;
+    columnToIndexMapping[SHORT_VOLTAGE] = -1;
+    columnToIndexMapping[ION_START_X] = -1;
+    columnToIndexMapping[ION_STOP_X] = -1;
+    columnToIndexMapping[ION_START_Y] = -1;
+    columnToIndexMapping[ION_STOP_Y] = -1;
+    columnToIndexMapping[ION_START_Z] = -1;
+    columnToIndexMapping[ION_STOP_Z] = -1;
+    columnToIndexMapping[DET_HIT] = -1;
+
+    //Instantiate a list of columns not found
+    std::vector<std::string> columnsNotFound;
+
+    //Instantiate a list to hold the key 
+    std::vector<std::string> ionPacketKeys;
     
-    //If both file streams were opened
-    if(inputFlag && outputFlag){
+    //For every element in the mapping
+    for(auto const& it : columnToIndexMapping){
 
-    }    
+      //For every column in the input file
+      for(unsigned i = 0; (columnToIndexMapping[it.first] < 0) && (i < inputSize.Columns); i++){
+
+	//If the column header value matches the key
+	if(it.first == inputFile(0,i)){
+	  
+	  //Update index
+	  columnToIndexMapping[it.first] = i;
+	}
+      }
+      
+      //If not found
+      if(columnToIndexMapping[it.first] < 0){
+	
+	//Update error list
+	columnsNotFound.push_back(it.first);
+      }
+    }
+
+    //If any columns were not found
+    if(columnsNotFound.size() > 0){
+      //Print error message
+      std::cout << "Unable to find: " << std::endl;
+      for(unsigned i = 0; i < columnsNotFound.size(); i++){
+	std::cout << "   '" << columnsNotFound[i] << "'" << std::endl;;
+      }
+
+      //Cease all operations
+      return 1;
+    }
+
+    
   }
     
   return 0;
