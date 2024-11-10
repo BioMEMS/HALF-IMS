@@ -2,15 +2,19 @@
 COMPILER=g++
 #Declare compiler flags
 CPPFLAGS=-ggdb -std=c++17 -Wall -Wextra
+
+#Declare output file
+OUTFILE=processing.x
+
+#Declare output directory
+OUTDIRECTORY=bin/
+
 #Declare directories for source files
 SOURCEDIRECTORIES=../../src/
 SOURCEDIRECTORIES+=../../src/databases/
 SOURCEDIRECTORIES+=../../src/utilities/
 SOURCEDIRECTORIES+=../../src/signal-processing/
-#Declare output file
-OUTFILE=processing.x
-#Declare output directory
-OUTDIRECTORY=bin/
+SOURCEDIRECTORIES+=$(OUTDIRECTORY)
 
 #Get all source and header files in the source directories
 SRCFILES=$(foreach DIR,$(SOURCEDIRECTORIES),$(wildcard $(DIR)*.cpp))

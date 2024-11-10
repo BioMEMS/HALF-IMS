@@ -37,31 +37,20 @@
 #define ION_START_Z "Initial Ion Z Position (mm)"
 #define ION_STOP_Z "Final Ion Z Position (mm)"
 #define DET_HIT "Detector Pad Hit"
+#define DET_HIT_RATIO "Detector Hit Ratio"
+#define AVG_COUNT "Average Count"
 
-//Convert provided vect
-std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> line, unsigned chemicalIndex){
-  std::vector<double> results;
+//Find the index of the provided value, return -1 if not found
+bool FindIndex(std::vector<std::string> items, std::string value){
+  int index = -1;
 
-  //For each element in the line
-  for(unsigned i = 0; i < line.size(); i++){
-    //Attempt to convert element to a double
-    try{
-      results.push_back(std::stod(line[i]));
-    }
-    catch(std::invalid_argument const& ex){
-      //If the current index is not the known chemical index
-      if(i != chemicalIndex){
-	//Print message to error stream
-	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert '" << line[i] << "' at position " << i << " for line " << lineNumber << ". ";
-	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
-      }
-      
-      //Push minimum double value
-      results.push_back(std::numeric_limits<double>::min());
+  for(unsigned i = 0; (index < 0) && (i < items.size()); i++){
+    if(items[i] == value){
+      index = i;
     }
   }
-
-  return results;
+  
+  return index < 0;
 }
 
 int main(int argc, char *argv[]){
@@ -80,7 +69,7 @@ int main(int argc, char *argv[]){
   cli.Add(Utilities::CLIParser::VERBOSE, std::vector<std::string>{"v", "verbose"}, std::vector<int>{flagTypeThree}, "Trigger verbose program output.");
 
   //Add user flags
-  cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input file to process. Final line is assumed to be a blank newline character.");
+  cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input file to process which represents the simulated electrical configurations for a single physical configuration. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output file path.");
   
   //Parse provided arguments list
@@ -151,16 +140,23 @@ int main(int argc, char *argv[]){
 
     //Instantiate a list of columns not found
     std::vector<std::string> columnsNotFound;
-
+    std::vector<std::string> columnsInFile;
+    
     //Instantiate a list to hold the key 
     std::vector<std::string> ionPacketKeys;
+    std::string temp;
+    bool indexNotFound = false;
     
-    //For every element in the mapping
-    for(auto const& it : columnToIndexMapping){
+    //Instantiate a mapping to hold all collected data
+    std::map<std::string, std::map<std::string, double>> ionPacketData;
+    std::map<std::string, std::map<std::string, std::string>> ionPacketInputs;
+    Utilities::ConvertedData result;
 
-      //For every column in the input file
-      for(unsigned i = 0; (columnToIndexMapping[it.first] < 0) && (i < inputSize.Columns); i++){
-
+    //For every column in the input file
+    for(unsigned i = 0; i < inputSize.Columns; i++){
+      
+      //For every element in the mapping
+      for(auto const& it : columnToIndexMapping){		
 	//If the column header value matches the key
 	if(it.first == inputFile(0,i)){
 	  
@@ -170,17 +166,21 @@ int main(int argc, char *argv[]){
       }
       
       //If not found
-      if(columnToIndexMapping[it.first] < 0){
+      if(columnToIndexMapping[inputFile(0,i)] < 0){
 	
 	//Update error list
-	columnsNotFound.push_back(it.first);
+	columnsNotFound.push_back(inputFile(0,i));
+      }
+      else{
+	//Insert header into columns list for later loops
+	columnsInFile.push_back(inputFile(0,i));
       }
     }
 
     //If any columns were not found
     if(columnsNotFound.size() > 0){
       //Print error message
-      std::cout << "Unable to find: " << std::endl;
+      std::cout << "Unable to find following column headers: " << std::endl;
       for(unsigned i = 0; i < columnsNotFound.size(); i++){
 	std::cout << "   '" << columnsNotFound[i] << "'" << std::endl;;
       }
@@ -189,7 +189,98 @@ int main(int argc, char *argv[]){
       return 1;
     }
 
+    //For every row in the input file
+    for(unsigned i = 1; (i < inputSize.Rows); i++){
+      //Build ion packet key string
+      temp =  inputFile(i,columnToIndexMapping[ION_FILE]) + "_"
+	+ inputFile(i,columnToIndexMapping[ION_MASS]) + "_"
+	+ inputFile(i,columnToIndexMapping[ION_CHARGE]) + "_"
+	+ inputFile(i,columnToIndexMapping[GAS_RATE]) + "_"
+	+ inputFile(i,columnToIndexMapping[BIAS_VOLTAGE]) + "_"
+	+ inputFile(i,columnToIndexMapping[SHUTTER_VOLTAGE]) + "_"
+	+ inputFile(i,columnToIndexMapping[LONG_VOLTAGE]) + "_"
+	+ inputFile(i,columnToIndexMapping[SHORT_VOLTAGE]);
+
+      //Determine if key has been defaulted
+      indexNotFound = FindIndex(ionPacketKeys, temp);
+      
+      //If unable to find the current key
+      if(indexNotFound){
+	//Save into history list
+	ionPacketKeys.push_back(temp);
+
+	//Default data values
+	ionPacketData[temp][AVG_COUNT] = 0;
+      }
+
+      //Increment average count by one
+      ionPacketData[temp][AVG_COUNT] += 1;
+      
+      //For every column in the file
+      for(unsigned j = 0; j < columnsInFile.size(); j++){
+	//If index was not found
+	if(indexNotFound){
+	  //Default numerical value to zero
+	  ionPacketData[temp][columnsInFile[j]] = 0;
+	  
+	  //Take a copy of the current line to save necessary string parameters
+	  ionPacketInputs[temp][columnsInFile[j]] = inputFile(i,j);
+	}
+
+	//Attempt to convert string value to a double
+	result = Utilities::ConvertValue_Double(inputFile(i,j));
+	
+	//If errors resulted from conversion and not the ion file column
+	if((columnsInFile[j] != ION_FILE) && result.error){
+	  //Print message to error stream
+	  std::cerr << "Error converting row " << i << ", column " << j << ". " << result.msg << std::endl;
+	}
+
+	//Accumulate the data value
+	ionPacketData[temp][columnsInFile[j]] += result.value;
+      }
+    }
+
+    //Write header line to output
+    for(unsigned i = 0; i < columnsInFile.size(); i++){
+      outputFile(0,i) = columnsInFile[i];
+    }
+
+    outputFile(0, columnsInFile.size()) = DET_HIT_RATIO;
+    outputFile(0, columnsInFile.size()+1) = AVG_COUNT;
     
+    //For all packet keys found
+    for(unsigned i = 0, columnCount = columnsInFile.size(); i < ionPacketKeys.size(); i++){
+      //For all columns in the input
+      for(unsigned j = 0; j < columnCount; j++){	
+	//If the ion file column
+	if(columnsInFile[j] == ION_FILE){
+	  //Output the proper string value
+	  temp = ionPacketInputs[ionPacketKeys[i]][columnsInFile[j]];
+	  
+	}//If the detector hit column
+	else if(columnsInFile[j] == DET_HIT){	  
+	  //Output accumulated value
+	  temp = std::to_string(ionPacketData[ionPacketKeys[i]][columnsInFile[j]]);
+	  
+	}
+	else{
+	  //Output averaged value
+	  temp = std::to_string(ionPacketData[ionPacketKeys[i]][columnsInFile[j]] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+	}
+
+	//Update appropriate row and column value
+	outputFile(i+1,j) = temp;
+      }
+
+      //Compute ion hit percentage
+      outputFile(i+1, columnCount) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+      outputFile(i+1, columnCount+1) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+      
+    }
+
+    //Write object contents to disk
+    outputFile.Write();
   }
     
   return 0;
