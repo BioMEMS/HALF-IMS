@@ -188,8 +188,6 @@ function set_carrier_gas_rate(value)
 	 -- Calculate velocity by converting area from mL/(min-m^2) to mm/us
 	 local velocity = value/(channelArea * 60000)
 
-	 print(value, z_dimension, channelArea, velocity)
-	 
 	 -- Set ion X velocity under assumption of X-axis flow
 	 set_ion_x_velocity(velocity)
 	 
