@@ -55,33 +55,25 @@ end
 function segment.fast_adjust()
 
   -- Set all electrodes to 0
-  for i = 1,(num_shutter_electrodes + 4*num_electrode_pairs + 2) do
+  for i = 1,(num_shutter_electrodes + 4*num_electrode_pairs + 6) do
     adj_elect[i] = 0
   end
   
   -- Set shutter electrodes to desired voltages
   adj_elect[1] = shutter_electrode_voltage/2
   adj_elect[2] = -shutter_electrode_voltage/2
-
-  -- Set first ground ring electrodes
-  adj_elect[3] = 0
-  adj_elect[4] = 0
   
   -- set electodes to the desired voltages
-  for i = (num_shutter_electrodes+1),(4*num_electrode_pairs),4 do
-    adj_elect[i] = -short_electrode_voltage/2 
-    adj_elect[i+1] = short_electrode_voltage/2
-    adj_elect[i+2] = long_electrode_voltage/2 
-    adj_elect[i+3] = -long_electrode_voltage/2    
+  for i = (num_shutter_electrodes+1),(4*num_electrode_pairs + num_shutter_electrodes + 2),4 do
+    adj_elect[i] = -long_electrode_voltage/2 
+    adj_elect[i+1] = long_electrode_voltage/2
+    adj_elect[i+2] = short_electrode_voltage/2 
+    adj_elect[i+3] = -short_electrode_voltage/2    
   end
 
-  -- Set second ground ring electrodes
-  adj_elect[4*num_electrode_pairs+3] = 0
-  adj_elect[4*num_electrode_pairs+4] = 0
-
   -- Set bias ring electrodes to desired voltages
-  adj_elect[4*num_electrode_pairs+5] = -bias_ring_voltage
-  adj_elect[4*num_electrode_pairs+6] = bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = -bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = bias_ring_voltage
 end
 
 -- Adjust acceleration every cycle

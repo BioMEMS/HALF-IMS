@@ -205,7 +205,7 @@ end
 
 -- Local variables for bias ring spacing
 local default_bias_ring_spacing_file_name = "bias_ring_spacing"
-local default_bias_ring_spacing = 1
+local default_bias_ring_spacing = 0.65
 
 -- Functions to get/set bias ring spacing
 function get_bias_ring_spacing()
@@ -262,8 +262,8 @@ end
 -- Local variables for ground pad lengths
 local default_first_ground_pad_length_file_name = "first_ground_length"
 local default_second_ground_pad_length_file_name = "second_ground_length"
-local default_first_ground_pad_length = 1
-local default_second_ground_pad_length = 2
+local default_first_ground_pad_length = 0.4
+local default_second_ground_pad_length = 0.2
 
 -- Functions to get/set the ground pad lengths
 function get_first_ground_pad_length()
