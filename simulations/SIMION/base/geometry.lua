@@ -293,7 +293,7 @@ end
 
 -- Functions to get the number of grid units in the X-direction
 function get_shutter_pattern_length()
-	 return get_shutter_electrode_count()*(get_shutter_electrode_length() + get_shutter_electrode_spacing())/2 + get_flow_channel_offset() + get_shutter_electrode_spacing() + get_first_ground_pad_length()
+	 return get_shutter_electrode_length() + 2*get_shutter_electrode_spacing() + get_flow_channel_offset() + get_first_ground_pad_length()
 end
 
 function get_electrode_pattern_length()

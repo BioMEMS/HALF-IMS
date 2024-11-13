@@ -82,16 +82,16 @@ locate (0,0,0,,0,0,0,dx,dy,dz){
     electrode(2) { corner_box(flowChannelOffset, electrodeYPosition, shutterElectrodeLength, electrodeHeight) } 
 
     ; Generate the ground ring electrodes
-    electrode(3) { corner_box(shutterElectrodeSpacing + shutterElectrodeLength, 0, firstGroundLength, electrodeHeight) }
-    electrode(4) { corner_box(shutterElectrodeSpacing + shutterElectrodeLength, electrodeYPosition, firstGroundLength, electrodeHeight) } 
+    electrode(3) { corner_box(shutterElectrodeSpacing + shutterElectrodeLength + flowChannelOffset, 0, firstGroundLength, electrodeHeight) }
+    electrode(4) { corner_box(shutterElectrodeSpacing + shutterElectrodeLength + flowChannelOffset, electrodeYPosition, firstGroundLength, electrodeHeight) } 
 
     ; Loop to generate the electrodes along the channel using a row-major format for the electrode potential so that they
     ; are generated individually
     for i=0,(numElectrodePairs-1) do
 	    electrode(4*i+1+shutterElectrodeCount) { corner_box(i*electrodePattern + shutterElectrodePattern,0, electrodeLengthLong,electrodeHeight) }
 	    electrode(4*i+2+shutterElectrodeCount) { corner_box(i*electrodePattern + shutterElectrodePattern,electrodeYPosition, electrodeLengthLong,electrodeHeight) }
-	    electrode(4*i+3+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern ,0, electrodeLengthShort,electrodeHeight) }
-	    electrode(4*i+4+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthShort+electrodeSpacing + shutterElectrodePattern,electrodeYPosition, electrodeLengthShort,electrodeHeight) }
+	    electrode(4*i+3+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthLong+electrodeSpacing + shutterElectrodePattern ,0, electrodeLengthShort,electrodeHeight) }
+	    electrode(4*i+4+shutterElectrodeCount) { corner_box(i*electrodePattern+electrodeLengthLong+electrodeSpacing + shutterElectrodePattern,electrodeYPosition, electrodeLengthShort,electrodeHeight) }
     end
 
     ; Calculate the total number of electrodes to offset final electrodes
