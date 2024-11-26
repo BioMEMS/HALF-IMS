@@ -66,6 +66,9 @@ function set_current_ion_file(file_name)
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
 
+	 -- Get ion count
+	 ionCount = calculate_ion_count()
+	 
 	 -- For every line in the file
 	 for line in tempID:lines() do
 	     -- If it matches the first position vector
