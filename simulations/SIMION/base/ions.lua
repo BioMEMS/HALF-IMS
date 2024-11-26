@@ -1,6 +1,31 @@
 simion.import("file_io.lua")
 simion.import("geometry.lua")
 
+--Function to build an ion file and place in particles directory
+function build_ion_file(name, masses, charges)
+
+	 local fileID = io.open(string.format("../particles/%s.fly2", name),"w")
+
+	 --Write opening FLY2 line
+	 fileID:write("particles {\n  coordinates = 1")
+	 
+	 contentFormatString = ",\n  standard_beam {\n    n = 20,\n    tob = 0,\n    mass = %s,\n    charge = %s,\n    cwf = 1,\n    color = %s,\n    position = line_distribution {\n      first = vector(0, 0, 0),\n      last = vector(0, 0, 0)\n    },\n    velocity = vector(1, 0, 0)\n  }"
+
+	 --For each particle mass
+	 for i=1,#masses do
+	     --Write particle beam to file
+	     fileID:write(string.format(contentFormatString, tostring(masses[i]), tostring(charges[i]), tostring(i-1)))
+	 end 
+
+	 --Write closing FLY2 line
+	 fileID:write("\n}\n")
+
+	 --Close file handler
+	 fileID:close();
+	 
+	 return
+end
+
 --Functions to set/get a list of ion files to process
 local simulation_ions_file_name = "simulate_files_list"
 function get_ion_files()
@@ -37,9 +62,6 @@ function set_current_ion_file(file_name)
 	 local yDimension = get_device_y_length()
 	 local zDimension = get_device_z_length()
 
-	 -- Determine ion count
-	 ionCount = calculate_ion_count()
-
 	 -- Open file with read/write
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
@@ -53,9 +75,9 @@ function set_current_ion_file(file_name)
 	     elseif (string.match(tostring(line), " *last =.*")) then
 	     	 -- Updating Y position end
      	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
-	     elseif (string.match(tostring(line), "^ *n = .*")) then
-	         -- Updating ion count
-		 fileID:write("    n = " .. tostring(ionCount) .. ",")
+             elseif (string.match(tostring(line), "^ *n = .*")) then
+	     	 -- Updating ion count
+	     	 fileID:write("      n = " .. tostring(ionCount) .. ",")
              else
 	         fileID:write(line)
 	     end
