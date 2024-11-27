@@ -21,39 +21,45 @@ local min_bias = get_bias_electrode_min_potential()
 local max_bias = get_bias_electrode_max_potential()
 local step_bias = get_bias_electrode_step_potential()
 
+local step_gas = get_carrier_gas_step_flow_rate()
 local min_gas = get_carrier_gas_min_flow_rate()
 local max_gas = get_carrier_gas_max_flow_rate()
-local step_gas = get_carrier_gas_step_flow_rate()
+
+local repetition_count = get_simulate_loop_count()
 
 set_results_file_name("output_" .. tostring(os.time()) .. ".csv")
 
--- For each file in the list
-for file in string.gmatch(get_ion_files(),"([^,]+)") do
+-- For all desired repetitions
+for repetition=0,repetition_count,1 do 
 
-    --Set the current ion file for logging
-    set_current_ion_file(file)
+    -- For each file in the list
+    for file in string.gmatch(get_ion_files(),"([^,]+)") do
 
-    for bep=min_bias,max_bias,step_bias do
-    	--Set bias ring voltage
-	set_bias_ring_electrode_potential(bep)
-	
-    	for rate=min_gas,max_gas,step_gas do
-	    --Set carrier gas flow rate
-	    set_carrier_gas_rate(rate)
+	--Set the current ion file for logging
+	set_current_ion_file(file)
 
-	    for lep=min_long,max_long,step_long do
-		--Set long electrode voltage
-		set_long_electrode_potential(lep)
+	for bep=min_bias,max_bias,step_bias do
+	    --Set bias ring voltage
+	    set_bias_ring_electrode_potential(bep)
 
-		for sep=min_short,max_short,step_short do
-		    -- Set short electrode voltage
-		    set_short_electrode_potential(sep)
+	    for rate=min_gas,max_gas,step_gas do
+		--Set carrier gas flow rate
+		set_carrier_gas_rate(rate)
 
-		    simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file())
-		 end
+		for lep=min_long,max_long,step_long do
+		    --Set long electrode voltage
+		    set_long_electrode_potential(lep)
+
+		    for sep=min_short,max_short,step_short do
+			-- Set short electrode voltage
+			set_short_electrode_potential(sep)
+
+			simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file())
+		     end
+		end
 	    end
-	end
-    end    
+	end    
+    end
 end
 
 -- Clean up simulation

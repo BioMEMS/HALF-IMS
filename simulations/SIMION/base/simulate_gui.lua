@@ -24,6 +24,7 @@ t = simion.experimental.dialog {
   {'Carrier Gas Min. Flow Rate (mL/min)', get_carrier_gas_min_flow_rate()},
   {'Carrier Gas Max. Flow Rate (mL/min)', get_carrier_gas_max_flow_rate()},
   {'Carrier Gas Step Flow Rate (mL/min)', get_carrier_gas_step_flow_rate()},
+  {'Simulation Loop Count', get_simulate_loop_count()},
   buttons="&Update|&Close"
 }
 
@@ -44,4 +45,5 @@ if(t.result == "Update") then
   set_carrier_gas_min_flow_rate(t['Carrier Gas Min. Flow Rate (mL/min)'])
   set_carrier_gas_max_flow_rate(t['Carrier Gas Max. Flow Rate (mL/min)'])
   set_carrier_gas_step_flow_rate(t['Carrier Gas Step Flow Rate (mL/min)'])
+  set_simulate_loop_count(t['Simulation Loop Count'])
 end

@@ -259,3 +259,15 @@ function set_results_file_name(name)
 	 set_file_value(results_output_file_name, name)
 	 return
 end
+
+-- Functions to get/set the number of simulate loop iterations
+local simulate_loop_iterations = "simulate_loop_iterations"
+
+function get_simulate_loop_count()
+	 return get_file_value(simulate_loop_iterations, 1)
+end
+
+function set_simulate_loop_count(value)
+	 set_file_value(simulate_loop_iterations, value)
+	 return
+end

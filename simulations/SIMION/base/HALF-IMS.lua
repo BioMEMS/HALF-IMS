@@ -71,9 +71,11 @@ function segment.fast_adjust()
     adj_elect[i+3] = -short_electrode_voltage/2    
   end
 
-  -- Set bias ring electrodes to desired voltages
+  -- Set bias ring and detector electrodes to desired voltages
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = -bias_ring_voltage
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+5] = -bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+6] = bias_ring_voltage
 end
 
 -- Adjust acceleration every cycle
