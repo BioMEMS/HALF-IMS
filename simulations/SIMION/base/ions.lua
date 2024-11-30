@@ -309,3 +309,37 @@ function set_upstream_pressure(pressure_psi)
 	 set_file_value(upstream_pressure_file_value, pressure_psi * 6894.75729)
 	 return
 end
+
+-- Functions to get/set ion flying parameters
+local iob_grouped_setting_file_value = "iob_grouped_setting"
+local iob_grouped_repulsion_file_value = "iob_grouped_repulsion"
+local iob_grouped_repulsion_value_file_value = "iob_grouped_repulsion_value"
+
+function get_iob_grouped_setting()
+	 return get_file_value(iob_grouped_setting_file_value, 0)
+end
+
+function set_iob_grouped_setting(flag)
+	 set_file_value(iob_grouped_setting_file_value, flag)
+	 return
+end
+
+function get_iob_grouped_repulsion()
+	 return get_raw_file_value(iob_grouped_repulsion_file_value, "none")
+end
+
+function set_iob_grouped_repulsion(setting)
+	 set_file_value(iob_grouped_repulsion_file_value, setting)
+	 return
+end
+
+function get_iob_grouped_repulsion_value()
+	 return get_file_value(iob_grouped_repulsion_value_file_value, 1.6E-19)
+end
+
+function set_iob_grouped_repulsion_value(setting)
+	 set_file_value(iob_grouped_repulsion_value_file_value, setting)
+	 return
+end
+
+

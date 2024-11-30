@@ -26,6 +26,9 @@ local min_gas = get_carrier_gas_min_flow_rate()
 local max_gas = get_carrier_gas_max_flow_rate()
 
 local repetition_count = get_simulate_loop_count()
+local grouped_flag = get_iob_grouped_setting()
+local repulsion_type = get_iob_grouped_repulsion()
+local repulsion_value = get_iob_grouped_repulsion_value()
 
 set_results_file_name("output_" .. tostring(os.time()) .. ".csv")
 
@@ -54,7 +57,15 @@ for repetition=0,repetition_count,1 do
 			-- Set short electrode voltage
 			set_short_electrode_potential(sep)
 
-			simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file())
+			if(grouped_flag == 1) then
+			   if(repulsion_type == "none") then
+			      simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file() .. " --grouped=" .. tostring(grouped_flag) .. " --repulsion=" .. repulsion_type)
+			   else
+			      simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file() .. " --grouped=" .. tostring(grouped_flag) .. " --repulsion=" .. repulsion_type .. " --repulsion-amount=" .. tostring(repulsion_value))
+			   end
+			else
+			   simion.command("--noprompt fly HALF-IMS.iob --particles=" .. get_current_ion_file())	
+			end
 		     end
 		end
 	    end
