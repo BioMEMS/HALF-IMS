@@ -10,6 +10,8 @@ simion.import("ions.lua")
 -- Control whether the PE view is frozen after potentials are updated
 adjustable freeze_potentials = 1
 
+-- Parameters dictated by configuration file
+
 -- Ion Velocities
 local ion_x_velocity = get_ion_x_velocity()
 local ion_y_velocity = get_ion_y_velocity()
@@ -42,10 +44,25 @@ local initial_scaled = 0
 local output_log_line = ""
 local output_log_file_name = get_results_file_name()
 local output_log_header_line = get_header_line_present()
-local deviceXLength = get_device_x_length()*get_grid_x_spacing()
-local deviceYLength = get_device_y_length()*get_grid_y_spacing()
-local deviceZLength = get_device_z_length()*get_grid_z_spacing()
+local workbenchGridXSpacing = get_grid_x_spacing()
+local workbenchGridYSpacing = get_grid_y_spacing()
+local workbenchGridZSpacing = get_grid_z_spacing()
+local deviceXLength = get_device_x_length()*workbenchGridXSpacing
+local deviceYLength = get_device_y_length()*workbenchGridYSpacing
+local deviceZLength = get_device_z_length()*workbenchGridZSpacing
 local deviceZLengthSimulated = get_simulated_z_device_length()
+local electrodeHeight = get_electrode_height()*workbenchGridYSpacing
+local shutterElectrodeLength = get_shutter_electrode_length()*workbenchGridXSpacing
+local firstGroundElectrodeLength = get_first_ground_pad_length()*workbenchGridXSpacing
+local longElectrodeLength = get_long_electrode_length()*workbenchGridXSpacing
+local shortElectrodeLength = get_short_electrode_length()*workbenchGridXSpacing
+local secondGroundElectrodeLength = get_second_ground_pad_length()*workbenchGridXSpacing
+local biasElectrodeLength = get_bias_ring_length()*workbenchGridXSpacing
+local detectorElectrodeLength = get_detector_pad_length()*workbenchGridXSpacing
+local workbenchGroupedSetting = get_iob_grouped_setting()
+local workbenchGroupedRepulsion = get_iob_grouped_repulsion()
+local workbenchRepulsionValue = get_iob_grouped_repulsion_value()
+local chemicalConcentration = get_chemical_concentration()
 
 function segment.initialize()
    -- Unclear when this gets called, but it never seems to output a log message...
@@ -116,12 +133,27 @@ function segment.other_actions()
 
      -- If the output header line is not present
      if (output_log_header_line == 0) then
+     	output_log_line = output_log_line .. "Grouped Flag,"
+     	output_log_line = output_log_line .. "Repulsion Setting,"
+     	output_log_line = output_log_line .. "Repulsion Value,"	
         output_log_line = output_log_line .. "Electrode Pairs,"     
 	output_log_line = output_log_line .. "Device X Length (mm),"
 	output_log_line = output_log_line .. "Device Y Length (mm),"
 	output_log_line = output_log_line .. "Device Z Length (mm),"
-	output_log_line = output_log_line .. "Device Z Length Simulated (mm),"     
+	output_log_line = output_log_line .. "Device Z Length Simulated (mm),"
+	output_log_line = output_log_line .. "Grid X Spacing (mm),"
+	output_log_line = output_log_line .. "Grid Y Spacing (mm),"
+	output_log_line = output_log_line .. "Grid Z Spacing (mm),"
+	output_log_line = output_log_line .. "Electrode Height (mm),"
+	output_log_line = output_log_line .. "Shutter Length (mm),"
+	output_log_line = output_log_line .. "First Ground Length (mm),"
+	output_log_line = output_log_line .. "Long Electrode Length (mm),"
+	output_log_line = output_log_line .. "Short Electrode Length (mm),"
+	output_log_line = output_log_line .. "Second Ground Length (mm),"
+	output_log_line = output_log_line .. "Bias Length (mm),"
+	output_log_line = output_log_line .. "Detector Length (mm),"
 	output_log_line = output_log_line .. "Current Ion File,"
+	output_log_line = output_log_line .. "Concentration (ppm),"
 	output_log_line = output_log_line .. "Ion Mass (u),"
 	output_log_line = output_log_line .. "Ion Charge (e),"
 	output_log_line = output_log_line .. "Ion Number,"
@@ -149,12 +181,27 @@ function segment.other_actions()
 
      -- Log final position, hit metric, and simulation parameters
      output_log_line = ""
+     output_log_line = output_log_line .. workbenchGroupedSetting .. ","
+     output_log_line = output_log_line .. workbenchGroupedRepulsion .. ","
+     output_log_line = output_log_line .. workbenchRepulsionValue .. ","
      output_log_line = output_log_line .. num_electrode_pairs .. ","     
      output_log_line = output_log_line .. deviceXLength .. ","
      output_log_line = output_log_line .. deviceYLength .. ","
      output_log_line = output_log_line .. deviceZLength .. ","
-     output_log_line = output_log_line .. deviceZLengthSimulated .. ","     
+     output_log_line = output_log_line .. deviceZLengthSimulated .. ","
+     output_log_line = output_log_line .. workbenchGridXSpacing .. ","
+     output_log_line = output_log_line .. workbenchGridYSpacing .. ","
+     output_log_line = output_log_line .. workbenchGridZSpacing .. ","
+     output_log_line = output_log_line .. electrodeHeight .. ","
+     output_log_line = output_log_line .. shutterElectrodeLength .. ","
+     output_log_line = output_log_line .. firstGroundElectrodeLength .. ","
+     output_log_line = output_log_line .. longElectrodeLength .. ","
+     output_log_line = output_log_line .. shortElectrodeLength .. ","
+     output_log_line = output_log_line .. secondGroundElectrodeLength .. ","
+     output_log_line = output_log_line .. biasElectrodeLength .. ","
+     output_log_line = output_log_line .. detectorElectrodeLength .. ","
      output_log_line = output_log_line .. cur_ion_file .. ","
+     output_log_line = output_log_line .. chemicalConcentration .. ","
      output_log_line = output_log_line .. ion_mass .. ","
      output_log_line = output_log_line .. ion_charge .. ","
      output_log_line = output_log_line .. ion_number .. ","
