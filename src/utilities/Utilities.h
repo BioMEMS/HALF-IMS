@@ -6,6 +6,7 @@
 
 #define ELEMENTARY_CHARGE 1.6E-19
 #define AMU_TO_GRAMS 1.660539E-24
+#define DETECTOR_BOARD_IDEAL_RESISTANCE 300E9
 
 namespace Utilities{
   //Simple limits structure to hold values
@@ -36,6 +37,9 @@ namespace Utilities{
 			
   //Convert number of atoms to current per Faraday Cup equations
   double CalculateCurrent(double atoms, double time);
+
+  //Convert the detector voltage value to an ideal current per Detector Board equations
+  double CalculateCurrent(double voltage);
 }
 
 #endif

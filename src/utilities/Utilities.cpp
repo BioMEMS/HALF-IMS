@@ -25,3 +25,7 @@ double Utilities::CalculateAtoms(double current, double time){
 double Utilities::CalculateCurrent(double atoms, double time){
   return (atoms * ELEMENTARY_CHARGE) / time;
 }
+
+double Utilities::CalculateCurrent(double voltage){
+  return voltage / DETECTOR_BOARD_IDEAL_RESISTANCE;
+}

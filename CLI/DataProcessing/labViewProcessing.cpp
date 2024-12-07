@@ -164,17 +164,17 @@ int main(int argc, char *argv[]){
     if(inputFlag && outputFlag){
 
       //Write a header line detailing the values in each column
-      outputFile << "Time (s), +V_s (V), +V_l (V), -V_s (V), -V_l (V), Detector 1 (V), Detector 2 (V), ";
+      outputFile << "Time (s),+V_s (V),+V_l (V),-V_s (V),-V_l (V),Detector 1 (V),Detector 2 (V),";
 
       for(int i = 1; i <= 8; i++){
-	outputFile << "MIPS Set Ch. " << i << " (V), ";
+	outputFile << "MIPS Set Ch. " << i << " (V),";
       }
 
       for(int i = 1; i <= 8; i++){
-	outputFile << "MIPS Read Ch. " << i << " (V), ";
+	outputFile << "MIPS Read Ch. " << i << " (V),";
       }
 
-      outputFile << "Chemical, Analyte Concentration (ppm), Syringe Volume (mL), Syringe Pump (mL/hr), MFC Setting (mL/min), Long Electrode Setting (V), Short Electrode Setting (V)" << std::endl;
+      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),Long Electrode Setting (V),Short Electrode Setting (V),Detector 1 Current (pA),Detector 2 Current(pA)" << std::endl;
       
       //Read the file until the LabView header line is found
       unsigned lineCount = 0;
@@ -299,9 +299,12 @@ int main(int argc, char *argv[]){
 	    csvOutput(i, j) = "";
 	  }
 	  
-	  //Calculate long and short electrode voltage settings	  
-	  csvOutput(i-1, outputSize.Columns-2) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
-	  csvOutput(i-1, outputSize.Columns-1) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));	  	  
+	  //Calculate long and short electrode voltage settings and ideal detector current 	  
+	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
+	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));
+	  csvOutput(i-1, outputSize.Columns-2) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,5))));
+	  csvOutput(i-1, outputSize.Columns-1) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,6))));
+	  
 	}
 
 	//First row already copied, so for every row after first 
