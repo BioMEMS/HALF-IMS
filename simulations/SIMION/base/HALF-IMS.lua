@@ -63,6 +63,8 @@ local workbenchGroupedSetting = get_iob_grouped_setting()
 local workbenchGroupedRepulsion = get_iob_grouped_repulsion()
 local workbenchRepulsionValue = get_iob_grouped_repulsion_value()
 local chemicalConcentration = get_chemical_concentration()
+local upstreamPressure = get_upstream_pressure() / 6894.75729
+local carrierPressure = get_carrier_gas_pressure() / 6894.75729
 
 function segment.initialize()
    -- Unclear when this gets called, but it never seems to output a log message...
@@ -153,6 +155,8 @@ function segment.other_actions()
 	output_log_line = output_log_line .. "Bias Length (mm),"
 	output_log_line = output_log_line .. "Detector Length (mm),"
 	output_log_line = output_log_line .. "Current Ion File,"
+	output_log_line = output_log_line .. "Upstream Pressure (psi),"
+	output_log_line = output_log_line .. "Carrier Pressure (psi),"
 	output_log_line = output_log_line .. "Concentration (ppm),"
 	output_log_line = output_log_line .. "Ion Mass (u),"
 	output_log_line = output_log_line .. "Ion Charge (e),"
@@ -162,6 +166,9 @@ function segment.other_actions()
 	output_log_line = output_log_line .. "Shutter Electrode (V),"
 	output_log_line = output_log_line .. "Long Electrode (V),"
 	output_log_line = output_log_line .. "Short Electrode (V),"
+	output_log_line = output_log_line .. "Ion X Velocity (mm/usec),"
+	output_log_line = output_log_line .. "Ion Y Velocity (mm/usec),"
+	output_log_line = output_log_line .. "Ion Z Velocity (mm/usec),"
 	output_log_line = output_log_line .. "Initial Ion X Position (mm),"
 	output_log_line = output_log_line .. "Initial Ion Y Position (mm),"
 	output_log_line = output_log_line .. "Initial Ion Z Position (mm),"
@@ -201,6 +208,8 @@ function segment.other_actions()
      output_log_line = output_log_line .. biasElectrodeLength .. ","
      output_log_line = output_log_line .. detectorElectrodeLength .. ","
      output_log_line = output_log_line .. cur_ion_file .. ","
+     output_log_line = output_log_line .. upstreamPressure .. ","
+     output_log_line = output_log_line .. carrierPressure .. ","
      output_log_line = output_log_line .. chemicalConcentration .. ","
      output_log_line = output_log_line .. ion_mass .. ","
      output_log_line = output_log_line .. ion_charge .. ","
@@ -210,6 +219,9 @@ function segment.other_actions()
      output_log_line = output_log_line .. shutter_electrode_voltage .. ","
      output_log_line = output_log_line .. long_electrode_voltage .. ","
      output_log_line = output_log_line .. short_electrode_voltage .. ","
+     output_log_line = output_log_line .. ion_x_velocity .. ","
+     output_log_line = output_log_line .. ion_y_velocity .. ","
+     output_log_line = output_log_line .. ion_z_velocity .. ","
      output_log_line = output_log_line .. initial_x_pos .. ","
      output_log_line = output_log_line .. initial_y_pos .. ","
      output_log_line = output_log_line .. initial_z_pos .. ","
