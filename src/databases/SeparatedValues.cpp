@@ -170,7 +170,7 @@ void SeparatedValues::Read(){
       std::getline(file, line);
       //Save the number of characters in the line
       characterCount = line.length();
-      
+
       //Create a temporary row vector
       std::vector<std::string> temp;
       //For every character in the line
@@ -198,7 +198,7 @@ void SeparatedValues::Read(){
 	    //If the end of line
 	    if(endOfLine){
 	      //Revert adjust value to prevent erroneous clipping of last column
-	      substringAdjust = 0;
+	      substringAdjust = -1;
 	    }
 	    
 	    //Slice out a substring

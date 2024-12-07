@@ -18,3 +18,10 @@ Utilities::ConvertedData Utilities::ConvertValue_Double(std::string item){
   return results;
 }
 
+double Utilities::CalculateAtoms(double current, double time){
+  return (current * time) / ELEMENTARY_CHARGE;
+}
+
+double Utilities::CalculateCurrent(double atoms, double time){
+  return (atoms * ELEMENTARY_CHARGE) / time;
+}

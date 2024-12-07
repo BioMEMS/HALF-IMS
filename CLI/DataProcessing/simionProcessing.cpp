@@ -16,6 +16,9 @@
 #define INPUT_FILE "input"
 
 //Pre-processor Variables for file column headers
+#define GROUPED_FLAG "Grouped Flag"
+#define REPULSION_SETT "Repulsion Setting"
+#define REPULSION_VAL "Repulsion Value"
 #define ELECTRODE_PAIRS "Electrode Pairs"
 #define X_LENGTH "Device X Length (mm)"
 #define Y_LENGTH "Device Y Length (mm)"
@@ -38,7 +41,27 @@
 #define ION_STOP_Z "Final Ion Z Position (mm)"
 #define DET_HIT "Detector Pad Hit"
 #define DET_HIT_RATIO "Detector Hit Ratio"
+#define GRID_X "Grid X Spacing (mm)"
+#define GRID_Y "Grid Y Spacing (mm)"
+#define GRID_Z "Grid Z Spacing (mm)"
+#define ELECTRODE_HEIGHT "Electrode Height (mm)"
+#define SHUTTER_LENGTH "Shutter Length (mm)"
+#define FIRST_GROUND "First Ground Length (mm)"
+#define SECOND_GROUND "Second Ground Length (mm)"
+#define LONG_LENGTH "Long Electrode Length (mm)"
+#define SHORT_LENGTH "Short Electrode Length (mm)"
+#define BIAS_LENGTH "Bias Length (mm)"
+#define DETECTOR_LENGTH "Detector Length (mm)"
+#define CHEM_CONCENTRATION "Concentration (ppm)"
+#define ION_VELOCITY_X "Ion X Velocity (mm/usec)"
+#define ION_VELOCITY_Y "Ion Y Velocity (mm/usec)"
+#define ION_VELOCITY_Z "Ion Z Velocity (mm/usec)"
+#define UPSTREAM_PRESSURE "Upstream Pressure (psi)"
+#define CARRIER_PRESSURE "Carrier Pressure (psi)"
+
+//Pre-processor variables for output file columns
 #define AVG_COUNT "Average Count"
+#define ION_CURRENT "Ion Current (pA)"
 
 //Find the index of the provided value, return -1 if not found
 bool FindIndex(std::vector<std::string> items, std::string value){
@@ -137,6 +160,26 @@ int main(int argc, char *argv[]){
     columnToIndexMapping[ION_START_Z] = -1;
     columnToIndexMapping[ION_STOP_Z] = -1;
     columnToIndexMapping[DET_HIT] = -1;
+    columnToIndexMapping[GRID_X] = -1;
+    columnToIndexMapping[GRID_Y] = -1;
+    columnToIndexMapping[GRID_Z] = -1;
+    columnToIndexMapping[ELECTRODE_HEIGHT] = -1;
+    columnToIndexMapping[SHUTTER_LENGTH] = -1;
+    columnToIndexMapping[FIRST_GROUND] = -1;
+    columnToIndexMapping[SECOND_GROUND] = -1;
+    columnToIndexMapping[LONG_LENGTH] = -1;
+    columnToIndexMapping[SHORT_LENGTH] = -1;
+    columnToIndexMapping[BIAS_LENGTH] = -1;
+    columnToIndexMapping[DETECTOR_LENGTH] = -1;
+    columnToIndexMapping[CHEM_CONCENTRATION] = -1;
+    columnToIndexMapping[GROUPED_FLAG] = -1;
+    columnToIndexMapping[REPULSION_SETT] = -1;
+    columnToIndexMapping[REPULSION_VAL] = -1;
+    columnToIndexMapping[ION_VELOCITY_X] = -1;
+    columnToIndexMapping[ION_VELOCITY_Y] = -1;
+    columnToIndexMapping[ION_VELOCITY_Z] = -1;
+    columnToIndexMapping[UPSTREAM_PRESSURE] = -1;
+    columnToIndexMapping[CARRIER_PRESSURE] = -1;
 
     //Instantiate a list of columns not found
     std::vector<std::string> columnsNotFound;
@@ -175,14 +218,22 @@ int main(int argc, char *argv[]){
 	//Insert header into columns list for later loops
 	columnsInFile.push_back(inputFile(0,i));
       }
+
+      if(verbose){
+	std::cout << inputFile(0,i) << ",";
+      }
     }
 
+    if(verbose){
+      std::cout << std::endl;
+    }
+    
     //If any columns were not found
     if(columnsNotFound.size() > 0){
       //Print error message
-      std::cout << "Unable to find following column headers: " << std::endl;
+      std::cerr << "Unable to find following column headers: " << std::endl;
       for(unsigned i = 0; i < columnsNotFound.size(); i++){
-	std::cout << "   '" << columnsNotFound[i] << "'" << std::endl;;
+	std::cerr << "   '" << columnsNotFound[i] << "'" << std::endl;;
       }
 
       //Cease all operations
@@ -229,15 +280,23 @@ int main(int argc, char *argv[]){
 
 	//Attempt to convert string value to a double
 	result = Utilities::ConvertValue_Double(inputFile(i,j));
+
+	if(verbose){
+	  std::cout << inputFile(i,j) << ",";
+	}
 	
 	//If errors resulted from conversion and not the ion file column
-	if((columnsInFile[j] != ION_FILE) && result.error){
+	if((columnsInFile[j] != ION_FILE) && (columnsInFile[j] != REPULSION_SETT) && result.error){
 	  //Print message to error stream
 	  std::cerr << "Error converting row " << i << ", column " << j << ". " << result.msg << std::endl;
 	}
 
 	//Accumulate the data value
 	ionPacketData[temp][columnsInFile[j]] += result.value;
+      }
+
+      if(verbose){
+	std::cout << std::endl;
       }
     }
 
@@ -248,13 +307,14 @@ int main(int argc, char *argv[]){
 
     outputFile(0, columnsInFile.size()) = DET_HIT_RATIO;
     outputFile(0, columnsInFile.size()+1) = AVG_COUNT;
+    outputFile(0, columnsInFile.size()+2) = ION_CURRENT;
     
     //For all packet keys found
-    for(unsigned i = 0, columnCount = columnsInFile.size(); i < ionPacketKeys.size(); i++){
+    for(unsigned i = 0, fileRow = 1, columnCount = columnsInFile.size(); i < ionPacketKeys.size(); i++, fileRow = i + 1){
       //For all columns in the input
       for(unsigned j = 0; j < columnCount; j++){	
 	//If the ion file column
-	if(columnsInFile[j] == ION_FILE){
+	if((columnsInFile[j] == ION_FILE) || (columnsInFile[j] == REPULSION_SETT)){
 	  //Output the proper string value
 	  temp = ionPacketInputs[ionPacketKeys[i]][columnsInFile[j]];
 	  
@@ -267,16 +327,17 @@ int main(int argc, char *argv[]){
 	else{
 	  //Output averaged value
 	  temp = std::to_string(ionPacketData[ionPacketKeys[i]][columnsInFile[j]] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+	  
 	}
 
 	//Update appropriate row and column value
-	outputFile(i+1,j) = temp;
+	outputFile(fileRow,j) = temp;
       }
 
       //Compute ion hit percentage
-      outputFile(i+1, columnCount) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
-      outputFile(i+1, columnCount+1) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
-      
+      outputFile(fileRow, columnCount) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+      outputFile(fileRow, columnCount+1) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);      
+      outputFile(fileRow, columnCount+2) = std::to_string((1E12) * Utilities::CalculateCurrent(ionPacketData[ionPacketKeys[i]][DET_HIT], ionPacketData[ionPacketKeys[i]][X_LENGTH] / ((1E6) * ionPacketData[ionPacketKeys[i]][ION_VELOCITY_X])));
     }
 
     //Write object contents to disk
