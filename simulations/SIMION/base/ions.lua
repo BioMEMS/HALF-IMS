@@ -102,7 +102,16 @@ end
 
 --Function to calculate the total number of ions based upon concentration
 function calculate_ion_count()
-	 return 50
+	 local chemicalConcentration = get_chemical_concentration()
+	 local deviceVolume = (get_device_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(get_device_z_length()*get_grid_z_spacing())	 
+
+	 -- Determine 
+	 local chemicalMoles = (chemicalConcentration * deviceVolume * get_carrier_gas_density()) / (get_carrier_gas_molar_mass() * 1E6)
+
+	 -- Multiple moles by Avogadro's number and ionization percentage
+	 local ions = get_ionization_percentage() * (chemicalMoles * 6.02214076E23)
+
+	 return math.floor(ions)
 end
 
 --Functions to set/get the current chemical concentration
@@ -342,4 +351,103 @@ function set_iob_grouped_repulsion_value(setting)
 	 return
 end
 
+-- Functions to assist in the generation of ion counts
+local chemical_properties_database_file_value = "chemical_properties_database_file"
+local ionization_percentage_file_vale = "ionization_percentage"
+local carrier_gas_density_file_value = "carrier_gas_density"
+local carrier_gas_molar_mass_file_value = "carrier_gas_molar_mass"
 
+function set_carrier_gas(name)
+	 if (name == "nitrogen") then
+	    set_carrier_gas_density(0.00125)
+	    set_carrier_gas_molar_mass(28.02)
+	 elseif (name == "oxygen") then
+	    set_carrier_gas_density(0.001429)
+	    set_carrier_gas_molar_mass(31.999)
+	 elseif (name == "helium") then
+	    set_carrier_gas_density(0.0001786)
+	    set_carrier_gas_molar_mass(4.0026)
+	 end
+
+	 return
+end
+
+function set_ionization_type(name)
+
+	 if (name == "photoionization") then
+	    set_ionization_percentage(0.3)
+	 elseif (name == "plasma") then
+	    set_ionization_percentage(0.9)
+	 elseif (name == "radioactive") then
+	    set_ionization_percentage(0.9)
+	 end
+
+	 return
+end
+
+function get_carrier_gas_density()
+	 return get_file_value(carrier_gas_density_file_value, 0.00125)
+end
+
+function set_carrier_gas_density(value)
+	 set_file_value(carrier_gas_density_file_value, value)
+	 return
+end
+
+function get_carrier_gas_molar_mass()
+	 return get_file_value(carrier_gas_molar_mass_file_value, 28.02)
+end
+
+function set_carrier_gas_molar_mass(value)
+	 set_file_value(carrier_gas_molar_mass_file_value, value)
+	 return
+end
+
+function get_ionization_percentage()
+	 return get_file_value(ionization_percentage_file_vale, 0.3)
+end
+
+function set_ionization_percentage(value)
+	 set_file_value(ionization_percentage_file_vale, value)
+	 return
+end
+
+function calculate_chemical_density(mass)
+	 local pressure = get_carrier_gas_pressure()
+	 local temperature = 298
+	 return (mass * pressure) / (8.3145 * temperature)
+end
+
+function get_chemical_properties_database_file()
+	 return get_raw_file_value(chemical_properties_database_file_value, "properties.tmp")
+end
+
+function set_chemical_properties_database_file(path)
+	 set_file_value(chemical_properties_database_file_value, path)
+	 return
+end
+
+function get_chemical_properties(mass)
+	 -- Get all CSV lines in the database
+
+	 -- Read all configuration file values
+	 local config_values = read_all_file_lines(get_chemical_properties_database_file())
+	 
+	 -- Find the appropriate index for updating parameter
+	 local parameter_index = find_parameter_index(mass, config_values)
+
+	 -- Set up return value
+	 local value = default_value
+	 local temp = ""
+	 
+	 -- Remove key from string and convert to numeric
+	 value, temp = string.gsub(config_values[parameter_index], mass .. ":", "")
+
+	 molarMass = tonumber(value)
+	 
+	 -- Calculate density from molar mass
+	 chemicalDensity = calculate_chemical_density(molarMass)
+
+	 -- Return table with both values
+	 return {["mass"] = molarMass, ["density"] = chemicalDensity}
+end
