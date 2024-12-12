@@ -26,7 +26,7 @@ local short_electrode_voltage = get_short_electrode_potential()
 local shutter_electrode_voltage = get_shutter_electrode_potential()
 local bias_ring_voltage = get_bias_ring_electrode_potential()
 local cur_carrier_gas = get_carrier_gas_rate()
-local cur_ion_file = get_current_ion_file()
+local cur_ion_file = get_current_packet_string()
 
 -- Get the total number of electrode pairs for indexing
 local num_electrode_pairs = get_electrode_pair_count()

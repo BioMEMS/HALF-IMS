@@ -17,8 +17,9 @@ t = simion.experimental.dialog {
   {'Bias Electrode Min. Potential (V)', get_bias_electrode_min_potential()},
   {'Bias Electrode Max. Potential (V)', get_bias_electrode_max_potential()},
   {'Bias Electrode Step Potential (V)', get_bias_electrode_step_potential()},
-  {'Ion File List', get_ion_files()},
+  {'Ion Packet List', get_ion_files()},
   {'Chemical Concentration (PPM)', get_chemical_concentration()},
+  {'Ion Packet X Stop (mm)', get_ion_packet_x_length()},
   {'Carrier Gas Pressure (PSI)', get_carrier_gas_pressure() / 6894.76},
   {'Upstream Pressure (PSI)', get_upstream_pressure() / 6894.76},
   {'Carrier Gas Min. Flow Rate (mL/min)', get_carrier_gas_min_flow_rate()},
@@ -52,4 +53,5 @@ if(t.result == "Update") then
   set_iob_grouped_repulsion(t['Simulation Repulsion Type'])
   set_iob_grouped_repulsion_value(t['Simulation Repulsion Value (C)'])
   set_simulate_loop_count(t['Simulation Loop Count'])
+  set_ion_packet_x_length(t['Ion Packet X Stop (mm)'])
 end

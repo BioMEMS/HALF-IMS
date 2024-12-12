@@ -4,19 +4,37 @@ simion.import("geometry.lua")
 --Function to build an ion file and place in particles directory
 function build_ion_file(name, masses, charges)
 
-	 local fileID = io.open(string.format("../particles/%s.fly2", name),"w")
-
+	 local fileID = io.open(name,"w")
+	 local particles = 0
+	 local ions = 0
+	 
 	 --Write opening FLY2 line
 	 fileID:write("particles {\n  coordinates = 1")
 	 
-	 contentFormatString = ",\n  standard_beam {\n    n = 20,\n    tob = 0,\n    mass = %s,\n    charge = %s,\n    cwf = 1,\n    color = %s,\n    position = line_distribution {\n      first = vector(0, 0, 0),\n      last = vector(0, 0, 0)\n    },\n    velocity = vector(1, 0, 0)\n  }"
-
+	 contentFormatString = ",\n  standard_beam {\n    n = %s,\n    tob = 0,\n    mass = %s,\n    charge = %s,\n    cwf = 1,\n    color = %s,\n    position = line_distribution {\n      first = vector(0, 0, 0),\n      last = vector(0, 0, 0)\n    },\n    velocity = vector(1, 0, 0)\n  }"
+	 
 	 --For each particle mass
 	 for i=1,#masses do
+	     -- If charge is neutral
+	     if(charges[i] == 0) then
+	        -- Assume carrier gas
+	        particles = calculate_atom_count()
+	     else
+		-- Calculate ion count per concentration
+	        particles = calculate_ion_count()
+		ions = ions + particles
+	     end
+
 	     --Write particle beam to file
-	     fileID:write(string.format(contentFormatString, tostring(masses[i]), tostring(charges[i]), tostring(i-1)))
+	     fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), tostring(charges[i]), tostring(i-1)))
 	 end 
 
+	 -- If using "Coulomb" repulsion type
+	 if(get_iob_grouped_repulsion() == "coulomb") then
+	     -- Update repulsion charge to be charge particle count times elementary charge
+	     set_iob_grouped_repulsion_value(ions * 1E-19)
+	 end
+	 
 	 --Write closing FLY2 line
 	 fileID:write("\n}\n")
 
@@ -40,22 +58,39 @@ end
 
 --Functions to set/get the current ion file
 local simulation_current_ion_file_name = "simulate_current_ion_file"
+local simulation_current_ion_packet_string_file_name = "simulate_current_packet_string"
+
 function get_current_ion_file()
 	 return get_raw_file_value(simulation_current_ion_file_name, "NONE")
 end
 
-function set_current_ion_file(file_name)
-	 local temp = ""
+function get_current_packet_string()
+	 return get_raw_file_value(simulation_current_ion_packet_string_file_name, "NONE")
+end
+
+function set_current_ion_file(packet_string)
+	 local temp = "current_packet.fly2"
 	 local tempFileName = "temp.fly2"
-	 
-	 -- Split the input 
-	 for name in string.gmatch(file_name,"([^/]+)") do
-	     -- Assign each segment to eventually get the file name itself
-	     temp = name
+
+	 -- Parse packet string
+ 	 local masses = {}
+	 local charges = {}
+	 for pair in string.gmatch(packet_string, "([^|]+)") do
+	     local table = {}
+	     local count = 1
+	     for value in string.gmatch(pair, "([^:]+)") do
+	     	 table[count] = value
+		 count = count + 1
+	     end
+	     masses[#masses + 1] = table[1]
+	     charges[#charges + 1] = table[2]
 	 end
 
+	 -- Dynamically build ion file
+	 build_ion_file(temp, masses, charges)	 
+
 	 -- Copy file to local directory
-	 copy_file(file_name, tempFileName)
+	 copy_file(temp, tempFileName)
 
 	 -- Modify file to account for current geometry
 	 local electrodeHeight = 2*math.ceil(get_electrode_height())
@@ -65,9 +100,9 @@ function set_current_ion_file(file_name)
 	 -- Open file with read/write
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
-
+	 
 	 -- Get ion count
-	 ionCount = calculate_ion_count()
+	 local ionPacketEnd = tostring(get_ion_packet_x_length())
 	 
 	 -- For every line in the file
 	 for line in tempID:lines() do
@@ -77,10 +112,7 @@ function set_current_ion_file(file_name)
 	     	 fileID:write("      first = vector(0, " .. tostring(electrodeHeight) .. ", " .. tostring(0.2*zDimension) .. "),")
 	     elseif (string.match(tostring(line), " *last =.*")) then
 	     	 -- Updating Y position end
-     	     	 fileID:write("      last = vector(0, " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
-             elseif (string.match(tostring(line), "^ *n = .*")) then
-	     	 -- Updating ion count
-	     	 fileID:write("      n = " .. tostring(ionCount) .. ",")
+     	     	 fileID:write("      last = vector(" .. ionPacketEnd .. ", " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
              else
 	         fileID:write(line)
 	     end
@@ -96,22 +128,40 @@ function set_current_ion_file(file_name)
 	 -- Delete temporary file
 	 os.remove(tempFileName)
 
-	 -- Set file name in configuration
+	 -- Set file name in configuration and packet string
 	 set_file_value(simulation_current_ion_file_name, temp)
+	 set_file_value(simulation_current_ion_packet_string_file_name, packet_string)
+	 return
 end
 
 --Function to calculate the total number of ions based upon concentration
 function calculate_ion_count()
+
+	 -- Reduce total atom count by ionization percentage
+	 local ions = get_ionization_percentage() * calculate_atom_count()
+	 
+	 return math.floor(ions)
+end
+
+function calculate_atom_count()
 	 local chemicalConcentration = get_chemical_concentration()
-	 local deviceVolume = (get_device_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(get_device_z_length()*get_grid_z_spacing())	 
+	 local deviceVolume = (get_ion_packet_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(get_device_z_length()*get_grid_z_spacing())	 
 
 	 -- Determine 
 	 local chemicalMoles = (chemicalConcentration * deviceVolume * get_carrier_gas_density()) / (get_carrier_gas_molar_mass() * 1E6)
 
-	 -- Multiple moles by Avogadro's number and ionization percentage
-	 local ions = get_ionization_percentage() * (chemicalMoles * 6.02214076E23)
+	 return math.floor(chemicalMoles * 6.02214076E23)
+end
 
-	 return math.floor(ions)
+-- Functions to set/get the ion packet X-dimension
+local ion_packet_x_length_file_value="ion_packet_x_length"
+function get_ion_packet_x_length()
+	 return get_file_value(ion_packet_x_length_file_value, 10E-6)
+end
+
+function set_ion_packet_x_length(length)
+	 set_file_value(ion_packet_x_length_file_value, length)
+	 return
 end
 
 --Functions to set/get the current chemical concentration

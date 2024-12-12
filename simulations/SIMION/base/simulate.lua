@@ -38,9 +38,6 @@ for repetition=0,repetition_count,1 do
     -- For each file in the list
     for file in string.gmatch(get_ion_files(),"([^,]+)") do
 
-	--Set the current ion file for logging
-	set_current_ion_file(file)
-
 	for bep=min_bias,max_bias,step_bias do
 	    --Set bias ring voltage
 	    set_bias_ring_electrode_potential(bep)
@@ -48,6 +45,9 @@ for repetition=0,repetition_count,1 do
 	    for rate=min_gas,max_gas,step_gas do
 		--Set carrier gas flow rate
 		set_carrier_gas_rate(rate)
+
+		--Set the current ion file for logging
+		set_current_ion_file(file)
 
 		for lep=min_long,max_long,step_long do
 		    --Set long electrode voltage
