@@ -42,7 +42,7 @@ if(t.result == "Update") then
   set_bias_electrode_min_potential(t['Bias Electrode Min. Potential (V)'])
   set_bias_electrode_max_potential(t['Bias Electrode Max. Potential (V)'])
   set_bias_electrode_step_potential(t['Bias Electrode Step Potential (V)'])
-  set_ion_files(t['Ion File List'])
+  set_ion_files(t['Ion Packet List'])
   set_chemical_concentration(t['Chemical Concentration (PPM)'])
   set_carrier_gas_pressure(t['Carrier Gas Pressure (PSI)'])
   set_upstream_pressure(t['Upstream Pressure (PSI)'])
