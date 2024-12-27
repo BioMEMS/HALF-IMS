@@ -30,7 +30,8 @@ local grouped_flag = get_iob_grouped_setting()
 local repulsion_type = get_iob_grouped_repulsion()
 local repulsion_value = get_iob_grouped_repulsion_value()
 
-set_results_file_name("output_" .. tostring(os.time()) .. ".csv")
+-- Rely on Simulate GUI to create output file name
+--set_results_file_name("output_" .. tostring(os.time()) .. ".csv")
 
 -- For all desired repetitions
 for repetition=0,repetition_count,1 do 
