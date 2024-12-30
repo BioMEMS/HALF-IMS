@@ -29,3 +29,15 @@ double Utilities::CalculateCurrent(double atoms, double time){
 double Utilities::CalculateCurrent(double voltage){
   return voltage / DETECTOR_BOARD_IDEAL_RESISTANCE;
 }
+
+
+bool Utilities::ContainsItem(std::vector<std::string> list, std::string item){
+
+  bool present = false;
+  
+  for(unsigned i = 0; !present && (i < list.size()); i++){
+    present |= (list[i] == item);
+  }
+  
+  return present;
+}

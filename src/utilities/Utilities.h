@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 
 #define ELEMENTARY_CHARGE 1.6E-19
 #define AMU_TO_GRAMS 1.660539E-24
@@ -40,6 +41,9 @@ namespace Utilities{
 
   //Convert the detector voltage value to an ideal current per Detector Board equations
   double CalculateCurrent(double voltage);
+
+  //Check presence of item in list
+  bool ContainsItem(std::vector<std::string> list, std::string item);
 }
 
 #endif

@@ -14,6 +14,7 @@ SOURCEDIRECTORIES=../../src/
 SOURCEDIRECTORIES+=../../src/databases/
 SOURCEDIRECTORIES+=../../src/utilities/
 SOURCEDIRECTORIES+=../../src/signal-processing/
+SOURCEDIRECTORIES+=../../dependencies/gnuplot-iostream/
 SOURCEDIRECTORIES+=$(OUTDIRECTORY)
 
 #Get all source and header files in the source directories
@@ -30,7 +31,7 @@ all:
 	make labview-processing OUTFILE=labview-processing.x
 	make labview-processing OUTFILE=simion-processing.x
 
-peak-processing: peakProcessing.cpp $(OBJTGT)
+data-processing: dataProcessing.cpp $(OBJTGT)
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
 
 labview-processing: labViewProcessing.cpp $(OBJTGT)
