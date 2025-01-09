@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
   int flagTypeThree = Utilities::CLIParser::Dash | Utilities::CLIParser::DoubleDash | Utilities::CLIParser::Standalone;
 
   //Add desired flags to parser
-  //cli.Add(Utilities::CLIParser::description, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A simple program which can take in multiple CSV files and identify the peak values.");
+  cli.Add(Utilities::CLIParser::DESCRIPTION, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A program which can process HALF-IMS CSV files into plots using GnuPlot.");
   cli.Add(Utilities::CLIParser::HELP, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree}, "Display this help message.");
   cli.Add(Utilities::CLIParser::VERBOSE, std::vector<std::string>{"v", "verbose"}, std::vector<int>{flagTypeThree}, "Trigger verbose program output.");
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input CSV file to process.");
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
 
   //Determine if the input file exists
   if(!std::filesystem::exists(std::filesystem::path(input)) || std::filesystem::is_directory(std::filesystem::path(input))){
-    std::cerr << "Invalid input file: '" << output << "'" << std::endl;
+    std::cerr << "Invalid input file: '" << input << "'" << std::endl;
     abort |= true;
   }
   
@@ -164,13 +164,63 @@ int main(int argc, char *argv[]){
     std::cout << "Plot Subtitle" << std::endl << constantParameters << std::endl << std::endl;
   }
 
+  std::map<std::string, std::vector<std::tuple<double, double>>> plotData;
+  std::vector<std::vector<std::tuple<double, double>>> curveData;
+  Utilities::ConvertedData xResult, yResult;
+  unsigned curveCount = 0;
   //For every column in the input
   for(auto const& xColumn : columnUniqueValues){
-    //If the column has more than one value
-    if(columnUniqueValues[xColumn.first].length() > 1){
-      //Partition values for 2D plot
 
-      //Partition values for 3D plot
+    //If the column has more than one value
+    if(columnUniqueValues[xColumn.first].size() > 1){
+
+      //For every column in the input
+      for(auto const& yColumn : columnUniqueValues){
+	
+	//If the X and Y values are not the same column
+	if(xColumn.first != yColumn.first){
+	  //Clear all previous values
+	  plotData.clear();
+	  curveData.clear();
+	  
+	  //Add all data to the mapping
+	  for(unsigned i = 1, xCol = columnToIndexMapping[xColumn.first], yCol = columnToIndexMapping[yColumn.first]; i < inputSize.Rows; i++){
+	    //Convert file results to double values
+	    xResult = Utilities::ConvertValue_Double(inputFile(i, xCol));
+	    yResult = Utilities::ConvertValue_Double(inputFile(i, yCol));
+
+	    //If errors did not result
+	    if(!xResult.error && !yResult.error){
+	      //Add data to appropriate list
+	      plotData[inputFile(i, xCol)].push_back(std::make_tuple(xResult.value, yResult.value));
+	    }
+	    
+	    //Update maximum curve count value
+	    if(plotData[inputFile(i, xCol)].size() > curveCount){
+	      curveCount = plotData[inputFile(i, xCol)].size();
+	    }
+	  }
+
+	  //Add all possible blank curves
+	  for(unsigned i = 0; i < curveCount; i++){
+	    curveData.push_back(std::vector<std::tuple<double, double>>{});
+	  }
+	  
+	  //For every unique value found
+	  for(unsigned i = 0; i < columnUniqueValues[xColumn.first].size(); i++){
+	    //For each possible curve count saved in the plot data
+	    for(unsigned j = 0; (j < curveCount) && (j < plotData[columnUniqueValues[xColumn.first][i]].size()); j++){
+	      //Copy the found tuple to the appropriate curve
+	      curveData[j].push_back(plotData[columnUniqueValues[xColumn.first][i]][j]);
+	    }
+	  }
+	  
+	  //Partition values for 3D plot
+	  for(auto const& zColumn : columnUniqueValues){
+
+	  }
+	}
+      }
     }
   }
   
