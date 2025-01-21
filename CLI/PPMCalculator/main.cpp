@@ -84,7 +84,7 @@ double CalculateCarrierRate(double sourceConcentration, double analyteConcentrat
 
 //Name:    CalculateAnalyteConcentration
 //Purpose: Perform a calculation to determine the necessary liquid volume of analyte for desired concentration. 
-//Input:   analyteVolume (double) - The carrier's total volume in Liters (L).
+//Input:   analyteVolume (double) - The analyte's total volume in Liters (L).
 //         analyteMolarMass (double) - The analyte's molar mass in grams per mol (g/mol).
 //         analyteDensity (double) - The analyte's density in grams per cubic centimeter (g/cm^3).
 //         carrierVolume (double) - The carrier's total volume in Liters (L).
@@ -95,7 +95,7 @@ double CalculateCarrierRate(double sourceConcentration, double analyteConcentrat
 double CalculateAnalyteConcentration(double analyteVolume, double analyteMolarMass, double analyteDensity, double carrierVolume, double carrierMolarMass, double carrierDensity){
   double analyteConcentration;
   
-  analyteConcentration = analyteVolume * analyteDensity * carrierMolarMass;
+  analyteConcentration = analyteVolume * analyteDensity * carrierMolarMass * 1E6;
   analyteConcentration /= carrierVolume * carrierDensity * analyteMolarMass;
   
   return analyteConcentration;
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]){
   cli.Add(MODULE_CALC_PUMP, std::vector<std::string>{"pump"}, std::vector<int>{DASH_STANDALONE_FLAG}, "Invoke the pump calculation submodule.");
   
   //Add desired flags to parser
-  cli.Add(ANALYTE_VOLUME, std::vector<std::string>{"av", "analyte_volume"}, std::vector<int>{DASH_SPACE_FLAG, DASH_DASH_SPACE_FLAG}, "The volume of the carrier gas in liters (L). Default is 1.2.");
+  cli.Add(ANALYTE_VOLUME, std::vector<std::string>{"av", "analyte_volume"}, std::vector<int>{DASH_SPACE_FLAG, DASH_DASH_SPACE_FLAG}, "The volume of the analyte in liters (L).");
   cli.Add(ANALYTE_MOLAR_MASS, std::vector<std::string>{"am", "analyte_molar_mass"}, std::vector<int>{DASH_SPACE_FLAG, DASH_DASH_SPACE_FLAG}, "The molar mass of the desired analyte in grams per mole (g/mol).");
   cli.Add(ANALYTE_DENSITY, std::vector<std::string>{"ad", "analyte_density"}, std::vector<int>{DASH_SPACE_FLAG, DASH_DASH_SPACE_FLAG}, "The density of the desired analyte in grams per cubic centimeter (g/cm^3).");
   cli.Add(ANALYTE_CONCENTRATION, std::vector<std::string>{"ac", "analyte_concentration"}, std::vector<int>{DASH_SPACE_FLAG, DASH_DASH_SPACE_FLAG}, "The concentration of the desired analyte in parts per million (ppm).");
