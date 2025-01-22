@@ -195,7 +195,7 @@ int main(int argc, char *argv[]){
     //Set bag failure code
     returnCode = ReturnCodes::BAG;
     
-    //If analyte cocentration, density, and molar mass are provided
+    //If analyte concentration, density, and molar mass are provided
     if(cli.Present(ANALYTE_DENSITY) && cli.Present(ANALYTE_MOLAR_MASS)){
       //Get the user-supplied numeric values
       analyteDensity = cli.GetNumeric(ANALYTE_DENSITY);

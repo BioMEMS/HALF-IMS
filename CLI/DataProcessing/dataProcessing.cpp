@@ -164,64 +164,117 @@ int main(int argc, char *argv[]){
     std::cout << "Plot Subtitle" << std::endl << constantParameters << std::endl << std::endl;
   }
 
+  std::vector<std::vector<std::string>> possiblePlots;
   std::map<std::string, std::vector<std::tuple<double, double>>> plotData;
+  std::map<std::string, std::vector<std::vector<std::string>>> plotNameParameters;
   std::vector<std::vector<std::tuple<double, double>>> curveData;
-  Utilities::ConvertedData xResult, yResult;
+  std::vector<std::string> curveLabel;
+  Utilities::ConvertedData xResult, yResult, zResult;
   unsigned curveCount = 0;
-  //For every column in the input
+
+  //For every column in the input file
   for(auto const& xColumn : columnUniqueValues){
 
-    //If the column has more than one value
+    //If column has more than one value
     if(columnUniqueValues[xColumn.first].size() > 1){
 
-      //For every column in the input
+      //Attempt to pair with every other possible column
       for(auto const& yColumn : columnUniqueValues){
 	
-	//If the X and Y values are not the same column
-	if(xColumn.first != yColumn.first){
-	  //Clear all previous values
-	  plotData.clear();
-	  curveData.clear();
-	  
-	  //Add all data to the mapping
-	  for(unsigned i = 1, xCol = columnToIndexMapping[xColumn.first], yCol = columnToIndexMapping[yColumn.first]; i < inputSize.Rows; i++){
-	    //Convert file results to double values
-	    xResult = Utilities::ConvertValue_Double(inputFile(i, xCol));
-	    yResult = Utilities::ConvertValue_Double(inputFile(i, yCol));
+	//So long as there is more than one value in the column and it is not the X-Column
+	if((columnUniqueValues[yColumn.first].size() > 1) && (xColumn.first != yColumn.first)){
 
-	    //If errors did not result
-	    if(!xResult.error && !yResult.error){
-	      //Add data to appropriate list
-	      plotData[inputFile(i, xCol)].push_back(std::make_tuple(xResult.value, yResult.value));
-	    }
-	    
-	    //Update maximum curve count value
-	    if(plotData[inputFile(i, xCol)].size() > curveCount){
-	      curveCount = plotData[inputFile(i, xCol)].size();
-	    }
-	  }
+	  //Add a two dimensional plot to the list
+	  possiblePlots.push_back(std::vector<std::string> { xColumn.first, yColumn.first });
 
-	  //Add all possible blank curves
-	  for(unsigned i = 0; i < curveCount; i++){
-	    curveData.push_back(std::vector<std::tuple<double, double>>{});
-	  }
-	  
-	  //For every unique value found
-	  for(unsigned i = 0; i < columnUniqueValues[xColumn.first].size(); i++){
-	    //For each possible curve count saved in the plot data
-	    for(unsigned j = 0; (j < curveCount) && (j < plotData[columnUniqueValues[xColumn.first][i]].size()); j++){
-	      //Copy the found tuple to the appropriate curve
-	      curveData[j].push_back(plotData[columnUniqueValues[xColumn.first][i]][j]);
-	    }
-	  }
-	  
-	  //Partition values for 3D plot
+	  //Attempt to pair X- and Y-columns with every other possible column
 	  for(auto const& zColumn : columnUniqueValues){
-
+	    //So long as there is more than one value in the column and it is not the X- or Y-Columns
+	    if((columnUniqueValues[zColumn.first].size() > 1) && (xColumn.first != zColumn.first) && (yColumn.first != zColumn.first)){
+	      
+	      //Add a three dimensional plot to the list
+	      possiblePlots.push_back(std::vector<std::string> {xColumn.first, yColumn.first, zColumn.first});
+	    }
 	  }
 	}
       }
     }
+  }
+
+  //For every possible plot
+  for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++){
+    //Clear all previous values
+    plotData.clear();
+    curveData.clear();
+    plotNameParameters.clear();
+ 
+    //Convert string to numerical index of known columns
+    xCol = columnToIndexMapping[possiblePlots[plotId][0]];
+    yCol = columnToIndexMapping[possiblePlots[plotId][1]];
+
+    //If more than two dimensions
+    if(possiblePlots[plotId].size() > 2){
+      //Convert third column
+      zCol = columnToIndexMapping[possiblePlots[plotId][2]];
+    }
+    else{
+      //Match column to second as an error condition
+      zCol = yCol;
+    }
+    
+    for(unsigned i = 1; i < inputSize.Rows; i++){
+      xResult = Utilities::ConvertValue_Double(inputFile(i, xCol));
+      yResult = Utilities::ConvertValue_Double(inputFile(i, yCol));
+      zResult = Utilities::ConvertValue_Double(inputFile(i, zCol));
+      
+      //If errors did not result
+      if(!xResult.error && !yResult.error && !zResult.error){
+	//If more than 
+	if(zCol != yCol){
+	  //
+	}
+	else{
+	  //Add data to appropriate list
+	  plotData[inputFile(i, xCol)].push_back(std::make_tuple(xResult.value, yResult.value));
+	  
+	  //Add blank list of parameters
+	  plotNameParameters[inputFile(i, xCol)].push_back(std::vector<std::string>{});
+	  
+	  //Copy values in columns
+	  for(unsigned j = 0, currentVector = plotNameParameters[inputFile(i, xCol)].size() - 1; j < inputSize.Columns; j++){
+	    //If value changes within file
+	    if((j != xCol) && (j != yCol) && (columnUniqueValues[inputFile(0, j)].size() > 1)){
+	      //Add it to the list for curve names
+	      plotNameParameters[inputFile(i, xCol)][currentVector].push_back(inputFile(i, j));
+	    }
+	    else{
+	      //Add a blank string to keep indexing similar
+	      plotNameParameters[inputFile(i, xCol)][currentVector].push_back("");
+	    }
+	  }
+	  
+	  //Update maximum curve count value
+	  if(plotData[inputFile(i, xCol)].size() > curveCount){
+	    curveCount = plotData[inputFile(i, xCol)].size();
+	  }
+	}
+      }
+    }
+
+    //Add all possible blank curves
+    for(unsigned i = 0; i < curveCount; i++){
+      curveData.push_back(std::vector<std::tuple<double, double>>{});
+    }
+    
+    //For every unique value found
+    for(unsigned i = 0; i < columnUniqueValues[possiblePlots[plotId][0]].size(); i++){
+      //For each possible curve count saved in the plot data
+      for(unsigned j = 0; (j < curveCount) && (j < plotData[columnUniqueValues[possiblePlots[plotId][0]][i]].size()); j++){
+	//Copy the found tuple to the appropriate curve
+	curveData[j].push_back(plotData[columnUniqueValues[possiblePlots[plotId][0]][i]][j]);
+      }
+    }
+
   }
   
   return 0;
