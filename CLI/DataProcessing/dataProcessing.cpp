@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <map>
 #include <limits>
+#include <vector>
+#include <cstdio>
 
 //HALF-IMS libraries
 #include "Filter.h"
@@ -92,7 +94,7 @@ int main(int argc, char *argv[]){
 
   //Get input file size
   Utilities::Limits inputSize = inputFile.Size();
-  
+    
   //Store a mapping of column header to index
   std::map <std::string, unsigned> columnToIndexMapping;
   for(unsigned i = 0; i < inputSize.Columns; i++){
@@ -165,11 +167,11 @@ int main(int argc, char *argv[]){
   }
 
   std::vector<std::vector<std::string>> possiblePlots;
-  std::map<std::string, std::vector<std::tuple<double, double>>> plotData;
+  std::map<std::string, std::vector<std::pair<double, double>>> plotData;
   std::map<std::string, std::vector<std::vector<std::string>>> plotNameParameters;
-  std::vector<std::vector<std::tuple<double, double>>> curveData;
-  std::vector<std::string> curveLabel;
+  std::vector<std::vector<std::pair<double, double>>> curveData;
   Utilities::ConvertedData xResult, yResult, zResult;
+  std::string graphTitle;
   unsigned curveCount = 0;
 
   //For every column in the input file
@@ -203,6 +205,19 @@ int main(int argc, char *argv[]){
 
   //For every possible plot
   for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++){
+    //Build graph title string
+    graphTitle = "";
+    for(unsigned j = possiblePlots[plotId].size() - 1; j > 0; j--){
+      graphTitle += possiblePlots[plotId][j] + " vs. ";
+    }
+    graphTitle += possiblePlots[plotId][0];
+    
+    //If verbose operation was requested
+    if(verbose){
+      //Print out columns being graphed
+      std::cout << std::endl << "Generating Graph: " << graphTitle << " ";
+    }
+    
     //Clear all previous values
     plotData.clear();
     curveData.clear();
@@ -229,13 +244,13 @@ int main(int argc, char *argv[]){
       
       //If errors did not result
       if(!xResult.error && !yResult.error && !zResult.error){
-	//If more than 
+	//If more than two dimensions
 	if(zCol != yCol){
 	  //
 	}
 	else{
 	  //Add data to appropriate list
-	  plotData[inputFile(i, xCol)].push_back(std::make_tuple(xResult.value, yResult.value));
+	  plotData[inputFile(i, xCol)].emplace_back(xResult.value, yResult.value);
 	  
 	  //Add blank list of parameters
 	  plotNameParameters[inputFile(i, xCol)].push_back(std::vector<std::string>{});
@@ -261,21 +276,125 @@ int main(int argc, char *argv[]){
       }
     }
 
-    //Add all possible blank curves
-    for(unsigned i = 0; i < curveCount; i++){
-      curveData.push_back(std::vector<std::tuple<double, double>>{});
+    //If more than two dimensions
+    if(zCol != yCol){
+      //
+    }
+    else{
+      //Declare variable to hold previous parameter value for comparison
+      std::string curveLabel;
+      //Declare variable to hold all X values
+      std::vector<std::string> plotXValues, curveLabels;
+      //Declare variable to hold indication if the parameter string is stable for a curve
+      std::vector<bool> parametersTable;
+      
+      //Get all keys of the mapping 
+      for(auto const& xValue : plotNameParameters){
+	plotXValues.push_back(xValue.first);
+      }
+
+      for(unsigned j = 0; j < inputSize.Columns; j++){
+	parametersTable.push_back(true);
+      }
+      
+      //Add all possible blank curves
+      for(unsigned i = 0; i < curveCount; i++){
+	curveData.push_back(std::vector<std::pair<double, double>>{});
+
+	//Reset the parameter flags
+	for(unsigned j = 0; j < parametersTable.size(); j++){
+	  parametersTable[j] = true;
+	}
+	
+	//Reduce plot name parameters to only unchanging values for every curve
+	for(unsigned paramIndex = 0; paramIndex < inputSize.Columns; paramIndex++){
+
+	  //Determine which parameter columns are unchanging
+	  for(unsigned j = 0; j < plotXValues.size(); j++){
+	    //Calculate if current parameter is equivalent to first parameter and not blank
+	    parametersTable[paramIndex] = (i < plotNameParameters[plotXValues[j]].size()) && parametersTable[paramIndex] && (plotNameParameters[plotXValues[j]][0][paramIndex] == plotNameParameters[plotXValues[j]][i][paramIndex]) && (plotNameParameters[plotXValues[j]][i][paramIndex] != "");
+	  }
+	}
+
+	//Build the curve label string and save it for later
+	curveLabel = "";
+	for(unsigned j = 0; j < inputSize.Columns; j++){
+	  //If first stable parameter
+	  if(parametersTable[j] && (curveLabel == "")){
+	    //Start curve label
+	    curveLabel = plotNameParameters[plotXValues[0]][0][j];
+	  }
+	  //If not first stable parameter
+	  else if(parametersTable[j]){
+	    //Append curve label
+	    curveLabel += ", " + plotNameParameters[plotXValues[0]][0][j];
+	  }
+	}
+
+	//If curve label is still blank
+	if(curveLabel == ""){
+	  //Create generic curve label name
+	  curveLabel = "Curve " + std::to_string(i);
+	}
+
+	if(verbose){
+	  std::cout << " '" << curveLabel << "',";
+	}
+
+	//Save generated curve label
+	curveLabels.push_back(curveLabel);
+	
+      }
+      
+      //For every unique value found
+      for(unsigned i = 0; i < columnUniqueValues[possiblePlots[plotId][0]].size(); i++){
+	//For each possible curve count saved in the plot data
+	for(unsigned j = 0; (j < curveCount) && (j < plotData[columnUniqueValues[possiblePlots[plotId][0]][i]].size()); j++){
+	  //Copy the found tuple to the appropriate curve
+	  curveData[j].push_back(plotData[columnUniqueValues[possiblePlots[plotId][0]][i]][j]);
+	}
+      }
+      
+      //Declare GNUPlot object
+      Gnuplot gp;
+      //Instantiate string to hold one line plot string
+      std::string gpPlotLine = "";
+
+      //Send GNU Plot parameters for a 2D plot
+      gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
+      gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
+      gp << "set key reverse Left outside" << std::endl;
+      gp << "set grid" << std::endl;
+      gp << "set style data linespoints" << std::endl;
+      gp << "set key title \"Legend\"" << std::endl;
+      gp << "set title \"" << graphTitle << "\"" << std::endl;
+      gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
+      gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+
+      //Build the plot string one-liner
+      for(unsigned i = 0; i < curveData.size(); i++){
+	if(curveData[i].size() > 0){
+	  gpPlotLine += "plot '-' with lines title '" + curveLabels[i] + "', ";
+	}
+      }
+      
+      //Send GNU Plot line
+      gp << gpPlotLine.substr(0, gpPlotLine.length()-2) << std::endl;
+
+      //Send GNU Plot required data
+      for(unsigned i = 0; i < curveData.size(); i++){
+	if(curveData[i].size() > 0){
+      	  gp.send1d(curveData[i]);
+	}
+      }
+      
     }
     
-    //For every unique value found
-    for(unsigned i = 0; i < columnUniqueValues[possiblePlots[plotId][0]].size(); i++){
-      //For each possible curve count saved in the plot data
-      for(unsigned j = 0; (j < curveCount) && (j < plotData[columnUniqueValues[possiblePlots[plotId][0]][i]].size()); j++){
-	//Copy the found tuple to the appropriate curve
-	curveData[j].push_back(plotData[columnUniqueValues[possiblePlots[plotId][0]][i]][j]);
-      }
-    }
-
   }
-  
+
+  //Account for some formatting issues if in verbose mode
+  if(verbose){
+    std::cout << std::endl;
+  }
   return 0;
 }

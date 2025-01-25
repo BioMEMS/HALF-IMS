@@ -2,7 +2,9 @@
 COMPILER=g++
 #Declare compiler flags
 CPPFLAGS=-ggdb -std=c++17 -Wall -Wextra
-
+#Declare linker flags
+LDFLAGS=$(CPPFLAGS)
+LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 #Declare output file
 OUTFILE=processing.x
 
@@ -32,7 +34,7 @@ all:
 	make labview-processing OUTFILE=simion-processing.x
 
 data-processing: dataProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
+	$(COMPILER) $(LDFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
 
 labview-processing: labViewProcessing.cpp $(OBJTGT)
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
@@ -42,11 +44,12 @@ simion-processing: simionProcessing.cpp $(OBJTGT)
 
 %.o: %.cpp %.h
 	@mkdir -p $(OUTDIRECTORY)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) -c $< -o $(OUTDIRECTORY)$(notdir $@) 
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) -c $< -o $@
+	@cp $@ $(OUTDIRECTORY)$(notdir $@)
 
 .PHONY: clean
 clean:
-	@rm *~ $(OUTDIRECTORY)*
+	rm *~ $(OUTDIRECTORY)* $(OBJTGT)
 
 .PHONY: test
 test:
