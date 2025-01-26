@@ -18,7 +18,18 @@
 //Pre-processor Variables
 #define OUTPUT_DIRECTORY "output"
 #define INPUT_FILE "input"
-#define HELP_NAME "help"
+#define PLOT_COLUMNS "columns"
+
+//Check if item exists in the provided list
+bool CheckList(std::vector<std::string> list, std::string item){
+  bool flag = (list.size() == 0);
+
+  for(unsigned i = 0; i < list.size(); i++){
+    flag |= (list[i] == item);
+  }
+  
+  return flag;
+}
 
 int main(int argc, char *argv[]){
 
@@ -39,6 +50,7 @@ int main(int argc, char *argv[]){
   cli.Add(Utilities::CLIParser::VERBOSE, std::vector<std::string>{"v", "verbose"}, std::vector<int>{flagTypeThree}, "Trigger verbose program output.");
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input CSV file to process.");
   cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
+  cli.Add(PLOT_COLUMNS, std::vector<std::string>{"c", "columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of columns to plot.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -53,6 +65,8 @@ int main(int argc, char *argv[]){
   
   //Declare default output as current directory
   std::string input, output = "."; //Might break on Windows? Use Filesystem library?
+  std::vector<std::string> columnWhitelist;
+  
   //If the output flag is present
   if(cli.Present(OUTPUT_DIRECTORY)){
     //Extract necessary arguments
@@ -80,13 +94,18 @@ int main(int argc, char *argv[]){
     abort |= true;
   }
 
-  
   //If abort triggered
   if(abort){
     //Stop
     return 1;
   }
 
+  //If a list was provided
+  if(cli.Present(PLOT_COLUMNS)){
+    //Update the whitelist
+    columnWhitelist = cli.GetList(PLOT_COLUMNS);
+  }
+  
   //Open input file
   CommaSeparatedValues inputFile;
   inputFile.Open(input);
@@ -173,26 +192,34 @@ int main(int argc, char *argv[]){
   Utilities::ConvertedData xResult, yResult, zResult;
   std::string graphTitle;
   unsigned curveCount = 0;
-
+  std::vector<bool> plotInclude = {false, false, false};
+  
   //For every column in the input file
   for(auto const& xColumn : columnUniqueValues){
+    //Calculate X-column flag
+    plotInclude[0] = CheckList(columnWhitelist, xColumn.first);
 
     //If column has more than one value
-    if(columnUniqueValues[xColumn.first].size() > 1){
-
+    if(plotInclude[0] && (columnUniqueValues[xColumn.first].size() > 1)){
+      
       //Attempt to pair with every other possible column
       for(auto const& yColumn : columnUniqueValues){
-	
+	//Calcualte Y-column flag
+	plotInclude[1] = CheckList(columnWhitelist, yColumn.first);
+
 	//So long as there is more than one value in the column and it is not the X-Column
-	if((columnUniqueValues[yColumn.first].size() > 1) && (xColumn.first != yColumn.first)){
+	if(plotInclude[1] && (columnUniqueValues[yColumn.first].size() > 1) && (xColumn.first != yColumn.first)){
 
 	  //Add a two dimensional plot to the list
 	  possiblePlots.push_back(std::vector<std::string> { xColumn.first, yColumn.first });
 
 	  //Attempt to pair X- and Y-columns with every other possible column
 	  for(auto const& zColumn : columnUniqueValues){
+	    //Reset Z-column flag
+	    plotInclude[2] = CheckList(columnWhitelist, zColumn.first);
+
 	    //So long as there is more than one value in the column and it is not the X- or Y-Columns
-	    if((columnUniqueValues[zColumn.first].size() > 1) && (xColumn.first != zColumn.first) && (yColumn.first != zColumn.first)){
+	    if(plotInclude[2] && (columnUniqueValues[zColumn.first].size() > 1) && (xColumn.first != zColumn.first) && (yColumn.first != zColumn.first)){
 	      
 	      //Add a three dimensional plot to the list
 	      possiblePlots.push_back(std::vector<std::string> {xColumn.first, yColumn.first, zColumn.first});
@@ -337,10 +364,6 @@ int main(int argc, char *argv[]){
 	  curveLabel = "Curve " + std::to_string(i);
 	}
 
-	if(verbose){
-	  std::cout << " '" << curveLabel << "',";
-	}
-
 	//Save generated curve label
 	curveLabels.push_back(curveLabel);
 	
@@ -354,39 +377,49 @@ int main(int argc, char *argv[]){
 	  curveData[j].push_back(plotData[columnUniqueValues[possiblePlots[plotId][0]][i]][j]);
 	}
       }
+
+      for(unsigned i = 0; verbose && i < curveData.size(); i++){
+	if(curveData[i].size() > 0){
+	  std::cout << " '" << curveLabels[i] << "',";
+	}
+      }
       
       //Declare GNUPlot object
       Gnuplot gp;
       //Instantiate string to hold one line plot string
       std::string gpPlotLine = "";
-
+      
       //Send GNU Plot parameters for a 2D plot
+      gp << "unset warnings" << std::endl;
       gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
       gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
       gp << "set key reverse Left outside" << std::endl;
       gp << "set grid" << std::endl;
       gp << "set style data linespoints" << std::endl;
-      gp << "set key title \"Legend\"" << std::endl;
-      gp << "set title \"" << graphTitle << "\"" << std::endl;
+      gp << "set key title \"Legend\" font \",20\"" << std::endl;
+      gp << "set key font \",20\"" << std::endl;
+      gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
       gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
       gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
-
+      
       //Build the plot string one-liner
       for(unsigned i = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
-	  gpPlotLine += "plot '-' with lines title '" + curveLabels[i] + "', ";
+	  //Utilize temporary file for graphing
+	  gp << "plot " << gp.file1d(curveData[i]) << " with lines title '" + curveLabels[i] + "'";
+	  if(i < (curveData.size() - 1)){
+	    gp <<", ";
+	  }
+	  else{
+	    gp << std::endl;
+	  }
 	}
       }
       
       //Send GNU Plot line
-      gp << gpPlotLine.substr(0, gpPlotLine.length()-2) << std::endl;
-
-      //Send GNU Plot required data
-      for(unsigned i = 0; i < curveData.size(); i++){
-	if(curveData[i].size() > 0){
-      	  gp.send1d(curveData[i]);
-	}
-      }
+      //gp << gpPlotLine.substr(0, gpPlotLine.length()-2) << std::endl;
+      //Send GNU plot data
+      //gp.send1d(gpPlotData);
       
     }
     
