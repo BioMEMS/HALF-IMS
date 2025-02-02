@@ -14,22 +14,12 @@
 #include "CommaSeparatedValues.h"
 #include "Checker.h"
 #include "gnuplot-iostream.h"
+#include "Utilities.h"
 
 //Pre-processor Variables
 #define OUTPUT_DIRECTORY "output"
 #define INPUT_FILE "input"
 #define PLOT_COLUMNS "columns"
-
-//Check if item exists in the provided list
-bool CheckList(std::vector<std::string> list, std::string item){
-  bool flag = (list.size() == 0);
-
-  for(unsigned i = 0; i < list.size(); i++){
-    flag |= (list[i] == item);
-  }
-  
-  return flag;
-}
 
 int main(int argc, char *argv[]){
 
@@ -193,11 +183,12 @@ int main(int argc, char *argv[]){
   std::string graphTitle;
   unsigned curveCount = 0;
   std::vector<bool> plotInclude = {false, false, false};
+  bool whiteListEmpty = (columnWhitelist.size() == 0);
   
   //For every column in the input file
   for(auto const& xColumn : columnUniqueValues){
     //Calculate X-column flag
-    plotInclude[0] = CheckList(columnWhitelist, xColumn.first);
+    plotInclude[0] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, xColumn.first);
 
     //If column has more than one value
     if(plotInclude[0] && (columnUniqueValues[xColumn.first].size() > 1)){
@@ -205,7 +196,7 @@ int main(int argc, char *argv[]){
       //Attempt to pair with every other possible column
       for(auto const& yColumn : columnUniqueValues){
 	//Calcualte Y-column flag
-	plotInclude[1] = CheckList(columnWhitelist, yColumn.first);
+	plotInclude[1] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, yColumn.first);
 
 	//So long as there is more than one value in the column and it is not the X-Column
 	if(plotInclude[1] && (columnUniqueValues[yColumn.first].size() > 1) && (xColumn.first != yColumn.first)){
@@ -216,7 +207,7 @@ int main(int argc, char *argv[]){
 	  //Attempt to pair X- and Y-columns with every other possible column
 	  for(auto const& zColumn : columnUniqueValues){
 	    //Reset Z-column flag
-	    plotInclude[2] = CheckList(columnWhitelist, zColumn.first);
+	    plotInclude[2] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, zColumn.first);
 
 	    //So long as there is more than one value in the column and it is not the X- or Y-Columns
 	    if(plotInclude[2] && (columnUniqueValues[zColumn.first].size() > 1) && (xColumn.first != zColumn.first) && (yColumn.first != zColumn.first)){
@@ -231,7 +222,7 @@ int main(int argc, char *argv[]){
   }
 
   //For every possible plot
-  for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++){
+  for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++, curveCount = 0){
     //Build graph title string
     graphTitle = "";
     for(unsigned j = possiblePlots[plotId].size() - 1; j > 0; j--){
@@ -303,9 +294,24 @@ int main(int argc, char *argv[]){
       }
     }
 
+    // For every X-value in the plot data
+    double nan = std::numeric_limits<double>::quiet_NaN();
+    for(auto const& value : plotData){
+      // Convert X-value to a numeric 
+      xResult = Utilities::ConvertValue_Double(value.first);
+      // Add blank values to ensure that each curve has values at that point
+      for(; plotData[value.first].size() < curveCount;){
+	plotData[value.first].emplace_back(xResult.value, nan);
+      }
+    }
+    
     //If more than two dimensions
     if(zCol != yCol){
-      //
+
+      //Send newline to format verbose mode correctly
+      if(verbose){
+	std::cout << std::endl;
+      }
     }
     else{
       //Declare variable to hold previous parameter value for comparison
@@ -349,7 +355,7 @@ int main(int argc, char *argv[]){
 	  //If first stable parameter
 	  if(parametersTable[j] && (curveLabel == "")){
 	    //Start curve label
-	    curveLabel = plotNameParameters[plotXValues[0]][0][j];
+	    curveLabel = inputFile(0,j) + " " + plotNameParameters[plotXValues[0]][0][j];
 	  }
 	  //If not first stable parameter
 	  else if(parametersTable[j]){
@@ -378,10 +384,8 @@ int main(int argc, char *argv[]){
 	}
       }
 
-      for(unsigned i = 0; verbose && i < curveData.size(); i++){
-	if(curveData[i].size() > 0){
-	  std::cout << " '" << curveLabels[i] << "',";
-	}
+      if(verbose){
+	std::cout << " with " << curveLabels.size() << " curves." << std::endl;
       }
       
       //Declare GNUPlot object
@@ -390,7 +394,9 @@ int main(int argc, char *argv[]){
       std::string gpPlotLine = "";
       
       //Send GNU Plot parameters for a 2D plot
+      gp << "set macros" << std::endl << "MATLAB = \"(0  0.0 0.0 0.5, 1  0.0 0.0 1.0, 2  0.0 0.5 1.0, 3  0.0 1.0 1.0, 4  0.5 1.0 0.5, 5  1.0 1.0 0.0, 6  1.0 0.5 0.0, 7  1.0 0.0 0.0, 8  0.5 0.0 0.0)\"" << std::endl;
       gp << "unset warnings" << std::endl;
+      gp << "set datafile missing 'nan'" << std::endl;
       gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
       gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
       gp << "set key reverse Left outside" << std::endl;
@@ -398,15 +404,23 @@ int main(int argc, char *argv[]){
       gp << "set style data linespoints" << std::endl;
       gp << "set key title \"Legend\" font \",20\"" << std::endl;
       gp << "set key font \",20\"" << std::endl;
+      gp << "set key columns 1" << std::endl;
       gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
       gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
       gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+      gp << "plot ";
+
+      // If only one curve
+      if(curveCount == 1){
+	// Ignore any discovered label
+	curveLabels[0] = "Data";
+      }
       
       //Build the plot string one-liner
       for(unsigned i = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
 	  //Utilize temporary file for graphing
-	  gp << "plot " << gp.file1d(curveData[i]) << " with lines title '" + curveLabels[i] + "'";
+	  gp << gp.file1d(curveData[i]) << " with linespoints title '" + curveLabels[i] + "'";
 	  if(i < (curveData.size() - 1)){
 	    gp <<", ";
 	  }
@@ -423,11 +437,6 @@ int main(int argc, char *argv[]){
       
     }
     
-  }
-
-  //Account for some formatting issues if in verbose mode
-  if(verbose){
-    std::cout << std::endl;
   }
   return 0;
 }

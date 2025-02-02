@@ -43,7 +43,17 @@ namespace Utilities{
   double CalculateCurrent(double voltage);
 
   //Check presence of item in list
-  bool ContainsItem(std::vector<std::string> list, std::string item);
+  template <typename T> bool ContainsItem(std::vector<T> list, T item){
+    
+    bool present = false;
+    
+    for(unsigned i = 0; !present && (i < list.size()); i++){
+      present |= (list[i] == item);
+    }
+    
+    return present;
+  }
+  
 }
 
 #endif
