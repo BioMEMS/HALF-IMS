@@ -21,6 +21,33 @@
 #define INPUT_FILE "input"
 #define PLOT_COLUMNS "columns"
 
+//Parse out the units for the provided string
+std::string ParseUnits(std::string parameter){
+  std::string units = "";
+  int start = -1, stop = -1;
+
+  //For every character in the string or until start and stop values are set
+  for(unsigned i = (parameter.length() - 1); ((stop < 0) || (start < 0)) && (i > 0); i--){
+    //If current character is a closing parenthesis
+    if(parameter[i] == ')'){
+      stop = i;
+    }
+    //If current character is an opening parenthesis
+    else if(parameter[i] == '('){
+      start = i;
+    }
+  }
+  
+  //If stop is after start and both are not equal
+  if((stop > start) && (start != stop)){
+    //Slice off the discovered unit portion
+    units = " " + parameter.substr(start + 1, stop - start - 1);
+  }
+
+  //Return string
+  return units;
+}
+
 int main(int argc, char *argv[]){
 
   //Instantiate abort flag
@@ -106,8 +133,12 @@ int main(int argc, char *argv[]){
     
   //Store a mapping of column header to index
   std::map <std::string, unsigned> columnToIndexMapping;
+  std::vector<std::string> columnUnitsMapping;
   for(unsigned i = 0; i < inputSize.Columns; i++){
     columnToIndexMapping[inputFile(0, i)] = i;
+
+    //Parse out units and add to list
+    columnUnitsMapping.push_back(ParseUnits(inputFile(0, i)));
 
     //If the value was too large for integer value
     if(((int)columnToIndexMapping[inputFile(0, i)]) < 0){
@@ -222,7 +253,7 @@ int main(int argc, char *argv[]){
   }
 
   //For every possible plot
-  for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++, curveCount = 0){
+  for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++){
     //Build graph title string
     graphTitle = "";
     for(unsigned j = possiblePlots[plotId].size() - 1; j > 0; j--){
@@ -240,7 +271,8 @@ int main(int argc, char *argv[]){
     plotData.clear();
     curveData.clear();
     plotNameParameters.clear();
- 
+    curveCount = 0;
+      
     //Convert string to numerical index of known columns
     xCol = columnToIndexMapping[possiblePlots[plotId][0]];
     yCol = columnToIndexMapping[possiblePlots[plotId][1]];
@@ -254,7 +286,8 @@ int main(int argc, char *argv[]){
       //Match column to second as an error condition
       zCol = yCol;
     }
-    
+
+    //For every data row in the output file
     for(unsigned i = 1; i < inputSize.Rows; i++){
       xResult = Utilities::ConvertValue_Double(inputFile(i, xCol));
       yResult = Utilities::ConvertValue_Double(inputFile(i, yCol));
@@ -293,7 +326,7 @@ int main(int argc, char *argv[]){
 	}
       }
     }
-
+    
     // For every X-value in the plot data
     double nan = std::numeric_limits<double>::quiet_NaN();
     for(auto const& value : plotData){
@@ -327,8 +360,39 @@ int main(int argc, char *argv[]){
       }
 
       for(unsigned j = 0; j < inputSize.Columns; j++){
+	//Initialize parameter table flags
 	parametersTable.push_back(true);
       }
+      
+      std::vector<std::string> xValList;
+      for(auto const& it : plotNameParameters){
+	xValList.push_back(it.first);
+      }
+
+      /*
+      //For every possible blank curve
+      for(unsigned i = 0; plotXValues.size() > 0 && i < curveCount; i++){
+	//Reset the parameter flags
+	for(unsigned j = 0; j < parametersTable.size(); j++){
+	  parametersTable[j] = true;
+	}	
+	
+	//For every possible X-value in the curve
+	for(unsigned j = 1; j < plotXValues.size(); j++){
+	  //If there is curve data for the X-value
+	  if(i < plotNameParameters[plotXValues[j]].size()){
+	    //For every parameter value found
+	    for(unsigned k = 0; k < plotNameParameters[plotXValues[j]][i].size(); k++){
+	      //Do logic on plotNameParameters[plotXValues[j]][i][k]
+	      //Determine which parameters should be used for the label
+	      parametersTable[k] = parametersTable[k] && (plotNameParameters[plotXValues[0]][i][k] == plotNameParameters[plotXValues[j]][i][k]) 
+	    }
+	  }
+	}
+
+	//Build curve label string
+      }
+      */
       
       //Add all possible blank curves
       for(unsigned i = 0; i < curveCount; i++){
@@ -343,9 +407,11 @@ int main(int argc, char *argv[]){
 	for(unsigned paramIndex = 0; paramIndex < inputSize.Columns; paramIndex++){
 
 	  //Determine which parameter columns are unchanging
-	  for(unsigned j = 0; j < plotXValues.size(); j++){
+	  for(unsigned j = 1; j < plotXValues.size(); j++){
 	    //Calculate if current parameter is equivalent to first parameter and not blank
-	    parametersTable[paramIndex] = (i < plotNameParameters[plotXValues[j]].size()) && parametersTable[paramIndex] && (plotNameParameters[plotXValues[j]][0][paramIndex] == plotNameParameters[plotXValues[j]][i][paramIndex]) && (plotNameParameters[plotXValues[j]][i][paramIndex] != "");
+	    parametersTable[paramIndex] = parametersTable[paramIndex] && (i < plotNameParameters[plotXValues[j]].size());
+	    parametersTable[paramIndex] = parametersTable[paramIndex] && (plotNameParameters[plotXValues[0]][i][paramIndex] == plotNameParameters[plotXValues[j]][i][paramIndex]);
+	    parametersTable[paramIndex] = parametersTable[paramIndex] && (plotNameParameters[plotXValues[j]][i][paramIndex] != "");
 	  }
 	}
 
@@ -355,12 +421,12 @@ int main(int argc, char *argv[]){
 	  //If first stable parameter
 	  if(parametersTable[j] && (curveLabel == "")){
 	    //Start curve label
-	    curveLabel = inputFile(0,j) + " " + plotNameParameters[plotXValues[0]][0][j];
+	    curveLabel = plotNameParameters[plotXValues[0]][i][j] + columnUnitsMapping[j];
 	  }
 	  //If not first stable parameter
 	  else if(parametersTable[j]){
 	    //Append curve label
-	    curveLabel += ", " + plotNameParameters[plotXValues[0]][0][j];
+	    curveLabel += ", " + plotNameParameters[plotXValues[0]][i][j] + columnUnitsMapping[j];
 	  }
 	}
 
@@ -404,7 +470,15 @@ int main(int argc, char *argv[]){
       gp << "set style data linespoints" << std::endl;
       gp << "set key title \"Legend\" font \",20\"" << std::endl;
       gp << "set key font \",20\"" << std::endl;
-      gp << "set key columns 1" << std::endl;
+      //If a large amount of curves
+      if(curveCount > 31){
+	//Allow two columns
+	gp << "set key columns 2" << std::endl;
+      }
+      else{
+	//Only have one column
+	gp << "set key columns 1" << std::endl;
+      }
       gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
       gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
       gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
