@@ -29,7 +29,7 @@ OBJTGT=$(SRCFILES:.cpp=.o)
 OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 
 all: 
-	make peak-processing OUTFILE=peak-processing.x
+	make data-processing OUTFILE=data-processing.x
 	make labview-processing OUTFILE=labview-processing.x
 	make labview-processing OUTFILE=simion-processing.x
 
