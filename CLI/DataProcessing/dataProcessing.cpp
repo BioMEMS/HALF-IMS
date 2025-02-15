@@ -207,9 +207,9 @@ int main(int argc, char *argv[]){
   }
 
   std::vector<std::vector<std::string>> possiblePlots;
-  std::map<std::string, std::vector<std::pair<double, double>>> plotData;
+  std::map<std::string, std::vector<std::tuple<double, double, double>>> plotData;
   std::map<std::string, std::vector<std::vector<std::string>>> plotNameParameters;
-  std::vector<std::vector<std::pair<double, double>>> curveData;
+  std::vector<std::vector<std::tuple<double, double, double>>> curveData;
   Utilities::ConvertedData xResult, yResult, zResult;
   std::string graphTitle;
   unsigned curveCount = 0;
@@ -297,11 +297,12 @@ int main(int argc, char *argv[]){
       if(!xResult.error && !yResult.error && !zResult.error){
 	//If more than two dimensions
 	if(zCol != yCol){
-	  //
+	  // Assume only one curve for the heatmap
+	  plotData[possiblePlots[plotId][2]].emplace_back(xResult.value, yResult.value, zResult.value);
 	}
 	else{
 	  //Add data to appropriate list
-	  plotData[inputFile(i, xCol)].emplace_back(xResult.value, yResult.value);
+	  plotData[inputFile(i, xCol)].emplace_back(xResult.value, yResult.value, zResult.value);
 	  
 	  //Add blank list of parameters
 	  plotNameParameters[inputFile(i, xCol)].push_back(std::vector<std::string>{});
@@ -334,17 +335,65 @@ int main(int argc, char *argv[]){
       xResult = Utilities::ConvertValue_Double(value.first);
       // Add blank values to ensure that each curve has values at that point
       for(; plotData[value.first].size() < curveCount;){
-	plotData[value.first].emplace_back(xResult.value, nan);
+	plotData[value.first].emplace_back(xResult.value, nan, nan);
       }
     }
+
+          
+    //Declare GNUPlot object
+    Gnuplot gp;
+    //Instantiate string to hold one line plot string
+    std::string gpPlotLine = "";
+
+    gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
+    gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
+    gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
+    gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+    gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
     
     //If more than two dimensions
     if(zCol != yCol){
+      double minXVal = std::numeric_limits<double>::max(), maxXVal = std::numeric_limits<double>::min(), minYVal = std::numeric_limits<double>::max(), maxYVal = std::numeric_limits<double>::min(), curVal;
 
-      //Send newline to format verbose mode correctly
-      if(verbose){
-	std::cout << std::endl;
+      // Determine the minimum and maximum values for the X- and Y-axis.
+      for(unsigned i = 0; i < plotData[possiblePlots[plotId][2]].size(); i++){
+
+	// Update minimum and maximum if the value exceeds the stored
+	curVal = std::get<0>(plotData[possiblePlots[plotId][2]][i]);
+	if(curVal > maxXVal){
+	  maxXVal = curVal;
+	}
+	
+	if(curVal < minXVal){
+	  minXVal = curVal;
+	}
+
+	// Update minimum and maximum if the value exceeds the stored
+	curVal = std::get<1>(plotData[possiblePlots[plotId][2]][i]);
+	if(curVal > maxYVal){
+	  maxYVal = curVal;
+	}
+
+	if(curVal < minYVal){
+	  minYVal = curVal;
+	}
+	
       }
+      
+      // Generate a MATLAB color scheme macro
+      gp << "set macros" << std::endl << "MATLAB = \"defined (0  0.0 0.0 0.5, 1  0.0 0.0 1.0, 2  0.0 0.5 1.0, 3  0.0 1.0 1.0, 4  0.5 1.0 0.5, 5  1.0 1.0 0.0, 6  1.0 0.5 0.0, 7  1.0 0.0 0.0, 8  0.5 0.0 0.0)\"" << std::endl;
+      gp << "set style data linespoints" << std::endl;
+      gp << "set view map" << std::endl;
+      gp << "set hidden3d" << std::endl;
+      gp << "set dgrid3d 50,50 qnorm 2" << std::endl;
+      gp << "set pm3d interpolate 4,4" << std::endl;
+      //gp << "set palette @MATLAB maxcolors 10" << std::endl;
+      gp << "set palette @MATLAB" << std::endl;
+      gp << "set cblabel \"" << possiblePlots[plotId][2] << "\"" << std::endl;
+      gp << "set xrange [" << std::to_string(minXVal) << ":" << std::to_string(maxXVal)  << "]" << std::endl;
+      gp << "set yrange [" << std::to_string(minYVal) << ":" << std::to_string(maxYVal)  << "]" << std::endl;
+
+      gp << "splot " << gp.file1d(plotData[possiblePlots[plotId][2]]) << " notitle with pm3d" << std::endl;
     }
     else{
       //Declare variable to hold previous parameter value for comparison
@@ -368,35 +417,10 @@ int main(int argc, char *argv[]){
       for(auto const& it : plotNameParameters){
 	xValList.push_back(it.first);
       }
-
-      /*
-      //For every possible blank curve
-      for(unsigned i = 0; plotXValues.size() > 0 && i < curveCount; i++){
-	//Reset the parameter flags
-	for(unsigned j = 0; j < parametersTable.size(); j++){
-	  parametersTable[j] = true;
-	}	
-	
-	//For every possible X-value in the curve
-	for(unsigned j = 1; j < plotXValues.size(); j++){
-	  //If there is curve data for the X-value
-	  if(i < plotNameParameters[plotXValues[j]].size()){
-	    //For every parameter value found
-	    for(unsigned k = 0; k < plotNameParameters[plotXValues[j]][i].size(); k++){
-	      //Do logic on plotNameParameters[plotXValues[j]][i][k]
-	      //Determine which parameters should be used for the label
-	      parametersTable[k] = parametersTable[k] && (plotNameParameters[plotXValues[0]][i][k] == plotNameParameters[plotXValues[j]][i][k]) 
-	    }
-	  }
-	}
-
-	//Build curve label string
-      }
-      */
       
       //Add all possible blank curves
       for(unsigned i = 0; i < curveCount; i++){
-	curveData.push_back(std::vector<std::pair<double, double>>{});
+	curveData.push_back(std::vector<std::tuple<double, double, double>>{});
 
 	//Reset the parameter flags
 	for(unsigned j = 0; j < parametersTable.size(); j++){
@@ -454,17 +478,9 @@ int main(int argc, char *argv[]){
 	std::cout << " with " << curveLabels.size() << " curves." << std::endl;
       }
       
-      //Declare GNUPlot object
-      Gnuplot gp;
-      //Instantiate string to hold one line plot string
-      std::string gpPlotLine = "";
-      
       //Send GNU Plot parameters for a 2D plot
-      gp << "set macros" << std::endl << "MATLAB = \"(0  0.0 0.0 0.5, 1  0.0 0.0 1.0, 2  0.0 0.5 1.0, 3  0.0 1.0 1.0, 4  0.5 1.0 0.5, 5  1.0 1.0 0.0, 6  1.0 0.5 0.0, 7  1.0 0.0 0.0, 8  0.5 0.0 0.0)\"" << std::endl;
       gp << "unset warnings" << std::endl;
       gp << "set datafile missing 'nan'" << std::endl;
-      gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
-      gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
       gp << "set key reverse Left outside" << std::endl;
       gp << "set grid" << std::endl;
       gp << "set style data linespoints" << std::endl;
@@ -479,9 +495,7 @@ int main(int argc, char *argv[]){
 	//Only have one column
 	gp << "set key columns 1" << std::endl;
       }
-      gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
-      gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
-      gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+
       gp << "plot ";
 
       // If only one curve
