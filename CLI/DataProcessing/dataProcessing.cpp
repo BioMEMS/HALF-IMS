@@ -48,6 +48,20 @@ std::string ParseUnits(std::string parameter){
   return units;
 }
 
+//Convert title string to remove any special characters
+std::string GenerateFileName(std::string title){
+
+  for(unsigned i = 0; i < title.length(); i++){
+    // If character matches any typical special character
+    if(title[i] == '(' || title[i] == ')' || title[i] == ' ' || title[i] == '.'){
+      // Replace with underscore
+      title[i] = '_';
+    }
+  }
+  
+  return title;
+}
+
 int main(int argc, char *argv[]){
 
   //Instantiate abort flag
@@ -345,7 +359,7 @@ int main(int argc, char *argv[]){
     //Instantiate string to hold one line plot string
     std::string gpPlotLine = "";
 
-    gp << "set output \"" << output << "/" << graphTitle << ".png\"" << std::endl;
+    gp << "set output \"" << output << "/" << GenerateFileName(graphTitle) << ".png\"" << std::endl;
     gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
     gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
     gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
