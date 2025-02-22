@@ -360,6 +360,44 @@ Utilities::Limits SeparatedValues::Size(){
   return temp;
 }
 
+std::map<std::string, unsigned> SeparatedValues::ColumnMapping(){
+  return ColumnMapping(0);
+}
+
+std::map<std::string, unsigned> SeparatedValues::ColumnMapping(unsigned row){
+  std::map<std::string, unsigned> mapping;
+
+  // Get the column headers as a vector
+  std::vector<std::string> rowValues = ColumnHeaders(row);
+
+  //For every column in the row
+  for(unsigned i = 0; i < rowValues.size(); i++){
+    //Add value found and 
+    mapping[rowValues[i]] = i;
+  }
+
+  //Return the mapping
+  return mapping;
+}
+
+std::vector<std::string> SeparatedValues::ColumnHeaders(){
+  return ColumnHeaders(0);
+}
+
+std::vector<std::string> SeparatedValues::ColumnHeaders(unsigned row){
+  std::vector<std::string> mapping;
+
+  //If contents exceeds the desired row
+  if(content.size() > row){
+    //For every column in the row
+    for(unsigned i = 0; i < content[row].size(); i++){
+      //Add value found
+      mapping.push_back(content[row][i]);
+    }
+  }
+
+  return mapping;
+}
 
 //Protected functions
 void SeparatedValues::SetDelimiter(char delimiter){

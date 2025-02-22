@@ -29,3 +29,7 @@ double Utilities::CalculateCurrent(double atoms, double time){
 double Utilities::CalculateCurrent(double voltage){
   return voltage / DETECTOR_BOARD_IDEAL_RESISTANCE;
 }
+
+double Utilities::CalculateResponse(double signal, double background){
+  return 100 * (signal - background) / background;
+}

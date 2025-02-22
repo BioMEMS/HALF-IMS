@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <vector>
+#include <map>
 
 #include "Utilities.h"
 #include "Checker.h"
@@ -100,7 +101,43 @@ public:
     Notes:   This function will not set the maximum and minimum values portion of the structure.
   */
   Utilities::Limits Size();
-  
+
+  /*
+    Name:    ColumnMapping
+    Purpose: Provide a mapping of column header to column index.
+    Inputs:  None
+    Outputs: mapping (std::map<std::string, unsigned> - A mapping of determined header value to index.
+    Notes:   Empty mapping indicate row had no values or file is not a CSV file. Assumes first row is a column header.
+  */
+  std::map<std::string, unsigned> ColumnMapping();
+
+  /*
+    Name:    ColumnMapping
+    Purpose: Provide a mapping of column header to column index.
+    Inputs:  row (unsigned) - The row to be considered as a header.
+    Outputs: mapping (std::map<std::string, unsigned> - A mapping of determined header value to index.
+    Notes:   Empty mapping indicate row had no values or file is not a CSV file.
+  */
+  std::map<std::string, unsigned> ColumnMapping(unsigned row);
+
+  /*
+    Name:    ColumnHeaders
+    Purpose: Provide a mapping of column header to column index.
+    Inputs:  None
+    Outputs: mapping (std::vector<std::string> - A mapping of determined header value to index.
+    Notes:   Empty mapping indicate row had no values or file is not a CSV file. Assumes first row is a column header.
+  */
+  std::vector<std::string> ColumnHeaders();
+
+  /*
+    Name:    ColumnMapping
+    Purpose: Provide a mapping of column header to column index.
+    Inputs:  row (unsigned) - The row to be considered as a header.
+    Outputs: mapping (std::vector<std::string> - A mapping of determined header value to index.
+    Notes:   Empty mapping indicate row had no values or file is not a CSV file.
+  */
+  std::vector<std::string> ColumnHeaders(unsigned row);
+
 protected:
   void SetDelimiter(char delimiter);
   

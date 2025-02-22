@@ -42,6 +42,9 @@ namespace Utilities{
   //Convert the detector voltage value to an ideal current per Detector Board equations
   double CalculateCurrent(double voltage);
 
+  //Convert supplied signal and background value into a response value
+  double CalculateResponse(double signal, double background);
+  
   //Check presence of item in list
   template <typename T> bool ContainsItem(std::vector<T> list, T item){
     

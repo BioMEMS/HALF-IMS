@@ -18,6 +18,9 @@
 #define SAMPLE_PER_SEGMENT "samples_per_segment"
 #define CHEMICAL_COLUMN_INDEX "chemical_index"
 #define RELATIVE_CALCULATION "rel_calc"
+#define BASELINE_REMOVAL "baseline_removal"
+#define SYSTEM_PRESSURE "pressure"
+#define SYSTEM_TEMPERATURE "temperature"
 #define LABVIEW_DATA_COLUMNS 7
 #define LABVIEW_TIME_COLUMN_INDEX 0
 #define CSV_SHUTTER_COLUMN_INDEX 11
@@ -82,6 +85,12 @@ std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> li
 
 int main(int argc, char *argv[]){
 
+  //Declare default output as current directory
+  std::string output, input;
+  bool inputFlag, outputFlag, verbose;
+  unsigned sampleCompressionMaximum = 4, chemicalIndex = 23;
+  double systemTemperature = 275, systemPressure = 26;
+  
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -101,6 +110,9 @@ int main(int argc, char *argv[]){
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
   cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
   cli.Add(RELATIVE_CALCULATION, std::vector<std::string>{"nrc", "no-relative-calculation"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Stop the execution of the relative calculation step.");
+  cli.Add(BASELINE_REMOVAL, std::vector<std::string>{"b", "baseline"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A CSV file which will be used to remove the baseline from the data. Must have equivalent columns to target data file.");
+cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The carrier gas temperature, in Kelvin, to assume if not provided in the data file. Default is " + std::to_string(systemTemperature));
+ cli.Add(SYSTEM_PRESSURE, std::vector<std::string>{"p", "pressure"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The chip pressure, in PSI, to assume if not provided in the data file. Default is " +std::to_string(systemPressure) + ".");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -109,11 +121,6 @@ int main(int argc, char *argv[]){
   if(cli.Help()){
     return 0;
   }
-
-  //Declare default output as current directory
-  std::string output, input;
-  bool inputFlag, outputFlag, verbose;
-  unsigned sampleCompressionMaximum = 4, chemicalIndex = 23;
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
@@ -149,7 +156,7 @@ int main(int argc, char *argv[]){
       chemicalIndex = cli.GetNumeric(CHEMICAL_COLUMN_INDEX);
     }
     
-    //Create file streams for input and output
+    //Declare file streams for input and output
     std::fstream inputFile, outputFile;
 
     //Open files
@@ -276,7 +283,7 @@ int main(int argc, char *argv[]){
 	//Open output file as a CSV
 	CommaSeparatedValues csvOutput = CommaSeparatedValues(output);
 	csvOutput.Read();
-
+	
 	//Get size of output for indexing
 	Utilities::Limits outputSize = csvOutput.Size();
 
@@ -317,6 +324,111 @@ int main(int argc, char *argv[]){
 	      //Delete old value
 	      csvOutput(tgt,j) = "";
 	    }	    
+	}
+	
+	//Remove bad columns and perform secondary calculations
+	std::vector<std::string> outputColumns = csvOutput.ColumnHeaders();
+	std::vector<bool> deleteColumn;
+
+	//Determine which columns should be deleted
+	for(unsigned i = 0; i < outputColumns.size(); i++){
+	  deleteColumn.push_back(false);
+	}
+
+	//For every column
+	for(unsigned i = 0; i < outputSize.Columns; i++){
+	  //If it is marked for deletion
+	  for(unsigned j = 0; deleteColumn[i] && (j < outputSize.Rows); j++){
+	    //Write a blank string into every row
+	    csvOutput(j, i) = "";
+	  }
+	}
+
+	//For every column
+	for(unsigned i = 0, deleted = 0, tgt = 0; (i + deleted) < outputSize.Columns; i++){
+	  //Reset target to current index
+	  tgt = i;
+	  
+	  //If the column header is blank
+	  if(csvOutput(0,i) == ""){
+	    //Find the next non-blank column to copy
+	    for(unsigned j = i+1; j < outputSize.Columns; j++){
+	      //If current column is not blank
+	      if(csvOutput(0,j) != ""){
+		//Update target index
+		tgt = j;
+
+		//Update loop index to jump out
+		j = outputSize.Columns;
+	      }
+	    }
+
+	    //If an appropriate target was found
+	    if(tgt > i){
+	      //For every column
+	      for(unsigned col = tgt, offset = 0; col < outputSize.Columns; col++, offset++){
+		//For every row
+		for(unsigned row = 0; row < outputSize.Rows; row++){
+		  //Copy the current column value to the current column
+		  csvOutput(row, i + offset) = csvOutput(row, col);
+
+		  //Remove the original value
+		  csvOutput(row, col) = "";
+		}
+	      }
+	    }
+	    
+	    //Increment the deleted counter by the amount of rows moved
+	    deleted += (tgt - i);	    
+	  }
+	}
+
+	//Save contents to file
+	csvOutput.Write();
+	
+	//If flag is present, remove baseline
+	if(cli.Present(BASELINE_REMOVAL)){
+	  //Read the CSV baseline file
+	  CommaSeparatedValues csvBaseline = CommaSeparatedValues(cli.Get(BASELINE_REMOVAL));
+	  csvBaseline.Read();
+
+	  //Ensure CSV output file object contents are updated
+	  csvOutput.Read();
+	  
+	  //Get current output size
+	  outputSize = csvOutput.Size();
+	  
+	  Utilities::ConvertedData dataValue, baselineValue;
+	  csvOutput(0, outputSize.Columns) = "Baseline";
+	  dataValue = Utilities::ConvertValue_Double("0");
+	  baselineValue = Utilities::ConvertValue_Double("0");
+	  
+	  std::vector<unsigned> locDataColumns = { CSV_DET_ONE_COLUMN_INDEX, CSV_DET_TWO_COLUMN_INDEX };
+	  //For every row after the header
+	  for(unsigned i = 1; i < outputSize.Rows; i++){
+	    for(unsigned j = 0; !dataValue.error && !baselineValue.error && (j < locDataColumns.size()); j++){
+	      //If both detector columns in the output are not blank
+	      if(csvOutput(i, locDataColumns[j]) != ""){
+		//Convert data and baseline values
+		dataValue = Utilities::ConvertValue_Double(csvOutput(i,locDataColumns[j]));
+		baselineValue = Utilities::ConvertValue_Double(csvBaseline(i,locDataColumns[j]));
+		
+		//If neither conversion resulted in an error
+		if(!dataValue.error && !baselineValue.error){
+		  //Subtract baseline value from data value
+		  csvOutput(i, locDataColumns[j]) = std::to_string(Utilities::CalculateResponse(dataValue.value, baselineValue.value));
+		  //Set the removed value		  
+		  csvOutput(i, outputSize.Columns) = "REMOVED";
+		}
+		else{
+		  //Print an error to the console indicating something happened
+		  std::cerr << "An error resulted attempting to convert Detector " << j + 1 << " value into a double for row " << i << ". ";
+		  std::cerr << "Data file message '" << dataValue.msg << "' and baseline file message '" << baselineValue.msg << "' resulted. Baseline not removed." << std::endl;
+		  csvOutput(i, outputSize.Columns) = "PRESENT";
+		}
+	      }
+	    }
+	  }
 	}
 	
 	//Write contents back to disk
