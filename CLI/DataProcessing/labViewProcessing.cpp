@@ -29,13 +29,16 @@
 #define CSV_DET_ONE_COLUMN_INDEX 5
 #define CSV_DET_TWO_COLUMN_INDEX 6
 
-//Deter
+//Determine if the column should be deleted based upon the header
 bool MarkColumnDeleted(std::string column){
   bool status = false;
 
   //Check for columns matching '{-|+}V_{l|s} (V)'
   status |= (column.find("V_") != std::string::npos) && (column.find("(V)") != std::string::npos);
 
+  //Check for detector voltage columns
+  status |= (column.find("Detector") != std::string::npos) && (column.find("(V)") != std::string::npos);
+  
   //Check for MIPS Set/Read columns
   status |= (column.find("MIPS") != std::string::npos) && (column.find("Ch.") != std::string::npos);
 
@@ -209,9 +212,6 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       }
     }
 
-    //Reduce system gap to midpoint for later calculations
-    systemGap /= 2;
-    
     //Declare file streams for input and output
     std::fstream inputFile, outputFile;
 
@@ -335,7 +335,10 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       outputFile.close();
 
       //If relative calculation flag is not present
-      if(!cli.Present(RELATIVE_CALCULATION)){
+      if(!cli.Present(RELATIVE_CALCULATION)){	
+	//Instantiate counters for later output file truncation
+	unsigned rowsDeleted = 0, columnsDeleted = 0;
+	
 	//Open output file as a CSV
 	CommaSeparatedValues csvOutput = CommaSeparatedValues(output);
 	csvOutput.Read();
@@ -385,13 +388,16 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  
 	  //Calculate diluted analyte concentration in the device
 	  csvOutput(i-1, 24) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))));
+
+	  //Increment counter
+	  rowsDeleted++;
 	}
 	
 	//Refresh output file to account for new headers
 	csvOutput.Write();
 	csvOutput.Read();
 	outputSize = csvOutput.Size();	
-	
+
 	//First row already copied, so for every row after first 
 	for(unsigned i = 2, tgt = 3; i < (outputSize.Rows - 1); i++, tgt += 2){
 	  //For all columns
@@ -401,7 +407,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 
 	      //Delete old value
 	      csvOutput(tgt,j) = "";
-	    }	    
+	    }	   
 	}
 
 	//Remove bad columns and perform secondary calculations
@@ -412,8 +418,16 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	for(unsigned i = 0; i < outputColumns.size(); i++){
 	  deleteColumn.push_back(saveAllColumns && MarkColumnDeleted(outputColumns[i]));
 
-	  if(verbose && deleteColumn[i]){
-	    std::cout << "Marking '" << outputColumns[i] << "' for deletion." << std::endl;
+	  //If column is to be deleted
+	  if(deleteColumn[i]){
+	    //Increment counter
+	    columnsDeleted++;
+	    
+	    //If verbose
+	    if(verbose){
+	      //Print out message indicating column is being deleted
+	      std::cout << "Marking '" << outputColumns[i] << "' for deletion." << std::endl;
+	    }
 	  }
 	}
 
@@ -465,6 +479,9 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  }
 	}
 
+	//Update CSV output size
+	csvOutput.Size(outputSize.Rows - rowsDeleted, outputSize.Columns - columnsDeleted);
+		       
 	//Save contents to file
 	csvOutput.Write();
 	
@@ -474,6 +491,9 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  CommaSeparatedValues csvBaseline = CommaSeparatedValues(cli.Get(BASELINE_REMOVAL));
 	  csvBaseline.Read();
 
+	  //Get the column header mapping for the baseline file
+	  std::map<std::string, unsigned> baselineHeaderMapping = csvBaseline.ColumnMapping();
+	  
 	  //Ensure CSV output file object contents are updated
 	  csvOutput.Read();
 	  
@@ -485,27 +505,34 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  dataValue = Utilities::ConvertValue_Double("0");
 	  baselineValue = Utilities::ConvertValue_Double("0");
 	  
-	  std::vector<unsigned> locDataColumns = { CSV_DET_ONE_COLUMN_INDEX, CSV_DET_TWO_COLUMN_INDEX };
-	  //For every row after the header
-	  for(unsigned i = 1; i < outputSize.Rows; i++){
-	    for(unsigned j = 0; !dataValue.error && !baselineValue.error && (j < locDataColumns.size()); j++){
-	      //If both detector columns in the output are not blank
-	      if(csvOutput(i, locDataColumns[j]) != ""){
+	  //For every column in the output file
+	  for(unsigned j = 0; j < outputSize.Columns; j++){
+
+	    //If the current column is a detector output
+	    if(csvOutput(0,j).find("Detector") != std::string::npos){
+	      
+	      //For every row after the header	    
+	      for(unsigned i = 1; i < outputSize.Rows; i++){
+		
 		//Convert data and baseline values
-		dataValue = Utilities::ConvertValue_Double(csvOutput(i,locDataColumns[j]));
-		baselineValue = Utilities::ConvertValue_Double(csvBaseline(i,locDataColumns[j]));
+		dataValue = Utilities::ConvertValue_Double(csvOutput(i,j));
+		baselineValue = Utilities::ConvertValue_Double(csvBaseline(i,baselineHeaderMapping[csvOutput(0,j)]));
 		
 		//If neither conversion resulted in an error
 		if(!dataValue.error && !baselineValue.error){
 		  //Subtract baseline value from data value
-		  csvOutput(i, locDataColumns[j]) = std::to_string(Utilities::CalculateResponse(dataValue.value, baselineValue.value));
-		  //Set the removed value		  
-		  csvOutput(i, outputSize.Columns) = "REMOVED";
+		  csvOutput(i, j) = std::to_string(dataValue.value - baselineValue.value);
+
+		  //If the baseline flag has not been written
+		  if(csvOutput(i, outputSize.Columns) == ""){
+		    //Set the removed value
+		    csvOutput(i, outputSize.Columns) = "REMOVED";
+		  }
 		}
 		else{
 		  //Print an error to the console indicating something happened
-		  std::cerr << "An error resulted attempting to convert Detector " << j + 1 << " value into a double for row " << i << ". ";
-		  std::cerr << "Data file message '" << dataValue.msg << "' and baseline file message '" << baselineValue.msg << "' resulted. Baseline not removed." << std::endl;
+		  std::cerr << "An error resulted attempting to convert '" << csvOutput(0,j) << "' value into a double for row " << i << ". Baseline not removed." << std::endl;
+		  std::cerr << "Data file message: " << dataValue.msg << std::endl << "Baseline file message " << baselineValue.msg << std::endl;
 		  csvOutput(i, outputSize.Columns) = "PRESENT";
 		}
 	      }

@@ -365,6 +365,14 @@ Utilities::Limits SeparatedValues::Size(){
   return temp;
 }
 
+void SeparatedValues::Size(unsigned rows, unsigned columns){
+  //Update the row and column maximum
+  maxRow = rows;
+  maxColumn = columns;
+
+  return;
+}
+
 std::map<std::string, unsigned> SeparatedValues::ColumnMapping(){
   return ColumnMapping(0);
 }

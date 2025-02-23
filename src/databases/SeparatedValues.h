@@ -103,6 +103,16 @@ public:
   Utilities::Limits Size();
 
   /*
+    Name:    Size
+    Purpose: Set the expected size parameters and truncate all values on the next write.
+    Inputs:  rows (unsigned) - The number of rows to keep.
+             columns (unsigned) - The number of columns to keep.
+    Outputs: None
+    Notes:   Accessing a value outside these set limits will reset the limits to previous.
+  */
+  void Size(unsigned rows, unsigned columns);
+  
+  /*
     Name:    ColumnMapping
     Purpose: Provide a mapping of column header to column index.
     Inputs:  None
