@@ -8,6 +8,7 @@
 
 //HALF-IMS libraries
 #include "CLIParser.h"
+#include "Utilities.h"
 //#include "CommaSeparatedValues.h"
 
 //Pre-processor variables for CLI parser names
@@ -37,109 +38,6 @@ enum ReturnCodes{
   BAG,
   PUMP
 };
-
-//Name:    CalculateAnalyteConcentration
-//Purpose: Perform a concentration calculation for a carrier gas with a particular analyte flow rate and concentration.
-//Input:   carrierRate (double) - The carrier gas flow rate in mL/min.
-//         analyteRate (double) - The analyte flow rate in mL/hr.
-//         sourceConcentration (double) - The analyte source concentration in ppm.
-//Output:  concentration (double) - The calculated concentration in ppm.
-//Note:    Concentration is not strictly required to be provided in ppm as calculation is a done by a unit-less scalar.
-double CalculateAnalyteConcentration(double carrierRate, double analyteRate, double sourceConcentration){
-  return sourceConcentration * (analyteRate / (60.0 * carrierRate));
-}
-
-//Name:    CalculateSourceConcentration
-//Purpose: Perform a concentration calculation for a carrier gas with a particular analyte flow rate and concentration.
-//Input:   carrierRate (double) - The carrier gas flow rate in mL/min.
-//         analyteRate (double) - The analyte flow rate in mL/hr.
-//         dilutedConcentration (double) - The diluted analyte concentration in ppm.
-//Output:  concentration (double) - The calculated concentration in ppm.
-//Note:    Concentration is not strictly required to be provided in ppm as calculation is a done by a unit-less scalar.
-double CalculateSourceConcentration(double carrierRate, double analyteRate, double dilutedConcentration){
-  return dilutedConcentration * (60.0 * carrierRate) / analyteRate;
-}
-
-//Name:    CalculateAnalyteRate
-//Purpose: Calculate the analyte rate required with provided parameters.
-//Input:   carrierRate (double) - The carrier gas flow rate in mL/min.
-//         analyteConcentration (double) - The analyte concentration in ppm.
-//         dilutedConcentration (double) - The diluted analyte concentration in ppm.
-//Output:  concentration (double) - The calculated concentration in ppm.
-//Note:    Concentration is not strictly required to be provided in ppm as calculation is a done by a unit-less scalar.
-double CalculateAnaylteRate(double carrierRate, double sourceConcentration, double analyteConcentration){
-  return (sourceConcentration * carrierRate * 60.0) / analyteConcentration;
-}
-
-//Name:    CalculateCarrierRate
-//Purpose: Calculate the carrier rate required with provided parameters.
-//Input:   analyteRate (double) - The analyte flow rate in mL/hr.
-//         analyteConcentration (double) - The analyte concentration in ppm.
-//         dilutedConcentration (double) - The diluted analyte concentration in ppm.
-//Output:  concentration (double) - The calculated concentration in ppm.
-//Note:    Concentration is not strictly required to be provided in ppm as calculation is a done by a unit-less scalar.
-double CalculateCarrierRate(double sourceConcentration, double analyteConcentration, double analyteRate){
-  return (sourceConcentration * analyteRate) / (60.0 * analyteConcentration);
-}
-
-//Name:    CalculateAnalyteConcentration
-//Purpose: Perform a calculation to determine the necessary liquid volume of analyte for desired concentration. 
-//Input:   analyteVolume (double) - The analyte's total volume in Liters (L).
-//         analyteMolarMass (double) - The analyte's molar mass in grams per mol (g/mol).
-//         analyteDensity (double) - The analyte's density in grams per cubic centimeter (g/cm^3).
-//         carrierVolume (double) - The carrier's total volume in Liters (L).
-//         carrierMolarMass (double) - The carrier's molar mass in grams per mol (g/mol).
-//         carrierDensity (double) - The carrier's density in grams per cubic centimeter (g/cm^3).
-//Output:  volume (double) - The calculated concentration in parts per million (ppm).
-//Note:    Calculate analyte concentration from PPM = (1E6 * V * D * MM_c) / (V_c * D_c * MM)
-double CalculateAnalyteConcentration(double analyteVolume, double analyteMolarMass, double analyteDensity, double carrierVolume, double carrierMolarMass, double carrierDensity){
-  double analyteConcentration;
-  
-  analyteConcentration = analyteVolume * analyteDensity * carrierMolarMass * 1E6;
-  analyteConcentration /= carrierVolume * carrierDensity * analyteMolarMass;
-  
-  return analyteConcentration;
-}
-
-//Name:    CalculateAnalyteVolume
-//Purpose: Perform a calculation to determine the necessary liquid volume of analyte for desired concentration. 
-//Input:   targetConcentration (double) - The desired concentration in parts per million (ppm).
-//         analyteMolarMass (double) - The analyte's molar mass in grams per mol (g/mol).
-//         analyteDensity (double) - The analyte's density in grams per cubic centimeter (g/cm^3).
-//         carrierVolume (double) - The carrier's total volume in Liters (L).
-//         carrierMolarMass (double) - The carrier's molar mass in grams per mol (g/mol).
-//         carrierDensity (double) - The carrier's density in grams per cubic centimeter (g/cm^3).
-//Output:  volume (double) - The calculated volume in Liters (L).
-//Note:    Calculate analyte volume from V =  V_c * (PPM / 1E6) * (D_c * MM) / (D * MM_c)
-double CalculateAnalyteVolume(double targetConcentration, double analyteMolarMass, double analyteDensity, double carrierVolume, double carrierMolarMass, double carrierDensity){
-  double analyteVolume;
-  
-  //Calculate analyte volume from V = V_c * (PPM / 1E6) * (D_c * MM) / (D * MM_c)
-  analyteVolume = (targetConcentration / 1000000.0);
-  analyteVolume *= carrierVolume;
-  analyteVolume *= (carrierDensity * analyteMolarMass) / (analyteDensity * carrierMolarMass);
-
-  return analyteVolume;
-}
-
-//Name:    CalculateCarrierVolume
-//Purpose: Perform a calculation to determine the necessary volume of carrier gas for desired concentration and volume of analyte. 
-//Input:   targetConcentration (double) - The desired concentration in parts per million (ppm).
-//         analyteMolarMass (double) - The analyte's molar mass in grams per mol (g/mol).
-//         analyteDensity (double) - The analyte's density in grams per cubic centimeter (g/cm^3).
-//         carrierVolume (double) - The carrier's total volume in Liters (L).
-//         carrierMolarMass (double) - The carrier's molar mass in grams per mol (g/mol).
-//         carrierDensity (double) - The carrier's density in grams per cubic centimeter (g/cm^3).
-//Output:  volume (double) - The calculated volume in Liters (L).
-//Note:    Calculate analyte volume from V_c = V / ((PPM / 1E6) * (D_c * MM) / (D * MM_c))
-double CalculateCarrierVolume(double targetConcentration, double analyteMolarMass, double analyteDensity, double analyteVolume, double carrierMolarMass, double carrierDensity){
-  double carrierVolume;
-
-  carrierVolume = analyteVolume * analyteDensity * carrierMolarMass;
-  carrierVolume /= (targetConcentration * carrierDensity * analyteMolarMass);
-  
-  return carrierVolume;
-}
 
 //Main function
 int main(int argc, char *argv[]){
@@ -229,7 +127,7 @@ int main(int argc, char *argv[]){
       //If the analyte concentration and volume values were provided
       if(cli.Present(ANALYTE_CONCENTRATION) && cli.Present(ANALYTE_VOLUME)){
 	//Calculate the carrier gas volume required to achieve 
-	result = CalculateCarrierVolume(analyteConcentration, analyteMolarMass, analyteDensity, analyteVolume, carrierGasMolarMass, carrierGasDensity);
+	result = Utilities::CalculateCarrierVolume(analyteConcentration, analyteMolarMass, analyteDensity, analyteVolume, carrierGasMolarMass, carrierGasDensity);
 	carrierGasVolume = result;
 
 	returnCode = ReturnCodes::SUCCESS;
@@ -237,7 +135,7 @@ int main(int argc, char *argv[]){
       //If the analyte volume is provided
       else if(cli.Present(ANALYTE_VOLUME)){
 	//Calculate the analyte concentration
-	result = CalculateAnalyteConcentration(analyteVolume, analyteMolarMass, analyteDensity, carrierGasVolume, carrierGasMolarMass, carrierGasDensity);
+	result = Utilities::CalculateAnalyteConcentration(analyteVolume, analyteMolarMass, analyteDensity, carrierGasVolume, carrierGasMolarMass, carrierGasDensity);
         analyteConcentration = result;
 
 	returnCode = ReturnCodes::SUCCESS;
@@ -245,7 +143,7 @@ int main(int argc, char *argv[]){
       //If the analyte concentration is provided
       else if(cli.Present(ANALYTE_CONCENTRATION)){
 	//Perform analyte volume calculation
-	result = CalculateAnalyteVolume(analyteConcentration, analyteMolarMass, analyteDensity, carrierGasVolume, carrierGasMolarMass, carrierGasDensity);
+	result = Utilities::CalculateAnalyteVolume(analyteConcentration, analyteMolarMass, analyteDensity, carrierGasVolume, carrierGasMolarMass, carrierGasDensity);
 	analyteVolume = result;
 
 	returnCode = ReturnCodes::SUCCESS;
@@ -291,7 +189,7 @@ int main(int argc, char *argv[]){
       pumpRate = cli.GetNumeric(PUMP_FLOW_RATE);
 
       //Calculate the analyte concentration in the system
-      result = CalculateAnalyteConcentration(carrierGasRate, pumpRate, analyteConcentration);
+      result = Utilities::CalculateAnalyteConcentration(carrierGasRate, pumpRate, analyteConcentration);
 
       returnCode = ReturnCodes::SUCCESS;
     }

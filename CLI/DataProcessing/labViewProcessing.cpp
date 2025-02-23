@@ -21,11 +21,33 @@
 #define BASELINE_REMOVAL "baseline_removal"
 #define SYSTEM_PRESSURE "pressure"
 #define SYSTEM_TEMPERATURE "temperature"
+#define SYSTEM_GAP_SIZE "gap_size"
+#define SAVE_ALL_COLUMNS "no_delete_columns"
 #define LABVIEW_DATA_COLUMNS 7
 #define LABVIEW_TIME_COLUMN_INDEX 0
 #define CSV_SHUTTER_COLUMN_INDEX 11
 #define CSV_DET_ONE_COLUMN_INDEX 5
 #define CSV_DET_TWO_COLUMN_INDEX 6
+
+//Deter
+bool MarkColumnDeleted(std::string column){
+  bool status = false;
+
+  //Check for columns matching '{-|+}V_{l|s} (V)'
+  status |= (column.find("V_") != std::string::npos) && (column.find("(V)") != std::string::npos);
+
+  //Check for MIPS Set/Read columns
+  status |= (column.find("MIPS") != std::string::npos) && (column.find("Ch.") != std::string::npos);
+
+  //Check for Syringe Volume/Pump columns
+  status |= (column.find("Syringe") != std::string::npos) && (column.find("mL") != std::string::npos);
+
+  //Check for Syringe Volume/Pump columns
+  status |= (column.find("MFC Setting") != std::string::npos);
+
+  
+  return status;
+}
 
 //Split the provided CSV line into numeric values
 std::vector<std::string> SplitLine(std::string line){
@@ -53,7 +75,7 @@ std::vector<std::string> SplitLine(std::string line){
       start = stop;
     }
   }
-
+  ;
   return results;
 }
 
@@ -87,9 +109,9 @@ int main(int argc, char *argv[]){
 
   //Declare default output as current directory
   std::string output, input;
-  bool inputFlag, outputFlag, verbose;
+  bool inputFlag, outputFlag, verbose, saveAllColumns;
   unsigned sampleCompressionMaximum = 4, chemicalIndex = 23;
-  double systemTemperature = 275, systemPressure = 26;
+  double systemTemperature = 30, systemPressure = 26, systemGap = 100E-6, systemGapScaled = 100;
   
   //Instantiate command line input parser
   Utilities::CLIParser cli;
@@ -110,9 +132,10 @@ int main(int argc, char *argv[]){
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
   cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
   cli.Add(RELATIVE_CALCULATION, std::vector<std::string>{"nrc", "no-relative-calculation"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Stop the execution of the relative calculation step.");
+  cli.Add(SAVE_ALL_COLUMNS, std::vector<std::string>{"sac", "save-all-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Prevent the removal of columns no longer necessary due to calculations.");
   cli.Add(BASELINE_REMOVAL, std::vector<std::string>{"b", "baseline"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A CSV file which will be used to remove the baseline from the data. Must have equivalent columns to target data file.");
-cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The carrier gas temperature, in Kelvin, to assume if not provided in the data file. Default is " + std::to_string(systemTemperature));
- cli.Add(SYSTEM_PRESSURE, std::vector<std::string>{"p", "pressure"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The chip pressure, in PSI, to assume if not provided in the data file. Default is " +std::to_string(systemPressure) + ".");
+cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The carrier gas temperature, in Celsius, to assume for the data file. Default is " + std::to_string(systemTemperature));
+ cli.Add(SYSTEM_PRESSURE, std::vector<std::string>{"p", "pressure"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The chip pressure, in PSI, to assume for the data file. Default is " +std::to_string(systemPressure) + ".");cli.Add(SYSTEM_GAP_SIZE, std::vector<std::string>{"g", "gap-size"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The chip gap size, in meters, to assume for the data file. Default is " +std::to_string(systemGap) + ".");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -124,7 +147,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
   
   //Determine output verbosity
   verbose = cli.Present(Utilities::CLIParser::VERBOSE);
-  
+
   //If the necessary inputs are present
   if(cli.Present(OUTPUT_FILE) && cli.Present(INPUT_FILE)){
     //Extract necessary arguments
@@ -156,6 +179,39 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       chemicalIndex = cli.GetNumeric(CHEMICAL_COLUMN_INDEX);
     }
     
+    //Determine if saving all columns
+    saveAllColumns = !cli.Present(SAVE_ALL_COLUMNS);
+
+    //If the system temperature value is provided
+    if(cli.Present(SYSTEM_TEMPERATURE)){
+      //Override default value with provided
+      systemTemperature = cli.GetNumeric(SYSTEM_TEMPERATURE);
+    }
+
+    //If the system temperature value is provided
+    if(cli.Present(SYSTEM_PRESSURE)){
+      //Override default value with provided
+      systemPressure = cli.GetNumeric(SYSTEM_PRESSURE);
+    }
+
+    //If the system temperature value is provided
+    if(cli.Present(SYSTEM_GAP_SIZE)){
+      //Override default value with provided
+      systemGap = cli.GetNumeric(SYSTEM_GAP_SIZE);
+      //Calculate system gap in micrometers
+      systemGapScaled = systemGap * 1E6;
+
+      //If user provided zero gap size
+      if(systemGap == 0.0){
+	//Print error and exit
+	std::cerr << "Invalid gap size '" << systemGap << "' provided." << std::endl;
+	return 1;
+      }
+    }
+
+    //Reduce system gap to midpoint for later calculations
+    systemGap /= 2;
+    
     //Declare file streams for input and output
     std::fstream inputFile, outputFile;
 
@@ -181,7 +237,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	outputFile << "MIPS Read Ch. " << i << " (V),";
       }
 
-      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),Long Electrode Setting (V),Short Electrode Setting (V),Detector 1 Current (pA),Detector 2 Current(pA)" << std::endl;
+      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),Long Electrode Setting (V),Short Electrode Setting (V),Long Electrode Setting (Td.),Short Electrode Setting (Td.),Detector 1 (pA),Detector 2 (pA)" << std::endl;
       
       //Read the file until the LabView header line is found
       unsigned lineCount = 0;
@@ -249,8 +305,8 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    avgLine[i] = 0.0;
 	  }
 
-	  //Add newline character
-	  line += '\n';
+	  //Replace last comma with newline character
+	  line[line.length() - 1] = '\n';
 
 	  //Write line to the file
 	  outputFile << line;
@@ -279,7 +335,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       outputFile.close();
 
       //If relative calculation flag is not present
-      if(!cli.Present(RELATIVE_CALCULATION)){       
+      if(!cli.Present(RELATIVE_CALCULATION)){
 	//Open output file as a CSV
 	CommaSeparatedValues csvOutput = CommaSeparatedValues(output);
 	csvOutput.Read();
@@ -287,6 +343,10 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	//Get size of output for indexing
 	Utilities::Limits outputSize = csvOutput.Size();
 
+	csvOutput(0, outputSize.Columns) = "Temperature (C)";
+	csvOutput(0, outputSize.Columns+1) = "Pressure (PSI)";
+	csvOutput(0, outputSize.Columns+2) = "Gap Size (um)";
+	
 	//For every other row in the output file
 	for(unsigned i = outputSize.Rows - 1; i > 1; i-=2){
 	  //For every column in the pair of rows
@@ -306,14 +366,32 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    csvOutput(i, j) = "";
 	  }
 	  
-	  //Calculate long and short electrode voltage settings and ideal detector current 	  
-	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
-	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));
+	  //Calculate long and short electrode voltage settings 
+	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
+	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));
+
+	  //Convert long and short electrode settings to Townsends
+	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-6))));
+	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-5))));
+
+	  //Calculate ideal detector current
 	  csvOutput(i-1, outputSize.Columns-2) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,5))));
 	  csvOutput(i-1, outputSize.Columns-1) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,6))));
-	  
-	}
 
+	  //Save the temperature, pressure, and gapsize values
+	  csvOutput(i-1, outputSize.Columns) = std::to_string(systemTemperature);
+	  csvOutput(i-1, outputSize.Columns+1) = std::to_string(systemPressure);
+	  csvOutput(i-1, outputSize.Columns+2) = std::to_string(systemGapScaled);
+	  
+	  //Calculate diluted analyte concentration in the device
+	  csvOutput(i-1, 24) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))));
+	}
+	
+	//Refresh output file to account for new headers
+	csvOutput.Write();
+	csvOutput.Read();
+	outputSize = csvOutput.Size();	
+	
 	//First row already copied, so for every row after first 
 	for(unsigned i = 2, tgt = 3; i < (outputSize.Rows - 1); i++, tgt += 2){
 	  //For all columns
@@ -325,14 +403,18 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	      csvOutput(tgt,j) = "";
 	    }	    
 	}
-	
+
 	//Remove bad columns and perform secondary calculations
 	std::vector<std::string> outputColumns = csvOutput.ColumnHeaders();
 	std::vector<bool> deleteColumn;
 
 	//Determine which columns should be deleted
 	for(unsigned i = 0; i < outputColumns.size(); i++){
-	  deleteColumn.push_back(false);
+	  deleteColumn.push_back(saveAllColumns && MarkColumnDeleted(outputColumns[i]));
+
+	  if(verbose && deleteColumn[i]){
+	    std::cout << "Marking '" << outputColumns[i] << "' for deletion." << std::endl;
+	  }
 	}
 
 	//For every column

@@ -195,10 +195,15 @@ void SeparatedValues::Read(){
 	    //Update start index with substring adjustment for quotations
 	    start = start + substringAdjust;
 
-	    //If the end of line
-	    if(endOfLine){
+	    //If the end of line and last character is not a quotation
+	    if(endOfLine && (line[i] != '"')){
 	      //Revert adjust value to prevent erroneous clipping of last column
 	      substringAdjust = -1;
+	    }
+	    //If end of line
+	    else if(endOfLine){
+	      //Zero out adjust value to prevent erroneous clipping when quotations are present
+	      substringAdjust = 0;
 	    }
 	    
 	    //Slice out a substring
