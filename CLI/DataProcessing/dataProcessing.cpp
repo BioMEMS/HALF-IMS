@@ -20,6 +20,7 @@
 #define OUTPUT_DIRECTORY "output"
 #define INPUT_FILE "input"
 #define PLOT_COLUMNS "columns"
+#define DEBUG "debug"
 
 //Parse out the units for the provided string
 std::string ParseUnits(std::string parameter){
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]){
   cli.Add(Utilities::CLIParser::DESCRIPTION, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A program which can process HALF-IMS CSV files into plots using GnuPlot.");
   cli.Add(Utilities::CLIParser::HELP, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree}, "Display this help message.");
   cli.Add(Utilities::CLIParser::VERBOSE, std::vector<std::string>{"v", "verbose"}, std::vector<int>{flagTypeThree}, "Trigger verbose program output.");
+  cli.Add(DEBUG, std::vector<std::string>{"d", "debug"}, std::vector<int>{flagTypeThree}, "Trigger debug program output.");
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input CSV file to process.");
   cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
   cli.Add(PLOT_COLUMNS, std::vector<std::string>{"c", "columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of columns to plot.");
@@ -92,7 +94,8 @@ int main(int argc, char *argv[]){
   }
 
   //Determine output verbosity
-  bool verbose = cli.Present(Utilities::CLIParser::VERBOSE);
+  bool debug = cli.Present(DEBUG);
+  bool verbose = debug || cli.Present(Utilities::CLIParser::VERBOSE);
   
   //Declare default output as current directory
   std::string input, output = "."; //Might break on Windows? Use Filesystem library?
@@ -175,7 +178,7 @@ int main(int argc, char *argv[]){
   }
 
   //Print out found values
-  if(verbose){
+  if(debug){
     std::cout << "Discovered Unique Values" << std::endl;
     //For every element in the mapping
     for(auto const& it : columnUniqueValues){		      
@@ -216,7 +219,7 @@ int main(int argc, char *argv[]){
   constantParameters = constantParameters.substr(0, constantParameters.length() - 1);
 
   //Print out header line
-  if(verbose){
+  if(debug){
     std::cout << "Plot Subtitle" << std::endl << constantParameters << std::endl << std::endl;
   }
 
@@ -274,19 +277,25 @@ int main(int argc, char *argv[]){
       graphTitle += possiblePlots[plotId][j] + " vs. ";
     }
     graphTitle += possiblePlots[plotId][0];
-    
+      
     //If verbose operation was requested
     if(verbose){
       //Print out columns being graphed
-      std::cout << std::endl << "Generating Graph: " << graphTitle << " ";
+      std::cout << "Generating Graph: " << graphTitle << " ";
+
+      //If printing a 3D graph
+      if(possiblePlots[plotId].size() > 2){
+	//Print newline
+	std::cout << std::endl;
+      }
     }
-    
+            
     //Clear all previous values
     plotData.clear();
     curveData.clear();
     plotNameParameters.clear();
     curveCount = 0;
-      
+          
     //Convert string to numerical index of known columns
     xCol = columnToIndexMapping[possiblePlots[plotId][0]];
     yCol = columnToIndexMapping[possiblePlots[plotId][1]];
@@ -341,7 +350,7 @@ int main(int argc, char *argv[]){
 	}
       }
     }
-    
+
     // For every X-value in the plot data
     double nan = std::numeric_limits<double>::quiet_NaN();
     for(auto const& value : plotData){
@@ -353,7 +362,6 @@ int main(int argc, char *argv[]){
       }
     }
 
-          
     //Declare GNUPlot object
     Gnuplot gp;
     //Instantiate string to hold one line plot string
@@ -371,7 +379,6 @@ int main(int argc, char *argv[]){
 
       // Determine the minimum and maximum values for the X- and Y-axis.
       for(unsigned i = 0; i < plotData[possiblePlots[plotId][2]].size(); i++){
-
 	// Update minimum and maximum if the value exceeds the stored
 	curVal = std::get<0>(plotData[possiblePlots[plotId][2]][i]);
 	if(curVal > maxXVal){
@@ -391,9 +398,9 @@ int main(int argc, char *argv[]){
 	if(curVal < minYVal){
 	  minYVal = curVal;
 	}
-	
+
       }
-      
+                  
       // Generate a MATLAB color scheme macro
       gp << "set macros" << std::endl << "MATLAB = \"defined (0  0.0 0.0 0.5, 1  0.0 0.0 1.0, 2  0.0 0.5 1.0, 3  0.0 1.0 1.0, 4  0.5 1.0 0.5, 5  1.0 1.0 0.0, 6  1.0 0.5 0.0, 7  1.0 0.0 0.0, 8  0.5 0.0 0.0)\"" << std::endl;
       gp << "set style data linespoints" << std::endl;
@@ -421,12 +428,12 @@ int main(int argc, char *argv[]){
       for(auto const& xValue : plotNameParameters){
 	plotXValues.push_back(xValue.first);
       }
-
+      
       for(unsigned j = 0; j < inputSize.Columns; j++){
 	//Initialize parameter table flags
 	parametersTable.push_back(true);
       }
-      
+
       std::vector<std::string> xValList;
       for(auto const& it : plotNameParameters){
 	xValList.push_back(it.first);
@@ -440,15 +447,15 @@ int main(int argc, char *argv[]){
 	for(unsigned j = 0; j < parametersTable.size(); j++){
 	  parametersTable[j] = true;
 	}
-	
+
 	//Reduce plot name parameters to only unchanging values for every curve
 	for(unsigned paramIndex = 0; paramIndex < inputSize.Columns; paramIndex++){
 
 	  //Determine which parameter columns are unchanging
-	  for(unsigned j = 1; j < plotXValues.size(); j++){
+	  for(unsigned j = 1; j < plotXValues.size(); j++){	    
 	    //Calculate if current parameter is equivalent to first parameter and not blank
-	    parametersTable[paramIndex] = parametersTable[paramIndex] && (i < plotNameParameters[plotXValues[j]].size());
-	    parametersTable[paramIndex] = parametersTable[paramIndex] && (plotNameParameters[plotXValues[0]][i][paramIndex] == plotNameParameters[plotXValues[j]][i][paramIndex]);
+	    parametersTable[paramIndex] = parametersTable[paramIndex] && (i < plotNameParameters[plotXValues[j]].size()) && (i < plotNameParameters[plotXValues[0]].size());
+	    parametersTable[paramIndex] = parametersTable[paramIndex] && (plotNameParameters[plotXValues[0]][i][paramIndex] == plotNameParameters[plotXValues[j]][i][paramIndex]);	    
 	    parametersTable[paramIndex] = parametersTable[paramIndex] && (plotNameParameters[plotXValues[j]][i][paramIndex] != "");
 	  }
 	}
@@ -478,7 +485,7 @@ int main(int argc, char *argv[]){
 	curveLabels.push_back(curveLabel);
 	
       }
-      
+
       //For every unique value found
       for(unsigned i = 0; i < columnUniqueValues[possiblePlots[plotId][0]].size(); i++){
 	//For each possible curve count saved in the plot data
@@ -488,8 +495,11 @@ int main(int argc, char *argv[]){
 	}
       }
 
-      if(verbose){
-	std::cout << " with " << curveLabels.size() << " curves." << std::endl;
+      if(debug){
+	std::cout << "with " << curveLabels.size() << " curves." << std::endl;
+      }
+      else if(verbose){
+	std::cout << std::endl;
       }
       
       //Send GNU Plot parameters for a 2D plot
