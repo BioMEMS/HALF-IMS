@@ -19,8 +19,13 @@
 //Pre-processor Variables
 #define OUTPUT_DIRECTORY "output"
 #define INPUT_FILE "input"
-#define PLOT_COLUMNS "columns"
+#define X_PLOT_COLUMNS "x_columns"
+#define Y_PLOT_COLUMNS "y_columns"
+#define Z_PLOT_COLUMNS "z_columns"
 #define DEBUG "debug"
+#define X_RANGE_LIMIT "x_range"
+#define Y_RANGE_LIMIT "y_range"
+#define Z_RANGE_LIMIT "z_range"
 
 //Parse out the units for the provided string
 std::string ParseUnits(std::string parameter){
@@ -83,7 +88,12 @@ int main(int argc, char *argv[]){
   cli.Add(DEBUG, std::vector<std::string>{"d", "debug"}, std::vector<int>{flagTypeThree}, "Trigger debug program output.");
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input CSV file to process.");
   cli.Add(OUTPUT_DIRECTORY, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
-  cli.Add(PLOT_COLUMNS, std::vector<std::string>{"c", "columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of columns to plot.");
+  cli.Add(X_PLOT_COLUMNS, std::vector<std::string>{"xc", "x-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of the x-columns to plot.");
+  cli.Add(Y_PLOT_COLUMNS, std::vector<std::string>{"yc", "y-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of the y-columns to plot.");
+  cli.Add(Z_PLOT_COLUMNS, std::vector<std::string>{"zc", "z-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of the z-columns to plot.");
+  cli.Add(X_RANGE_LIMIT, std::vector<std::string>{"xr", "x-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for X-axis limits. Applies to both two- and three-dimensional plots.");
+  cli.Add(Y_RANGE_LIMIT, std::vector<std::string>{"yr", "y-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Y-axis limits. Applies to both two- and three-dimensional plots.");
+  cli.Add(Z_RANGE_LIMIT, std::vector<std::string>{"zr", "z-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Z-axis limits. Only applies to three-dimensional plots.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -99,7 +109,7 @@ int main(int argc, char *argv[]){
   
   //Declare default output as current directory
   std::string input, output = "."; //Might break on Windows? Use Filesystem library?
-  std::vector<std::string> columnWhitelist;
+  std::vector<std::string> xColumnWhitelist, yColumnWhitelist, zColumnWhitelist;
   
   //If the output flag is present
   if(cli.Present(OUTPUT_DIRECTORY)){
@@ -135,9 +145,21 @@ int main(int argc, char *argv[]){
   }
 
   //If a list was provided
-  if(cli.Present(PLOT_COLUMNS)){
+  if(cli.Present(X_PLOT_COLUMNS)){
     //Update the whitelist
-    columnWhitelist = cli.GetList(PLOT_COLUMNS);
+    xColumnWhitelist = cli.GetList(X_PLOT_COLUMNS);
+  }
+
+  //If a list was provided
+  if(cli.Present(Y_PLOT_COLUMNS)){
+    //Update the whitelist
+    yColumnWhitelist = cli.GetList(Y_PLOT_COLUMNS);
+  }
+
+  //If a list was provided
+  if(cli.Present(Z_PLOT_COLUMNS)){
+    //Update the whitelist
+    zColumnWhitelist = cli.GetList(Z_PLOT_COLUMNS);
   }
   
   //Open input file
@@ -231,12 +253,12 @@ int main(int argc, char *argv[]){
   std::string graphTitle;
   unsigned curveCount = 0;
   std::vector<bool> plotInclude = {false, false, false};
-  bool whiteListEmpty = (columnWhitelist.size() == 0);
+  bool xWhiteListEmpty = (xColumnWhitelist.size() == 0), yWhiteListEmpty = (yColumnWhitelist.size() == 0), zWhiteListEmpty = (zColumnWhitelist.size() == 0);
   
   //For every column in the input file
   for(auto const& xColumn : columnUniqueValues){
     //Calculate X-column flag
-    plotInclude[0] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, xColumn.first);
+    plotInclude[0] = xWhiteListEmpty || Utilities::ContainsItem<std::string>(xColumnWhitelist, xColumn.first);
 
     //If column has more than one value
     if(plotInclude[0] && (columnUniqueValues[xColumn.first].size() > 1)){
@@ -244,7 +266,7 @@ int main(int argc, char *argv[]){
       //Attempt to pair with every other possible column
       for(auto const& yColumn : columnUniqueValues){
 	//Calcualte Y-column flag
-	plotInclude[1] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, yColumn.first);
+	plotInclude[1] = yWhiteListEmpty || Utilities::ContainsItem<std::string>(yColumnWhitelist, yColumn.first);
 
 	//So long as there is more than one value in the column and it is not the X-Column
 	if(plotInclude[1] && (columnUniqueValues[yColumn.first].size() > 1) && (xColumn.first != yColumn.first)){
@@ -255,7 +277,7 @@ int main(int argc, char *argv[]){
 	  //Attempt to pair X- and Y-columns with every other possible column
 	  for(auto const& zColumn : columnUniqueValues){
 	    //Reset Z-column flag
-	    plotInclude[2] = whiteListEmpty || Utilities::ContainsItem<std::string>(columnWhitelist, zColumn.first);
+	    plotInclude[2] = zWhiteListEmpty || Utilities::ContainsItem<std::string>(zColumnWhitelist, zColumn.first);
 
 	    //So long as there is more than one value in the column and it is not the X- or Y-Columns
 	    if(plotInclude[2] && (columnUniqueValues[zColumn.first].size() > 1) && (xColumn.first != zColumn.first) && (yColumn.first != zColumn.first)){
@@ -366,17 +388,33 @@ int main(int argc, char *argv[]){
     Gnuplot gp;
     //Instantiate string to hold one line plot string
     std::string gpPlotLine = "";
-
+    std::vector<std::string> axisLimits;
+    
     gp << "set output \"" << output << "/" << GenerateFileName(graphTitle) << ".png\"" << std::endl;
     gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
     gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
     gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
     gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
-    
+
+    if(cli.Present(X_RANGE_LIMIT)){
+      axisLimits = cli.GetList(X_RANGE_LIMIT);
+      gp << "set xrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
+    }
+
+    if(cli.Present(Y_RANGE_LIMIT)){
+      axisLimits = cli.GetList(Y_RANGE_LIMIT);
+      gp << "set yrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
+    }
+
     //If more than two dimensions
     if(zCol != yCol){
       double minXVal = std::numeric_limits<double>::max(), maxXVal = std::numeric_limits<double>::min(), minYVal = std::numeric_limits<double>::max(), maxYVal = std::numeric_limits<double>::min(), curVal;
 
+      if(cli.Present(Z_RANGE_LIMIT)){
+	axisLimits = cli.GetList(Z_RANGE_LIMIT);
+	gp << "set cbrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
+      }
+      
       // Determine the minimum and maximum values for the X- and Y-axis.
       for(unsigned i = 0; i < plotData[possiblePlots[plotId][2]].size(); i++){
 	// Update minimum and maximum if the value exceeds the stored
