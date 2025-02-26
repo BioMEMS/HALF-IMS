@@ -33,14 +33,14 @@ all:
 	make labview-processing OUTFILE=labview-processing.x
 	make labview-processing OUTFILE=simion-processing.x
 
-data-processing: dataProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(LDFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
+$(OUTDIRECTORY)data-processing.x: dataProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(LDFLAGS) $(SOURCE) $(OBJFILES) $< -o $@ 
 
-labview-processing: labViewProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
+$(OUTDIRECTORY)labview-processing.x: labViewProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $@
 
-simion-processing: simionProcessing.cpp $(OBJTGT)
-	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $(OUTDIRECTORY)$(OUTFILE)
+$(OUTDIRECTORY)simion-processing.x: simionProcessing.cpp $(OBJTGT)
+	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $@
 
 %.o: %.cpp %.h
 	@mkdir -p $(OUTDIRECTORY)
