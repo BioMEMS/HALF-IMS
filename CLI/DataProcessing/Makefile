@@ -18,6 +18,7 @@ SOURCEDIRECTORIES+=../../src/utilities/
 SOURCEDIRECTORIES+=../../src/signal-processing/
 SOURCEDIRECTORIES+=../../dependencies/gnuplot-iostream/
 SOURCEDIRECTORIES+=$(OUTDIRECTORY)
+VPATH:=$(SOURCEDIRECTORIES)
 
 #Get all source and header files in the source directories
 SRCFILES=$(foreach DIR,$(SOURCEDIRECTORIES),$(wildcard $(DIR)*.cpp))
@@ -29,33 +30,29 @@ OBJTGT=$(SRCFILES:.cpp=.o)
 OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 
 all: 
-	make $(OUTDIRECTORY)data-processing.x OUTFILE=data-processing.x
-	make $(OUTDIRECTORY)labview-processing.x OUTFILE=labview-processing.x
-	make $(OUTDIRECTORY)labview-processing.x OUTFILE=simion-processing.x
+	make --no-print-directory $(OUTDIRECTORY)data-processing.x OUTFILE=data-processing.x
+	make --no-print-directory $(OUTDIRECTORY)labview-processing.x OUTFILE=labview-processing.x
+	make --no-print-directory $(OUTDIRECTORY)simion-processing.x OUTFILE=simion-processing.x
 
-$(OUTDIRECTORY)data-processing.x: dataProcessing.cpp $(OBJTGT)
+$(OUTDIRECTORY)data-processing.x: dataProcessing.cpp $(OBJFILES)
+	make --no-print-directory output-directory
 	$(COMPILER) $(LDFLAGS) $(SOURCE) $(OBJFILES) $< -o $@ 
 
-$(OUTDIRECTORY)labview-processing.x: labViewProcessing.cpp $(OBJTGT)
+$(OUTDIRECTORY)labview-processing.x: labViewProcessing.cpp $(OBJFILES)
+	make --no-print-directory output-directory
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $@
 
-$(OUTDIRECTORY)simion-processing.x: simionProcessing.cpp $(OBJTGT)
+$(OUTDIRECTORY)simion-processing.x: simionProcessing.cpp $(OBJFILES)
+	make --no-print-directory output-directory
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) $(OBJFILES) $< -o $@
 
-%.o: %.cpp %.h
-	@mkdir -p $(OUTDIRECTORY)
+$(OUTDIRECTORY)%.o: %.cpp %.h
 	$(COMPILER) $(CPPFLAGS) $(SOURCE) -c $< -o $@
-	@cp $@ $(OUTDIRECTORY)$(notdir $@)
+
+.PHONY: output-directory
+output-directory:
+	@mkdir -p $(OUTDIRECTORY)
 
 .PHONY: clean
 clean:
-	rm *~ $(OUTDIRECTORY)* $(OBJTGT)
-
-.PHONY: test
-test:
-	@printf "%s\n" "Source Directory" $(SOURCE)
-	@printf "%s\n" "Header Files" $(HDRFILES)
-	@printf "%s\n" "Source Files" $(SRCFILES)
-	@printf "%s\n" "Object Targets" $(OBJTGT)
-	@printf "%s\n" "Object Files" $(OBJFILES)
-
+	rm -r *~ $(OUTDIRECTORY)*
