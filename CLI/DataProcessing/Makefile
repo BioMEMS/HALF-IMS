@@ -29,9 +29,9 @@ OBJTGT=$(SRCFILES:.cpp=.o)
 OBJFILES:=$(foreach FILE,$(OBJTGT),$(OUTDIRECTORY)$(notdir $(FILE)))
 
 all: 
-	make data-processing OUTFILE=data-processing.x
-	make labview-processing OUTFILE=labview-processing.x
-	make labview-processing OUTFILE=simion-processing.x
+	make $(OUTDIRECTORY)data-processing.x OUTFILE=data-processing.x
+	make $(OUTDIRECTORY)labview-processing.x OUTFILE=labview-processing.x
+	make $(OUTDIRECTORY)labview-processing.x OUTFILE=simion-processing.x
 
 $(OUTDIRECTORY)data-processing.x: dataProcessing.cpp $(OBJTGT)
 	$(COMPILER) $(LDFLAGS) $(SOURCE) $(OBJFILES) $< -o $@ 
