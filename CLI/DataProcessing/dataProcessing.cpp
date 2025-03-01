@@ -26,6 +26,7 @@
 #define X_RANGE_LIMIT "x_range"
 #define Y_RANGE_LIMIT "y_range"
 #define Z_RANGE_LIMIT "z_range"
+#define PLOT_TITLE "plot_title"
 
 //Parse out the units for the provided string
 std::string ParseUnits(std::string parameter){
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]){
   int flagTypeThree = Utilities::CLIParser::Dash | Utilities::CLIParser::DoubleDash | Utilities::CLIParser::Standalone;
 
   //Add desired flags to parser
-  cli.Add(Utilities::CLIParser::DESCRIPTION, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A program which can process HALF-IMS CSV files into plots using GnuPlot.");
+  cli.Add(Utilities::CLIParser::DESCRIPTION, std::vector<std::string>{""}, std::vector<int>{flagTypeThree}, "A program which can process CSV files into plots using GnuPlot.");
   cli.Add(Utilities::CLIParser::HELP, std::vector<std::string>{"h", "help"}, std::vector<int>{flagTypeThree}, "Display this help message.");
   cli.Add(Utilities::CLIParser::VERBOSE, std::vector<std::string>{"v", "verbose"}, std::vector<int>{flagTypeThree}, "Trigger verbose program output.");
   cli.Add(DEBUG, std::vector<std::string>{"d", "debug"}, std::vector<int>{flagTypeThree}, "Trigger debug program output.");
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]){
   cli.Add(X_RANGE_LIMIT, std::vector<std::string>{"xr", "x-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for X-axis limits. Applies to both two- and three-dimensional plots.");
   cli.Add(Y_RANGE_LIMIT, std::vector<std::string>{"yr", "y-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Y-axis limits. Applies to both two- and three-dimensional plots.");
   cli.Add(Z_RANGE_LIMIT, std::vector<std::string>{"zr", "z-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Z-axis limits. Only applies to three-dimensional plots.");
+  cli.Add(PLOT_TITLE, std::vector<std::string>{"t", "title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The replacement title string for auto-generated title.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -293,13 +295,14 @@ int main(int argc, char *argv[]){
 
   //For every possible plot
   for(unsigned plotId = 0, xCol=0, yCol=0, zCol=0; plotId < possiblePlots.size(); plotId++){
+    
     //Build graph title string
     graphTitle = "";
     for(unsigned j = possiblePlots[plotId].size() - 1; j > 0; j--){
       graphTitle += possiblePlots[plotId][j] + " vs. ";
     }
     graphTitle += possiblePlots[plotId][0];
-      
+    
     //If verbose operation was requested
     if(verbose){
       //Print out columns being graphed
@@ -394,7 +397,18 @@ int main(int argc, char *argv[]){
     gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
     gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
     gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
-    gp << "set title \"" << graphTitle << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
+    
+    //If plot title was provided
+    if(cli.Present(PLOT_TITLE)){
+      //Overwrite the graph title string
+      gp << "set title \"" << cli.Get(PLOT_TITLE);
+    }
+    else{
+      //Use auto-generated title
+      gp << "set title \"" << graphTitle;
+    }
+  
+    gp << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
 
     if(cli.Present(X_RANGE_LIMIT)){
       axisLimits = cli.GetList(X_RANGE_LIMIT);
