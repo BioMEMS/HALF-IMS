@@ -1,7 +1,7 @@
 #Declare compiler
 COMPILER=g++
 #Declare compiler flags
-CPPFLAGS=-ggdb -std=c++17 -Wall -Wextra
+CPPFLAGS=-ggdb -std=c++26 -Wall -Wextra
 #Declare linker flags
 LDFLAGS=$(CPPFLAGS)
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
