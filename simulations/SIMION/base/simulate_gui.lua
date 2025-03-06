@@ -22,6 +22,7 @@ t = simion.experimental.dialog {
   {'Ion Packet List', get_ion_files()},
   {'Chemical Concentration (PPM)', get_chemical_concentration()},
   {'Ion Packet X Stop (mm)', get_ion_packet_x_length()},
+  {'Carrier Gas Temperature (C)', get_carrier_gas_temperature() - 273.15},
   {'Carrier Gas Pressure (PSI)', get_carrier_gas_pressure() / 6894.76},
   {'Upstream Pressure (PSI)', get_upstream_pressure() / 6894.76},
   {'Carrier Gas Min. Flow Rate (mL/min)', get_carrier_gas_min_flow_rate()},
@@ -46,6 +47,7 @@ if(t.result == "Update") then
   set_bias_electrode_step_potential(t['Bias Electrode Step Potential (V)'])
   set_ion_files(t['Ion Packet List'])
   set_chemical_concentration(t['Chemical Concentration (PPM)'])
+  set_carrier_gas_temperature(t['Carrier Gas Temperature (C)'])
   set_carrier_gas_pressure(t['Carrier Gas Pressure (PSI)'])
   set_upstream_pressure(t['Upstream Pressure (PSI)'])
   set_carrier_gas_min_flow_rate(t['Carrier Gas Min. Flow Rate (mL/min)'])
