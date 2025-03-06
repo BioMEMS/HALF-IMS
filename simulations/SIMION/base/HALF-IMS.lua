@@ -5,6 +5,9 @@ simion.import("geometry.lua")
 simion.import("electrode_potentials.lua")
 simion.import("ions.lua")
 
+-- Import of the SDS collision model
+local SDS = simion.import("collision_sds.lua", "noinstall")
+
 -- Adjustable parameters which show up in the GUI under Ion Workbench "Variables" tab
 
 -- Control whether the PE view is frozen after potentials are updated
@@ -67,7 +70,18 @@ local upstreamPressure = get_upstream_pressure() / 6894.75729
 local carrierPressure = get_carrier_gas_pressure() / 6894.75729
 
 function segment.initialize()
-   -- Unclear when this gets called, but it never seems to output a log message...
+   -- Call SDS model's initialization function
+   SDS.initialize()
+end
+
+function segment.initialize_run()
+   -- Call SDS model's function
+   SDS.initialize_run()
+end
+
+function segment.load()
+   -- Call SDS model's function
+   SDS.load()
 end
 
 -- Voltage adjustment segment.
@@ -91,15 +105,21 @@ function segment.fast_adjust()
   end
 
   -- Set bias ring and detector electrodes to desired voltages
-  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = -bias_ring_voltage
-  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = 0
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = 0
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+5] = -bias_ring_voltage
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+6] = bias_ring_voltage
 end
 
 -- Adjust acceleration every cycle
 function segment.accel_adjust()
+   -- Call SDS model's acceleration adjustment function
+   SDS.accel_adjust()
+end
 
+function segment.tstep_adjust()
+   -- Call SDS model's function
+   SDS.tstep_adjust()
 end
 
 -- Segment called after each time-step.
@@ -126,6 +146,9 @@ function segment.other_actions()
      -- Set flag to prevent this section from being called again for the current ion
      initial_scaled = 1
    end
+
+   -- Call SDS model other actions after velocity assignment
+   SDS.other_actions()
 
    sim_update_pe_surface = 1  -- update display
 

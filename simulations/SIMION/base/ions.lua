@@ -26,7 +26,15 @@ function build_ion_file(name, masses, charges)
 	     end
 
 	     --Write particle beam to file
-	     fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), tostring(charges[i]), tostring(i-1)))
+	     fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), tostring(charges[i]), tostring(i)))
+
+	     -- If charges are not neutral
+	     if(charges[i] ~= 0) then
+	        -- Calculate non-ionized particles
+	     	particles = calculate_atom_count() - particles
+
+		fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), "0", "0"))
+	     end
 	 end 
 
 	 -- If using "Coulomb" repulsion type
@@ -232,15 +240,27 @@ function set_simulated_z_device_length(value)
 end
 
 --Functions to get/set the carrier gas pressure
-local carrier_gas_upstream_pressure_file_name = "carrier_gas_upstream_pressure"
+local carrier_gas_pressure_file_name = "carrier_gas_pressure"
 
 function get_carrier_gas_pressure()
-	 return get_file_value(carrier_gas_upstream_pressure_file_name, 137895)
+	 return get_file_value(carrier_gas_pressure_file_name, 137895)
 end
 
 function set_carrier_gas_pressure(value)
 	 -- Accept PSI value and convert to N/m^2
-	 set_file_value(carrier_gas_upstream_pressure_file_name, value * 6894.76)
+	 set_file_value(carrier_gas_pressure_file_name, value * 6894.76)
+end
+
+--Functions to get/set the carrier gas temperature
+local carrier_gas_temperature_file_name = "carrier_gas_temperature_kelvin"
+
+function get_carrier_gas_temperature()
+	 return get_file_value(carrier_gas_temperature_file_name, 298.15)
+end
+
+function set_carrier_gas_temperature(value)
+	 -- Accept Celsius and convert to Kelvin
+	 set_file_value(carrier_gas_temperature_file_name, value + 273.15)
 end
 
 --Functions to get/set the carrier gas flow rate
