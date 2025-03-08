@@ -17,12 +17,14 @@
 #define SAMPLE_COMPRESSION_COUNT "sample_compression"
 #define SAMPLE_PER_SEGMENT "samples_per_segment"
 #define CHEMICAL_COLUMN_INDEX "chemical_index"
+#define DOPANT_COLUMN_INDEX "dopant_index"
 #define RELATIVE_CALCULATION "rel_calc"
 #define BASELINE_REMOVAL "baseline_removal"
 #define SYSTEM_PRESSURE "pressure"
 #define SYSTEM_TEMPERATURE "temperature"
 #define SYSTEM_GAP_SIZE "gap_size"
 #define SAVE_ALL_COLUMNS "no_delete_columns"
+#define NO_DOPANT_COLUMN_PRESENT "no_dopant_present"
 #define LABVIEW_DATA_COLUMNS 7
 #define LABVIEW_TIME_COLUMN_INDEX 0
 #define CSV_SHUTTER_COLUMN_INDEX 11
@@ -83,7 +85,7 @@ std::vector<std::string> SplitLine(std::string line){
 }
 
 //Convert provided vect
-std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> line, unsigned chemicalIndex){
+std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> line, std::vector<unsigned> chemicalIndices){
   std::vector<double> results;
 
   //For each element in the line
@@ -93,8 +95,8 @@ std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> li
       results.push_back(std::stod(line[i]));
     }
     catch(std::invalid_argument const& ex){
-      //If the current index is not the known chemical index
-      if(i != chemicalIndex){
+      //If the current index is not a known chemical index
+      if(!Utilities::ContainsItem(chemicalIndices,i)){
 	//Print message to error stream
 	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert '" << line[i] << "' at position " << i << " for line " << lineNumber << ". ";
 	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
@@ -113,9 +115,10 @@ int main(int argc, char *argv[]){
   //Declare default output as current directory
   std::string output, input;
   bool inputFlag, outputFlag, verbose, saveAllColumns;
-  unsigned sampleCompressionMaximum = 4, chemicalIndex = 23;
+  unsigned sampleCompressionMaximum = 4, chemicalIndex = 23, dopantIndex = 28;
   double systemTemperature = 30, systemPressure = 26, systemGap = 100E-6, systemGapScaled = 100;
-  
+  std::vector<unsigned> chemicalIndices;
+    
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -133,7 +136,9 @@ int main(int argc, char *argv[]){
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The comma-separated list of input files to process. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output directory where to place the processed files.");
   cli.Add(SAMPLE_COMPRESSION_COUNT, std::vector<std::string>{"s", "sections"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of LabView sample sections to average together. Default is 4.");
-  cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is 23.");
+  cli.Add(CHEMICAL_COLUMN_INDEX, std::vector<std::string>{"c", "chemical-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the chemical name. Default is " + std::to_string(chemicalIndex) + ".");
+  cli.Add(DOPANT_COLUMN_INDEX, std::vector<std::string>{"d", "dopant-column"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The column index which has the dopant name. Default is " + std::to_string(dopantIndex) + ".");
+  cli.Add(NO_DOPANT_COLUMN_PRESENT, std::vector<std::string>{"ndc", "no-dopant-column"}, std::vector<int>{flagTypeThree, flagTypeThree}, "Indicates if the data does not have a dopant column.");
   cli.Add(RELATIVE_CALCULATION, std::vector<std::string>{"nrc", "no-relative-calculation"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Stop the execution of the relative calculation step.");
   cli.Add(SAVE_ALL_COLUMNS, std::vector<std::string>{"sac", "save-all-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Prevent the removal of columns no longer necessary due to calculations.");
   cli.Add(BASELINE_REMOVAL, std::vector<std::string>{"b", "baseline"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A CSV file which will be used to remove the baseline from the data. Must have equivalent columns to target data file.");
@@ -181,6 +186,16 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       //Update value
       chemicalIndex = cli.GetNumeric(CHEMICAL_COLUMN_INDEX);
     }
+
+    //If the chemical column index is provided
+    if(cli.Present(DOPANT_COLUMN_INDEX)){
+      //Update value
+      dopantIndex = cli.GetNumeric(DOPANT_COLUMN_INDEX);
+    }
+
+    //Put chemical and dopant column indices into vector
+    chemicalIndices.push_back(chemicalIndex);
+    chemicalIndices.push_back(dopantIndex);
     
     //Determine if saving all columns
     saveAllColumns = !cli.Present(SAVE_ALL_COLUMNS);
@@ -237,7 +252,21 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	outputFile << "MIPS Read Ch. " << i << " (V),";
       }
 
-      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),Long Electrode Setting (V),Short Electrode Setting (V),Long Electrode Setting (Td.),Short Electrode Setting (Td.),Detector 1 (pA),Detector 2 (pA)" << std::endl;
+      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),";
+      
+      //If the dopant column was indicated to be present
+      if(!cli.Present(NO_DOPANT_COLUMN_PRESENT)){
+	//Add dopant column headers
+	outputFile << "Dopant,Dopant Concentration (ppm),";
+      }
+
+      //If the relative calculation was allowed
+      if(!cli.Present(RELATIVE_CALCULATION)){
+	//Write relative correction column values
+	outputFile << "Long Electrode Setting (V),Short Electrode Setting (V),Long Electrode Setting (Td.),Short Electrode Setting (Td.),Detector 1 (pA),Detector 2 (pA)";
+      }
+
+      outputFile << std::endl;
       
       //Read the file until the LabView header line is found
       unsigned lineCount = 0;
@@ -249,24 +278,33 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       //For each line of the input file
       double avgCount = -1;
       double timeSegmentCompressionCount = 0;
-      for(std::string line = "", convertedVal="", chemical=""; !inputFile.eof(); std::getline(inputFile, line), lineCount++){	
+      for(std::string line = "", convertedVal="", chemical="", dopant=""; !inputFile.eof(); std::getline(inputFile, line), lineCount++){
 	//Split the line into numeric values
 	splitLine = SplitLine(line);
-	numericLine = ConvertLine(lineCount, splitLine, chemicalIndex);
+	numericLine = ConvertLine(lineCount, splitLine, chemicalIndices);
 	
 	//Initialize average line with zeroes
 	for(unsigned i = avgLine.size(); i < splitLine.size(); i++){
 	  avgLine.push_back(0.0);
 	}
 
-	//If line has at least 24 elements
-	if(splitLine.size() >= 24){
-	  //Grab the 24th element which should be the chemical name	  
-	  chemical = splitLine[23];
+	//If line has at least more than chemical index elements
+	if(splitLine.size() >= (chemicalIndex + 1)){
+	  //Grab the chemical element as indicated by the index
+	  chemical = splitLine[chemicalIndex];
 	}
 
+	//If line has more than dopant index elements
+	if(splitLine.size() >= (dopantIndex + 1)){
+	  //Grab the dopant element as indicated by the index
+	  dopant = splitLine[dopantIndex];
+	}
+
+	//Peek next character to trigger EOF calculation, behavior seems to have changed from C++17 to C++23
+	inputFile.peek();
+
 	//If line exceeds LAB View column count
-	if(splitLine.size() > LABVIEW_DATA_COLUMNS){
+	if((splitLine.size() > LABVIEW_DATA_COLUMNS) || inputFile.eof()){
 	  //Increase compression count
 	  timeSegmentCompressionCount++;
 	}
@@ -291,20 +329,27 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	      //Use time segment compression count for averaging	      
 	      avgLine[i] /= (timeSegmentCompressionCount - 1);
 	    }
-
-	    //Convert value to a string and append to output line
-	    if(i == 23){
+	    std::cout << " AVG VAL2: " << avgLine[i] << std::endl;
+	    
+	    //If the current index is the chemical index
+	    if(i == chemicalIndex){
+	      //Write the chemical directly
 	      convertedVal = chemical;
 	    }
+	    //If the current index is the dopant index
+	    else if(i == dopantIndex){
+	      //Write the dopant directly
+	      convertedVal = dopant;
+	    }
 	    else{
+	      //Convert value to a string and append to output line
 	      convertedVal = std::to_string(trunc(avgLine[i]*100)/100);
 	    }
-	    line = line + convertedVal + ',';	      
+	    line = line + convertedVal + ',';
 
 	    //Reset value to zero
 	    avgLine[i] = 0.0;
 	  }
-
 	  //Replace last comma with newline character
 	  line[line.length() - 1] = '\n';
 
