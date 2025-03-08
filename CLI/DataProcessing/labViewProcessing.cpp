@@ -329,7 +329,6 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	      //Use time segment compression count for averaging	      
 	      avgLine[i] /= (timeSegmentCompressionCount - 1);
 	    }
-	    std::cout << " AVG VAL2: " << avgLine[i] << std::endl;
 	    
 	    //If the current index is the chemical index
 	    if(i == chemicalIndex){
