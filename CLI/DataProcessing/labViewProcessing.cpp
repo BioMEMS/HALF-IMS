@@ -167,6 +167,11 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
       //Report input and output file
       std::cout << "Input File: " << input << std::endl;
       std::cout << "Output File: " << output << std::endl;
+
+      //If baseline removal was provided, report file
+      if(cli.Present(BASELINE_REMOVAL)){
+	std::cout << "Baseline File: " << cli.Get(BASELINE_REMOVAL) << std::endl;
+      }
     }
     
     //If compression count maximum was provided
@@ -543,6 +548,10 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 
 	  //Get the column header mapping for the baseline file
 	  std::map<std::string, unsigned> baselineHeaderMapping = csvBaseline.ColumnMapping();
+
+	  if(verbose){
+	    std::cout << "Mapping columns in baseline file:" << std::endl;
+	  }
 	  
 	  //Ensure CSV output file object contents are updated
 	  csvOutput.Read();
@@ -552,14 +561,20 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  
 	  Utilities::ConvertedData dataValue, baselineValue;
 	  csvOutput(0, outputSize.Columns) = "Baseline";
-	  dataValue = Utilities::ConvertValue_Double("0");
-	  baselineValue = Utilities::ConvertValue_Double("0");
-	  
+
 	  //For every column in the output file
 	  for(unsigned j = 0; j < outputSize.Columns; j++){
 
+	    if(verbose){
+	      std::cout << "Data Column " << j << " '" << csvOutput(0,j) << "' -> Baseline Column " << baselineHeaderMapping[csvOutput(0,j)] << std::endl; 
+	    }
+	    
 	    //If the current column is a detector output
 	    if(csvOutput(0,j).find("Detector") != std::string::npos){
+
+	      if(verbose){
+		std::cout << "Attempting to remove baseline from '" << csvOutput(0,j) << "' column of datafile." << std::endl;
+	      }
 	      
 	      //For every row after the header	    
 	      for(unsigned i = 1; i < outputSize.Rows; i++){
