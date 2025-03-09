@@ -433,6 +433,12 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  //Calculate diluted analyte concentration in the device
 	  csvOutput(i-1, 24) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))));
 
+	  if(!cli.Present(NO_DOPANT_COLUMN_PRESENT)){
+	    //Calculate diluted analyte concentration in the device
+	    csvOutput(i-1, 29) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,29))));
+	    
+	  }
+	  
 	  //Increment counter
 	  rowsDeleted++;
 	}
