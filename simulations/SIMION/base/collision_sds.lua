@@ -1332,8 +1332,8 @@ end
 --]]
 function M.segment.load()
   if sim_trajectory_quality > 0 then
-    print("SDS changing Trajectory Quality (TQual) to zero (recommended for speed).")
-    -- sim_trajectory_quality = 0
+      print("SDS changing Trajectory Quality (TQual) to zero (recommended for speed).")
+      sim_trajectory_quality = 0
   end
 end
 
@@ -1495,7 +1495,6 @@ end
 
 -- Install segments on load.
 if not opt_noinstall then
-   print("testing!")
   M.install()
 end
 
@@ -1510,7 +1509,7 @@ end
 --   SDS.velocity = function(x,y,z) return x*2,0,0 end
 --   SDS.velocity = {simion.wb.instances[2], simion.wb.instances[3], simion.wb.instances[4])
 local mt = {}
-function mt.__index.(t,k)  -- GET t[k]
+function mt.__index(t,k)  -- GET t[k]
   if     k == 'pressure'    then return pres_defs
   elseif k == 'temperature' then return temp_defs
   elseif k == 'velocity'    then return vel_defs
@@ -1522,7 +1521,11 @@ function mt.__index.(t,k)  -- GET t[k]
   elseif k == 'temperature_coordinates' then error('no longer implemented: ' .. k)
   elseif k == 'instances'   then return instances
   elseif k == 'init'        then return init
-  else error(k) return end
+  else
+	print("Unable to find input: '" .. k .. "'")
+	print("If error resulted from a function call, check that the syntax is correct as Lua will interpret it as variable.")
+	return
+  end
 end
 function mt.__newindex(t,k,v)  -- SET t[k]=v
   print("SDS Defining " .. k .. ":",

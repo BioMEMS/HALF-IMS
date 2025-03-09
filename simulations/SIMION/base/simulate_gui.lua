@@ -30,7 +30,8 @@ t = simion.experimental.dialog {
   {'Carrier Gas Step Flow Rate (mL/min)', get_carrier_gas_step_flow_rate()},
   {'Simulation Grouped Setting', get_iob_grouped_setting()},	
   {'Simulation Repulsion Type', get_iob_grouped_repulsion()},	
-  {'Simulation Repulsion Value (C)', get_iob_grouped_repulsion_value()},	
+  {'Simulation Repulsion Value (C)', get_iob_grouped_repulsion_value()},
+  {'Simulation Trajectory Quality', get_iob_trajectory_quality()},	
   {'Simulation Loop Count', get_simulate_loop_count()},
   buttons="&Update|&Close"
 }
@@ -56,6 +57,7 @@ if(t.result == "Update") then
   set_iob_grouped_setting(t['Simulation Grouped Setting'])
   set_iob_grouped_repulsion(t['Simulation Repulsion Type'])
   set_iob_grouped_repulsion_value(t['Simulation Repulsion Value (C)'])
+  set_iob_trajectory_quality(t['Simulation Trajectory Quality'])
   set_simulate_loop_count(t['Simulation Loop Count'])
   set_ion_packet_x_length(t['Ion Packet X Stop (mm)'])
   set_results_file_name(t['Log File'])

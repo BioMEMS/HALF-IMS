@@ -421,6 +421,18 @@ function set_iob_grouped_repulsion_value(setting)
 	 return
 end
 
+-- Functions to get/set the ion trajectory quality
+local iob_trajectory_quality_file_value = "iob_trajectory_quality_setting"
+
+function get_iob_trajectory_quality()
+	 return get_file_value(iob_trajectory_quality_file_value, 0)
+end
+
+function set_iob_trajectory_quality(value)
+	 set_file_value(iob_trajectory_quality_file_value, value)
+	 return
+end
+
 -- Functions to assist in the generation of ion counts
 local chemical_properties_database_file_value = "chemical_properties_database_file"
 local ionization_percentage_file_vale = "ionization_percentage"

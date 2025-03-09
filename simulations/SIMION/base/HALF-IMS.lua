@@ -65,23 +65,23 @@ local detectorElectrodeLength = get_detector_pad_length()*workbenchGridXSpacing
 local workbenchGroupedSetting = get_iob_grouped_setting()
 local workbenchGroupedRepulsion = get_iob_grouped_repulsion()
 local workbenchRepulsionValue = get_iob_grouped_repulsion_value()
+local workbenchTrajectorySetting = get_iob_trajectory_quality()
 local chemicalConcentration = get_chemical_concentration()
 local upstreamPressure = get_upstream_pressure() / 6894.75729
 local carrierPressure = get_carrier_gas_pressure() / 6894.75729
 
 function segment.initialize()
    -- Call SDS model's initialization function
-   SDS.initialize()
+   SDS.segment.initialize()
 end
 
 function segment.initialize_run()
    -- Call SDS model's function
-   SDS.initialize_run()
+   SDS.segment.initialize_run()
 end
 
 function segment.load()
-   -- Call SDS model's function
-   SDS.load()
+   sim_trajectory_quality = workbenchTrajectorySetting
 end
 
 -- Voltage adjustment segment.
@@ -97,7 +97,7 @@ function segment.fast_adjust()
   adj_elect[2] = -shutter_electrode_voltage/2
   
   -- set electodes to the desired voltages
-  for i = (num_shutter_electrodes+1),(4*num_electrode_pairs + num_shutter_electrodes + 2),4 do
+  for i = (num_shutter_electrodes+1),(4*(num_electrode_pairs-1) + num_shutter_electrodes + 2),4 do
     adj_elect[i] = -long_electrode_voltage/2 
     adj_elect[i+1] = long_electrode_voltage/2
     adj_elect[i+2] = short_electrode_voltage/2 
@@ -105,8 +105,8 @@ function segment.fast_adjust()
   end
 
   -- Set bias ring and detector electrodes to desired voltages
-  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = 0
-  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = 0
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+3] = -bias_ring_voltage
+  adj_elect[4*num_electrode_pairs+num_shutter_electrodes+4] = bias_ring_voltage
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+5] = -bias_ring_voltage
   adj_elect[4*num_electrode_pairs+num_shutter_electrodes+6] = bias_ring_voltage
 end
@@ -114,12 +114,12 @@ end
 -- Adjust acceleration every cycle
 function segment.accel_adjust()
    -- Call SDS model's acceleration adjustment function
-   SDS.accel_adjust()
+   SDS.segment.accel_adjust()
 end
 
 function segment.tstep_adjust()
    -- Call SDS model's function
-   SDS.tstep_adjust()
+   SDS.segment.tstep_adjust()
 end
 
 -- Segment called after each time-step.
@@ -148,7 +148,7 @@ function segment.other_actions()
    end
 
    -- Call SDS model other actions after velocity assignment
-   SDS.other_actions()
+   SDS.segment.other_actions()
 
    sim_update_pe_surface = 1  -- update display
 
@@ -160,7 +160,8 @@ function segment.other_actions()
      if (output_log_header_line == 0) then
      	output_log_line = output_log_line .. "Grouped Flag,"
      	output_log_line = output_log_line .. "Repulsion Setting,"
-     	output_log_line = output_log_line .. "Repulsion Value,"	
+     	output_log_line = output_log_line .. "Repulsion Value,"
+	output_log_line = output_log_line .. "Trajectory Quality,"
         output_log_line = output_log_line .. "Electrode Pairs,"     
 	output_log_line = output_log_line .. "Device X Length (mm),"
 	output_log_line = output_log_line .. "Device Y Length (mm),"
@@ -214,6 +215,7 @@ function segment.other_actions()
      output_log_line = output_log_line .. workbenchGroupedSetting .. ","
      output_log_line = output_log_line .. workbenchGroupedRepulsion .. ","
      output_log_line = output_log_line .. workbenchRepulsionValue .. ","
+     output_log_line = output_log_line .. workbenchTrajectorySetting .. ","	
      output_log_line = output_log_line .. num_electrode_pairs .. ","     
      output_log_line = output_log_line .. deviceXLength .. ","
      output_log_line = output_log_line .. deviceYLength .. ","
