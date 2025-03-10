@@ -33,7 +33,7 @@ function build_ion_file(name, masses, charges)
 	        -- Calculate non-ionized particles
 	     	particles = calculate_atom_count() - particles
 
-		fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), "0", "0"))
+		--fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), "0", "0"))
 	     end
 	 end 
 
