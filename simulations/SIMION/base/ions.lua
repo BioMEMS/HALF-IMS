@@ -86,7 +86,7 @@ function set_current_ion_file(packet_string)
 	 for pair in string.gmatch(packet_string, "([^|]+)") do
 	     local table = {}
 	     local count = 1
-	     for value in string.gmatch(pair, "([^:]+)") do
+	     for value in string.gmatch(pair, "([^|]+)") do
 	     	 table[count] = value
 		 count = count + 1
 	     end
