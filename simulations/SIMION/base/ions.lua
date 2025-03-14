@@ -83,7 +83,7 @@ function set_current_ion_file(packet_string)
 	 -- Parse packet string
  	 local masses = {}
 	 local charges = {}
-	 for pair in string.gmatch(packet_string, "([^|]+)") do
+	 for pair in string.gmatch(packet_string, "([^,]+)") do
 	     local table = {}
 	     local count = 1
 	     for value in string.gmatch(pair, "([^|]+)") do
