@@ -421,8 +421,9 @@ function set_iob_grouped_repulsion_value(setting)
 	 return
 end
 
--- Functions to get/set the ion trajectory quality
+-- Functions to get/set the ion trajectory settings
 local iob_trajectory_quality_file_value = "iob_trajectory_quality_setting"
+local iob_trajectory_image_control_file_value = "iob_trajectory_image_control"
 
 function get_iob_trajectory_quality()
 	 return get_file_value(iob_trajectory_quality_file_value, 0)
@@ -430,6 +431,15 @@ end
 
 function set_iob_trajectory_quality(value)
 	 set_file_value(iob_trajectory_quality_file_value, value)
+	 return
+end
+
+function get_iob_trajectory_image_control()
+	 return get_file_value(iob_trajectory_image_control_file_value, 0)
+end
+
+function set_iob_trajectory_image_control(value)
+	 set_file_value(iob_trajectory_image_control_file_value, value)
 	 return
 end
 

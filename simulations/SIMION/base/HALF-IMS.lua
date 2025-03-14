@@ -70,6 +70,59 @@ local chemicalConcentration = get_chemical_concentration()
 local upstreamPressure = get_upstream_pressure() / 6894.75729
 local carrierPressure = get_carrier_gas_pressure() / 6894.75729
 
+local min_long = get_long_electrode_min_potential()
+local max_long = get_long_electrode_max_potential()
+local step_long = get_long_electrode_step_potential()
+
+local min_short = get_short_electrode_min_potential()
+local max_short = get_short_electrode_max_potential()
+local step_short = get_short_electrode_step_potential()
+
+local min_bias = get_bias_electrode_min_potential()
+local max_bias = get_bias_electrode_max_potential()
+local step_bias = get_bias_electrode_step_potential()
+
+local step_gas = get_carrier_gas_step_flow_rate()
+local min_gas = get_carrier_gas_min_flow_rate()
+local max_gas = get_carrier_gas_max_flow_rate()
+
+local repetition_count = get_simulate_loop_count()
+
+function segment.flym()
+   -- Clear runs to prevent clutter
+   sim_trajectory_image_control = get_iob_trajectory_image_control()
+   
+   -- Preserve original behavior 
+   repeat 
+	-- For all desired repetitions
+      	for repetition=0,repetition_count,1 do 
+	    -- For each bias ring voltage
+	    for bep=min_bias,max_bias,step_bias do
+		-- Set bias ring voltage
+		bias_ring_voltage = bep
+
+		-- For each long electrode voltage
+		for lep=min_long,max_long,step_long do
+		    -- Set long electrode voltage
+		    long_electrode_voltage = lep
+
+		    -- For each short electrode voltage
+		    for sep=min_short,max_short,step_short do
+			-- Set short electrode voltage
+			short_electrode_voltage = sep
+			
+			-- Run simulation
+			run()
+			
+			-- Report progress
+			print("Long (V):",lep,"Short (V):",sep,"Bias (V):",bep,"Repeats:",repetition,"/",repetition_count)
+		    end
+		end
+	    end
+	 end
+   until sim_rerun_flym == 0
+end
+
 function segment.initialize()
    -- Call SDS model's initialization function
    SDS.segment.initialize()

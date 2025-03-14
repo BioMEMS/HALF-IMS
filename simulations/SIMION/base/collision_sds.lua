@@ -1369,7 +1369,6 @@ function M.segment.initialize_run()
     else
       print "SDS enabled (WARNING: diffusion disabled: SDS_diffusion==0)"
     end
-    print_sds_parameters()
   end
 
   --seed(1) --DEBUG (disable randomization between runs)
