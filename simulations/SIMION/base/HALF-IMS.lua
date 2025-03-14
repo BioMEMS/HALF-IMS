@@ -82,10 +82,6 @@ local min_bias = get_bias_electrode_min_potential()
 local max_bias = get_bias_electrode_max_potential()
 local step_bias = get_bias_electrode_step_potential()
 
-local step_gas = get_carrier_gas_step_flow_rate()
-local min_gas = get_carrier_gas_min_flow_rate()
-local max_gas = get_carrier_gas_max_flow_rate()
-
 local repetition_count = get_simulate_loop_count()
 
 function segment.flym()

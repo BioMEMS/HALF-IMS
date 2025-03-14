@@ -13,6 +13,10 @@ local grouped_flag = get_iob_grouped_setting()
 local repulsion_type = get_iob_grouped_repulsion()
 local repulsion_value = get_iob_grouped_repulsion_value()
 
+local step_gas = get_carrier_gas_step_flow_rate()
+local min_gas = get_carrier_gas_min_flow_rate()
+local max_gas = get_carrier_gas_max_flow_rate()
+
 -- Set image control to View On, Retain Off
 set_iob_trajectory_image_control(1)
 
