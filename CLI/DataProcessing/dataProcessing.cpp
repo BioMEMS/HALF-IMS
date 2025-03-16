@@ -450,8 +450,8 @@ int main(int argc, char *argv[]){
     if(zCol != yCol){
       double minXVal = std::numeric_limits<double>::max(), maxXVal = std::numeric_limits<double>::min(), minYVal = std::numeric_limits<double>::max(), maxYVal = std::numeric_limits<double>::min(), curVal;
 
-      //Calculate the 3D plot top margin offset value from the number of parameters and desired columns
-      unsigned titleMargin = (constantParameters.size() / subtitleLineColumns);
+      //Calculate the 3D plot top margin offset value from the number of parameters and desired columns to match 2D plots
+      unsigned titleMargin = (constantParameters.size() / subtitleLineColumns) + 1;
 
       //If present
       if(cli.Present(Z_RANGE_LIMIT)){
