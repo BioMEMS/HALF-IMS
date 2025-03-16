@@ -87,18 +87,22 @@ std::vector<std::string> SplitLine(std::string line){
 //Convert provided vect
 std::vector<double> ConvertLine(unsigned lineNumber, std::vector<std::string> line, std::vector<unsigned> chemicalIndices){
   std::vector<double> results;
-
+  Utilities::ConvertedData result;
+  
   //For each element in the line
   for(unsigned i = 0; i < line.size(); i++){
     //Attempt to convert element to a double
-    try{
-      results.push_back(std::stod(line[i]));
+    result = Utilities::ConvertValue_Double(line[i]);
+
+    //If there was an error with converting the value
+    if(!result.error){
+      results.push_back(result.value);
     }
-    catch(std::invalid_argument const& ex){
+    else{
       //If the current index is not a known chemical index
       if(!Utilities::ContainsItem(chemicalIndices,i)){
 	//Print message to error stream
-	std::cerr << "Exception in '" << ex.what() << "' thrown attempting to convert '" << line[i] << "' at position " << i << " for line " << lineNumber << ". ";
+	std::cerr << "Exception in '" << result.msg << "' thrown attempting to convert '" << line[i] << "' at position " << i << " for line " << lineNumber << ". ";
 	std::cerr << "A minimum data value has been added as a placeholder to preserve any data spacing." << std::endl;
       }
       
