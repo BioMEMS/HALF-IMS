@@ -62,7 +62,7 @@ std::string GenerateFileName(std::string title){
 
   for(unsigned i = 0; i < title.length(); i++){
     // If character matches any typical special character
-    if(title[i] == '(' || title[i] == ')' || title[i] == ' ' || title[i] == '.'){
+    if(title[i] == '(' || title[i] == ')' || title[i] == ' ' || title[i] == '.' || title[i] == '\\' || title[i] == '/'){
       // Replace with underscore
       title[i] = '_';
     }
@@ -605,15 +605,15 @@ int main(int argc, char *argv[]){
 	//Only have one column
 	gp << "set key columns 1" << std::endl;
       }
-
-      gp << "plot ";
-
+      
       // If only one curve
       if(curveCount == 1){
 	// Remove legend to ignore any discovered label
-	gp << "unset key" << std::endl;
+	gp << "set key off" << std::endl;
       }
       
+      gp << "plot ";
+
       //Build the plot string one-liner
       for(unsigned i = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
