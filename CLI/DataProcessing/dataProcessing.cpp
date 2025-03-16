@@ -27,6 +27,8 @@
 #define Y_RANGE_LIMIT "y_range"
 #define Z_RANGE_LIMIT "z_range"
 #define PLOT_TITLE "plot_title"
+#define SUBTITLE_COLUMNS "subtitle_columns"
+#define GNUPLOT_NEWLINE "\\n"
 
 //Parse out the units for the provided string
 std::string ParseUnits(std::string parameter){
@@ -74,6 +76,9 @@ int main(int argc, char *argv[]){
   //Instantiate abort flag
   bool abort = false;
 
+  //Instantiate value for how many fields are in a row of the subtitle line
+  unsigned subtitleLineColumns = 5;
+  
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -96,6 +101,7 @@ int main(int argc, char *argv[]){
   cli.Add(Y_RANGE_LIMIT, std::vector<std::string>{"yr", "y-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Y-axis limits. Applies to both two- and three-dimensional plots.");
   cli.Add(Z_RANGE_LIMIT, std::vector<std::string>{"zr", "z-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Z-axis limits. Only applies to three-dimensional plots.");
   cli.Add(PLOT_TITLE, std::vector<std::string>{"t", "title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The replacement title string for auto-generated title.");
+  cli.Add(SUBTITLE_COLUMNS, std::vector<std::string>{"sc", "subtitle-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of fields per line of the automatically generated subtitle. Default is " + std::to_string(subtitleLineColumns) + ".");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -112,7 +118,7 @@ int main(int argc, char *argv[]){
   //Declare default output as current directory
   std::string input, output = "."; //Might break on Windows? Use Filesystem library?
   std::vector<std::string> xColumnWhitelist, yColumnWhitelist, zColumnWhitelist;
-  
+
   //If the output flag is present
   if(cli.Present(OUTPUT_DIRECTORY)){
     //Extract necessary arguments
@@ -162,6 +168,11 @@ int main(int argc, char *argv[]){
   if(cli.Present(Z_PLOT_COLUMNS)){
     //Update the whitelist
     zColumnWhitelist = cli.GetList(Z_PLOT_COLUMNS);
+  }
+
+  //If a column count was provided
+  if(cli.Present(SUBTITLE_COLUMNS)){
+    subtitleLineColumns = cli.GetNumeric(SUBTITLE_COLUMNS);
   }
   
   //Open input file
@@ -225,26 +236,24 @@ int main(int argc, char *argv[]){
   }
 
   //Build a sub-title string for the generated plots
-  std::string constantParameters = "";
+  std::vector<std::string> constantParameters;
   for(auto const& it : columnUniqueValues){
     if(columnUniqueValues[it.first].size() == 1){
-      //If not the first element
-      if(constantParameters.length() > 0){
-	//Separate values with a space
-	constantParameters += " ";
-      }
-
       //Append the column header and unique value in a comma-separated list
-      constantParameters += it.first + ": " + columnUniqueValues[it.first][0] + ",";
+      constantParameters.push_back(it.first + ": " + columnUniqueValues[it.first][0]);
     }
   }
-  
-  //Remove trailing comma
-  constantParameters = constantParameters.substr(0, constantParameters.length() - 1);
 
-  //Print out header line
+  //Print out header line without consideration of subtitle count
   if(debug){
-    std::cout << "Plot Subtitle" << std::endl << constantParameters << std::endl << std::endl;
+    std::cout << "Plot Subtitle" << std::endl;
+    if(constantParameters.size() > 0){
+      std::cout << constantParameters[0];
+      for(unsigned i = 0; i < constantParameters.size(); i++){
+	std::cout << ", " << constantParameters[i];
+      }
+    }
+    std::cout << std::endl;
   }
 
   std::vector<std::vector<std::string>> possiblePlots;
@@ -390,7 +399,7 @@ int main(int argc, char *argv[]){
     //Declare GNUPlot object
     Gnuplot gp;
     //Instantiate string to hold one line plot string
-    std::string gpPlotLine = "";
+    std::string gpPlotLine = "", titleOffset = "";
     std::vector<std::string> axisLimits;
     
     gp << "set output \"" << output << "/" << GenerateFileName(graphTitle) << ".png\"" << std::endl;
@@ -407,9 +416,26 @@ int main(int argc, char *argv[]){
       //Use auto-generated title
       gp << "set title \"" << graphTitle;
     }
-  
-    gp << "\\n{/*0.5 " << constantParameters << "}\"" << std::endl;
 
+    //Write subtitle line
+    for(unsigned subtitleParam = 0; subtitleParam < constantParameters.size(); ){
+      //Write a newline
+      gp << GNUPLOT_NEWLINE << "{/*0.5 ";
+      for(unsigned subtitleParamCur = 0; (subtitleParam < constantParameters.size()) && (subtitleParamCur < subtitleLineColumns); subtitleParamCur++, subtitleParam++){
+	//Write the parameter string built earlier
+	gp << constantParameters[subtitleParam];
+
+	//If not the final column
+	if((subtitleParam + 1) < constantParameters.size()){
+	  //Write a comma
+	  gp << ", ";
+	}
+      }
+      gp << "}";
+    }
+    
+    gp << "\"" << std::endl;
+    
     if(cli.Present(X_RANGE_LIMIT)){
       axisLimits = cli.GetList(X_RANGE_LIMIT);
       gp << "set xrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
@@ -424,7 +450,12 @@ int main(int argc, char *argv[]){
     if(zCol != yCol){
       double minXVal = std::numeric_limits<double>::max(), maxXVal = std::numeric_limits<double>::min(), minYVal = std::numeric_limits<double>::max(), maxYVal = std::numeric_limits<double>::min(), curVal;
 
+      //Calculate the 3D plot top margin offset value from the number of parameters and desired columns
+      unsigned titleMargin = (constantParameters.size() / subtitleLineColumns);
+
+      //If present
       if(cli.Present(Z_RANGE_LIMIT)){
+	//Set the Z-range limit
 	axisLimits = cli.GetList(Z_RANGE_LIMIT);
 	gp << "set cbrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
       }
@@ -452,7 +483,11 @@ int main(int argc, char *argv[]){
 	}
 
       }
-                  
+
+      //Update the 3D plot top margin and title offset values to allow for dynamic alteraton of the subtitle
+      gp << "set tmargin " << std::to_string(titleMargin) << std::endl;
+      gp << "set title offset 0," << std::to_string(titleMargin) << std::endl;
+      
       // Generate a MATLAB color scheme macro
       gp << "set macros" << std::endl << "MATLAB = \"defined (0  0.0 0.0 0.5, 1  0.0 0.0 1.0, 2  0.0 0.5 1.0, 3  0.0 1.0 1.0, 4  0.5 1.0 0.5, 5  1.0 1.0 0.0, 6  1.0 0.5 0.0, 7  1.0 0.0 0.0, 8  0.5 0.0 0.0)\"" << std::endl;
       gp << "set style data linespoints" << std::endl;
@@ -460,7 +495,6 @@ int main(int argc, char *argv[]){
       gp << "set hidden3d" << std::endl;
       gp << "set dgrid3d 50,50 qnorm 2" << std::endl;
       gp << "set pm3d interpolate 4,4" << std::endl;
-      //gp << "set palette @MATLAB maxcolors 10" << std::endl;
       gp << "set palette @MATLAB" << std::endl;
       gp << "set cblabel \"" << possiblePlots[plotId][2] << "\"" << std::endl;
       gp << "set xrange [" << std::to_string(minXVal) << ":" << std::to_string(maxXVal)  << "]" << std::endl;
@@ -576,8 +610,8 @@ int main(int argc, char *argv[]){
 
       // If only one curve
       if(curveCount == 1){
-	// Ignore any discovered label
-	curveLabels[0] = "Data";
+	// Remove legend to ignore any discovered label
+	gp << "unset key" << std::endl;
       }
       
       //Build the plot string one-liner
