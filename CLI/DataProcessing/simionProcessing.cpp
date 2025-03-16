@@ -14,6 +14,7 @@
 //Pre-processor Variables
 #define OUTPUT_FILE "output"
 #define INPUT_FILE "input"
+#define DEBUG "debug"
 
 //Pre-processor Variables for file column headers
 #define GROUPED_FLAG "Grouped Flag"
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]){
   //Add user flags
   cli.Add(INPUT_FILE, std::vector<std::string>{"i", "input"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The input file to process which represents the simulated electrical configurations for a single physical configuration. Final line is assumed to be a blank newline character.");
   cli.Add(OUTPUT_FILE, std::vector<std::string>{"o", "output"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The output file path.");
+  cli.Add(DEBUG, std::vector<std::string>{"d", "debug"}, std::vector<int>{flagTypeThree}, "Trigger verbose debug program output.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -105,10 +107,11 @@ int main(int argc, char *argv[]){
 
   //Declare default output as current directory
   std::string output, input;
-  bool verbose;
+  bool verbose, debug;
   
   //Determine output verbosity
-  verbose = cli.Present(Utilities::CLIParser::VERBOSE);
+  debug = cli.Present(DEBUG);
+  verbose = debug || cli.Present(Utilities::CLIParser::VERBOSE);
   
   //If the necessary inputs are present
   if(cli.Present(OUTPUT_FILE) && cli.Present(INPUT_FILE)){
@@ -219,12 +222,12 @@ int main(int argc, char *argv[]){
 	columnsInFile.push_back(inputFile(0,i));
       }
 
-      if(verbose){
+      if(debug){
 	std::cout << inputFile(0,i) << ",";
       }
     }
 
-    if(verbose){
+    if(debug){
       std::cout << std::endl;
     }
     
@@ -281,7 +284,7 @@ int main(int argc, char *argv[]){
 	//Attempt to convert string value to a double
 	result = Utilities::ConvertValue_Double(inputFile(i,j));
 
-	if(verbose){
+	if(debug){
 	  std::cout << inputFile(i,j) << ",";
 	}
 	
@@ -295,19 +298,28 @@ int main(int argc, char *argv[]){
 	ionPacketData[temp][columnsInFile[j]] += result.value;
       }
 
-      if(verbose){
+      if(debug){
 	std::cout << std::endl;
       }
     }
 
     //Write header line to output
     for(unsigned i = 0; i < columnsInFile.size(); i++){
+      if(verbose){
+	std::cout << "Setting column " << i + 1 << " header as '" << columnsInFile[i] << "' in the output file." << std::endl;
+      }
       outputFile(0,i) = columnsInFile[i];
     }
 
-    outputFile(0, columnsInFile.size()) = DET_HIT_RATIO;
-    outputFile(0, columnsInFile.size()+1) = AVG_COUNT;
-    outputFile(0, columnsInFile.size()+2) = ION_CURRENT;
+    //Add calculated columns to mapping
+    columnToIndexMapping[DET_HIT_RATIO] = columnsInFile.size();
+    columnToIndexMapping[AVG_COUNT] = columnsInFile.size() + 1;
+    columnToIndexMapping[ION_CURRENT] = columnsInFile.size() + 2;
+    
+    //Write the appropriate columns headers
+    outputFile(0, columnToIndexMapping[DET_HIT_RATIO]) = DET_HIT_RATIO;
+    outputFile(0, columnToIndexMapping[AVG_COUNT]) = AVG_COUNT;
+    outputFile(0, columnToIndexMapping[ION_CURRENT]) = ION_CURRENT;
     
     //For all packet keys found
     for(unsigned i = 0, fileRow = 1, columnCount = columnsInFile.size(); i < ionPacketKeys.size(); i++, fileRow = i + 1){
@@ -335,9 +347,9 @@ int main(int argc, char *argv[]){
       }
 
       //Compute ion hit percentage
-      outputFile(fileRow, columnCount) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
-      outputFile(fileRow, columnCount+1) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);      
-      outputFile(fileRow, columnCount+2) = std::to_string((1E12) * Utilities::CalculateCurrent(ionPacketData[ionPacketKeys[i]][DET_HIT], ionPacketData[ionPacketKeys[i]][X_LENGTH] / ((1E6) * ionPacketData[ionPacketKeys[i]][ION_VELOCITY_X])));
+      outputFile(fileRow, columnToIndexMapping[DET_HIT_RATIO]) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
+      outputFile(fileRow, columnToIndexMapping[AVG_COUNT]) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);      
+      outputFile(fileRow, columnToIndexMapping[ION_CURRENT]) = std::to_string((1E12) * Utilities::CalculateCurrent(ionPacketData[ionPacketKeys[i]][DET_HIT], ionPacketData[ionPacketKeys[i]][X_LENGTH] / ((1E6) * ionPacketData[ionPacketKeys[i]][ION_VELOCITY_X])));
     }
 
     //Write object contents to disk
