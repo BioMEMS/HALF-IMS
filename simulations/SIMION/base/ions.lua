@@ -153,7 +153,17 @@ end
 
 function calculate_atom_count()
 	 local chemicalConcentration = get_chemical_concentration()
-	 local deviceVolume = (get_ion_packet_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(get_device_z_length()*get_grid_z_spacing())	 
+	 local zLength = get_device_z_length()
+
+	 -- If cross-sectional simulation
+	 if (zLength == 0) then
+	    -- Get simulated Z-length	  
+	    zLength = get_simulated_z_device_length()
+	 end
+
+	 print(zLength)
+
+	 local deviceVolume = (get_ion_packet_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(zLength*get_grid_z_spacing())	 
 
 	 -- Determine 
 	 local chemicalMoles = (chemicalConcentration * deviceVolume * get_carrier_gas_density()) / (get_carrier_gas_molar_mass() * 1E6)
