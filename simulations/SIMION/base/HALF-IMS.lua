@@ -36,9 +36,9 @@ local num_electrode_pairs = get_electrode_pair_count()
 local num_shutter_electrodes = get_shutter_electrode_count()
 
 -- Initial position for each ion
-local initial_x_pos = 0
-local initial_y_pos = 0
-local initial_z_pos = 0
+local initial_x_pos = {}
+local initial_y_pos = {}
+local initial_z_pos = {}
 
 -- Flag tracking if the particular ion has been scaled
 local initial_scaled = 0
@@ -185,9 +185,9 @@ function segment.other_actions()
      ion_vz_mm = ion_z_velocity
 
      -- Save the initial position for later logging
-     initial_x_pos = ion_px_mm
-     initial_y_pos = ion_py_mm
-     initial_z_pos = ion_pz_mm
+     initial_x_pos[ion_number] = ion_px_mm
+     initial_y_pos[ion_number] = ion_py_mm
+     initial_z_pos[ion_number] = ion_pz_mm
 
      -- Calculate and save the ion acceleration due to the carrier gas
      ion_x_acceleration = calculate_ion_acceleration(ion_mass)
@@ -296,9 +296,9 @@ function segment.other_actions()
      output_log_line = output_log_line .. ion_x_velocity .. ","
      output_log_line = output_log_line .. ion_y_velocity .. ","
      output_log_line = output_log_line .. ion_z_velocity .. ","
-     output_log_line = output_log_line .. initial_x_pos .. ","
-     output_log_line = output_log_line .. initial_y_pos .. ","
-     output_log_line = output_log_line .. initial_z_pos .. ","
+     output_log_line = output_log_line .. initial_x_pos[ion_number] .. ","
+     output_log_line = output_log_line .. initial_y_pos[ion_number] .. ","
+     output_log_line = output_log_line .. initial_z_pos[ion_number] .. ","
      output_log_line = output_log_line .. ion_px_mm .. ","
      output_log_line = output_log_line .. ion_py_mm .. ","
      output_log_line = output_log_line .. ion_pz_mm .. ","
