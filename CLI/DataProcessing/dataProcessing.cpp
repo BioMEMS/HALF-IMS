@@ -28,6 +28,9 @@
 #define Z_RANGE_LIMIT "z_range"
 #define PLOT_TITLE "plot_title"
 #define SUBTITLE_COLUMNS "subtitle_columns"
+#define LEGEND_TITLE "legend_title"
+#define LEGEND_COLUMNS "legend_columns"
+#define LEGEND_FONT_SIZE "legend_font_size"
 #define GNUPLOT_NEWLINE "\\n"
 
 //Parse out the units for the provided string
@@ -78,7 +81,6 @@ int main(int argc, char *argv[]){
 
   //Instantiate value for how many fields are in a row of the subtitle line
   unsigned subtitleLineColumns = 5;
-  
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -102,6 +104,9 @@ int main(int argc, char *argv[]){
   cli.Add(Z_RANGE_LIMIT, std::vector<std::string>{"zr", "z-range"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "A comma-separated list of value to use for Z-axis limits. Only applies to three-dimensional plots.");
   cli.Add(PLOT_TITLE, std::vector<std::string>{"t", "title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The replacement title string for auto-generated title.");
   cli.Add(SUBTITLE_COLUMNS, std::vector<std::string>{"sc", "subtitle-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of fields per line of the automatically generated subtitle. Default is " + std::to_string(subtitleLineColumns) + ".");
+  cli.Add(LEGEND_TITLE, std::vector<std::string>{"lt", "legend-title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The string to use instead of the auto-generated legend title.");
+  cli.Add(LEGEND_COLUMNS, std::vector<std::string>{"lc", "legend-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of columns to display in the legend instead of auto-generated quantity.");
+  cli.Add(LEGEND_FONT_SIZE, std::vector<std::string>{"lfs", "legend-font-size"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The font size value to use in the legend instead of auto-generated quantity.");
   
   //Parse provided arguments list
   cli.Parse(argc, argv);
@@ -509,6 +514,7 @@ int main(int argc, char *argv[]){
       std::vector<std::string> plotXValues, curveLabels;
       //Declare variable to hold indication if the parameter string is stable for a curve
       std::vector<bool> parametersTable;
+      bool keyTitleGenerated = true;
       
       //Get all keys of the mapping 
       for(auto const& xValue : plotNameParameters){
@@ -546,7 +552,7 @@ int main(int argc, char *argv[]){
 	  }
 	}
 
-	//Build the curve label string and save it for later
+	//Build the curve string and save it for later while also building key label string
 	curveLabel = "";
 	for(unsigned j = 0; j < inputSize.Columns; j++){
 	  //If first stable parameter
@@ -565,6 +571,7 @@ int main(int argc, char *argv[]){
 	if(curveLabel == ""){
 	  //Create generic curve label name
 	  curveLabel = "Curve " + std::to_string(i);
+	  keyTitleGenerated = false;
 	}
 
 	//Save generated curve label
@@ -587,24 +594,64 @@ int main(int argc, char *argv[]){
       else if(verbose){
 	std::cout << std::endl;
       }
-      
+
       //Send GNU Plot parameters for a 2D plot
+      int keyColumns = curveCount / 32;
+      //If user provided a columns value
+      if(cli.Present(LEGEND_COLUMNS)){
+	//Replace auto-generated value
+	keyColumns = cli.GetNumeric(LEGEND_COLUMNS);
+      }
+      
+      int fontSize = 20 / keyColumns;
+      //If user provided a font size
+      if(cli.Present(LEGEND_FONT_SIZE)){
+	//Replace auto-generated value
+	fontSize = cli.GetNumeric(LEGEND_FONT_SIZE);
+      }
+      
       gp << "unset warnings" << std::endl;
       gp << "set datafile missing 'nan'" << std::endl;
       gp << "set key reverse Left outside" << std::endl;
       gp << "set grid" << std::endl;
       gp << "set style data linespoints" << std::endl;
-      gp << "set key title \"Legend\" font \",20\"" << std::endl;
-      gp << "set key font \",20\"" << std::endl;
-      //If a large amount of curves
-      if(curveCount > 31){
-	//Allow two columns
-	gp << "set key columns 2" << std::endl;
-      }
+      gp << "set key title \"";
+
+      //If the user provided a title
+      if(cli.Present(LEGEND_TITLE)){
+	//Replace the auto-generated label
+        gp << cli.Get(LEGEND_TITLE);
+      }//If every curve has a proper label
+      else if(keyTitleGenerated){
+	//Use the last parameter list to auto-generate title
+	for(unsigned j = 0, first = 0; j < inputSize.Columns; j++){
+	  //If first stable parameter
+	  if(parametersTable[j] && (first == 0)){
+	    //Start key label
+	    gp << inputFile(0,j);
+	    first++;
+	  }
+	  //If not first stable parameter
+	  else if(parametersTable[j]){
+	    //Append key label with next column header and a newline character
+	    gp << ", ";
+	    //If only one column
+	    if(keyColumns == 1){
+	      // Keep key small by inserting a newline
+	      gp << GNUPLOT_NEWLINE;
+	    }
+	    gp << inputFile(0,j);
+	  }
+	}
+      }//Otherwise
       else{
-	//Only have one column
-	gp << "set key columns 1" << std::endl;
+	//Use a generic key title
+	gp << "Legend";
       }
+      
+      gp << "\" font \"," << fontSize << " \"" << std::endl;
+      gp << "set key font \"," << fontSize << "\"" << std::endl;
+      gp << "set key columns " << keyColumns << std::endl;
       
       // If only one curve
       if(curveCount == 1){
