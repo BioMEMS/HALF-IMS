@@ -30,6 +30,7 @@
 #define CSV_SHUTTER_COLUMN_INDEX 11
 #define CSV_DET_ONE_COLUMN_INDEX 5
 #define CSV_DET_TWO_COLUMN_INDEX 6
+#define ALLOWED_DIGITS 3
 
 //Determine if the column should be deleted based upon the header
 bool MarkColumnDeleted(std::string column){
@@ -351,7 +352,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    }
 	    else{
 	      //Convert value to a string and append to output line
-	      convertedVal = std::to_string(trunc(avgLine[i]*100)/100);
+	      convertedVal = std::to_string(Utilities::TruncateValue(avgLine[i],ALLOWED_DIGITS));
 	    }
 	    line = line + convertedVal + ',';
 
@@ -410,7 +411,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    //If either of the detector columns
 	    if((j == CSV_DET_ONE_COLUMN_INDEX) || (j == CSV_DET_TWO_COLUMN_INDEX)){
 	      //Subtract background detector measurement from analyte detector measurement
-	      csvOutput(i-1, j) = std::to_string(std::abs(std::stod(csvOutput(i-1,j)) - std::stod(csvOutput(i,j))));
+	      csvOutput(i-1, j) = std::to_string(Utilities::TruncateValue(std::abs(std::stod(csvOutput(i-1,j)) - std::stod(csvOutput(i,j))), ALLOWED_DIGITS));
 	    }
 	    //If the time column index
 	    else if (j == LABVIEW_TIME_COLUMN_INDEX){
@@ -423,29 +424,28 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  }
 	  
 	  //Calculate long and short electrode voltage settings 
-	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)));
-	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)));
+	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)), ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)), ALLOWED_DIGITS));
 
 	  //Convert long and short electrode settings to Townsends
-	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-6))));
-	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-5))));
+	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-6))), ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-5))), ALLOWED_DIGITS));
 
 	  //Calculate ideal detector current
-	  csvOutput(i-1, outputSize.Columns-2) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,5))));
-	  csvOutput(i-1, outputSize.Columns-1) = std::to_string((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,6))));
+	  csvOutput(i-1, outputSize.Columns-2) = std::to_string(Utilities::TruncateValue((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,5))), ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns-1) = std::to_string(Utilities::TruncateValue((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,6))), ALLOWED_DIGITS));
 
 	  //Save the temperature, pressure, and gapsize values
-	  csvOutput(i-1, outputSize.Columns) = std::to_string(systemTemperature);
-	  csvOutput(i-1, outputSize.Columns+1) = std::to_string(systemPressure);
-	  csvOutput(i-1, outputSize.Columns+2) = std::to_string(systemGapScaled);
+	  csvOutput(i-1, outputSize.Columns) = std::to_string(Utilities::TruncateValue(systemTemperature, ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns+1) = std::to_string(Utilities::TruncateValue(systemPressure, ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns+2) = std::to_string(Utilities::TruncateValue(systemGapScaled, ALLOWED_DIGITS));
 	  
 	  //Calculate diluted analyte concentration in the device
-	  csvOutput(i-1, 24) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))));
+	  csvOutput(i-1, 24) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))), ALLOWED_DIGITS));
 
 	  if(!cli.Present(NO_DOPANT_COLUMN_PRESENT)){
 	    //Calculate diluted analyte concentration in the device
-	    csvOutput(i-1, 29) = std::to_string(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,29))));
-	    
+	    csvOutput(i-1, 29) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,29))), ALLOWED_DIGITS));
 	  }
 	  
 	  //Increment counter
@@ -590,7 +590,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 		//If neither conversion resulted in an error
 		if(!dataValue.error && !baselineValue.error){
 		  //Subtract baseline value from data value
-		  csvOutput(i, j) = std::to_string(dataValue.value - baselineValue.value);
+		  csvOutput(i, j) = std::to_string(Utilities::TruncateValue(dataValue.value - baselineValue.value, ALLOWED_DIGITS));
 
 		  //If the baseline flag has not been written
 		  if(csvOutput(i, outputSize.Columns) == ""){

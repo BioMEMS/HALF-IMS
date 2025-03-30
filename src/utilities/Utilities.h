@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #define ELEMENTARY_CHARGE 1.6E-19
 #define AMU_TO_GRAMS 1.660539E-24
@@ -47,6 +48,14 @@ namespace Utilities{
   //Output:  mass (double) - The mass, in AMU.
   //Note:    None
   ConvertedData ConvertValue_MassGrams(double mass);
+
+  //Name:    TruncateValue
+  //Purpose: Truncate a fractional value to the desired number of digits.
+  //Input:   value (double) - The value to truncate.
+  //         digits (unsigned) - The number of digits to preserve.
+  //Output:  result (double) - The truncated value.
+  //Note:    None
+  double TruncateValue(double value, unsigned digits);
   
   //Name:    ConvertValue_MassGrams
   //Purpose: Convert grams to atomic mass units (AMU)

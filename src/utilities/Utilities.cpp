@@ -18,11 +18,24 @@ Utilities::ConvertedData Utilities::ConvertValue_Double(std::string item){
   return results;
 }
 
+double Utilities::TruncateValue(double value, unsigned digits){
+  //Generate a scaling value
+  double scale = std::pow(10.0, digits);
+  
+  //Multiple the input value by the scale, truncate all fractional bits, and then divide by scale
+  return std::trunc(value * scale) / scale;
+}
+
 double Utilities::ConvertValue_Townsends(double temperature, double pressure, double gap, double voltage){
   double efield, numberDensity;
-  
+
+  //Calculate the electric field by dividing the voltage over the gap size
   efield = voltage / gap;
+
+  //Calculate the number density from equation listed in ISIMS Short Course documents
   numberDensity = (pressure * PSI_TO_PASCALS) / (BOLTZMANN_CONSTANT * (temperature + 274.15));
+  
+  //Use calculated values to convert the electric field to a Townsend value
   return EFIELD_TO_TOWNSEND * (efield / (numberDensity));
 }
 
