@@ -505,7 +505,17 @@ int main(int argc, char *argv[]){
       gp << "set xrange [" << std::to_string(minXVal) << ":" << std::to_string(maxXVal)  << "]" << std::endl;
       gp << "set yrange [" << std::to_string(minYVal) << ":" << std::to_string(maxYVal)  << "]" << std::endl;
 
-      gp << "splot " << gp.file1d(plotData[possiblePlots[plotId][2]]) << " notitle with pm3d" << std::endl;
+      gp << "splot ";
+      // If debugging
+      if(debug){
+	// Create a named temporary file in the current directory
+	gp << gp.file1d(plotData[possiblePlots[plotId][2]], GenerateFileName(graphTitle));
+      }
+      else{
+	// Allow utility to create temporary file which is cleaned up later
+	gp << gp.file1d(plotData[possiblePlots[plotId][2]]);
+      }
+      gp << " notitle with pm3d" << std::endl;
     }
     else{
       //Declare variable to hold previous parameter value for comparison
@@ -664,8 +674,17 @@ int main(int argc, char *argv[]){
       //Build the plot string one-liner
       for(unsigned i = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
-	  //Utilize temporary file for graphing
-	  gp << gp.file1d(curveData[i]) << " with linespoints title '" + curveLabels[i] + "'";
+	  // If debugging
+	  if(debug){
+	    // Use a named temporary file for graphing
+	    gp << gp.file1d(curveData[i], GenerateFileName(graphTitle) + "_" + std::to_string(i));
+	  }
+	  else{
+	    //Utilize temporary file for graphing
+	    gp << gp.file1d(curveData[i]);
+	  }
+	  
+	  gp << " with linespoints title '" + curveLabels[i] + "'";
 	  if(i < (curveData.size() - 1)){
 	    gp <<", ";
 	  }
