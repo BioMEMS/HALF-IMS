@@ -508,8 +508,9 @@ int main(int argc, char *argv[]){
       gp << "splot ";
       // If debugging
       if(debug){
+	std::cout << "Saving data to file: " << output << "/" << GenerateFileName(graphTitle) << ".tmp" << std::endl;
 	// Create a named temporary file in the current directory
-	gp << gp.file1d(plotData[possiblePlots[plotId][2]], GenerateFileName(graphTitle));
+	gp << gp.file1d(plotData[possiblePlots[plotId][2]], output + "/" + GenerateFileName(graphTitle) + ".tmp");
       }
       else{
 	// Allow utility to create temporary file which is cleaned up later
@@ -612,12 +613,26 @@ int main(int argc, char *argv[]){
 	//Replace auto-generated value
 	keyColumns = cli.GetNumeric(LEGEND_COLUMNS);
       }
+
+      // If column count is zero or below
+      if(keyColumns <= 0){
+	// Default to a single column
+	keyColumns = 1;
+      }
+      
+      if(debug){
+	std::cout << "Key Columns: " << keyColumns << std::endl;
+      }
       
       int fontSize = 20 / keyColumns;
       //If user provided a font size
       if(cli.Present(LEGEND_FONT_SIZE)){
 	//Replace auto-generated value
 	fontSize = cli.GetNumeric(LEGEND_FONT_SIZE);
+      }
+
+      if(debug){
+	std::cout << "Font Size: " << fontSize << std::endl;
       }
       
       gp << "unset warnings" << std::endl;
@@ -676,8 +691,9 @@ int main(int argc, char *argv[]){
 	if(curveData[i].size() > 0){
 	  // If debugging
 	  if(debug){
+	    std::cout << "Saving curve data to file: " << output << "/" << GenerateFileName(graphTitle) << "_" << std::to_string(i) << ".tmp" << std::endl;
 	    // Use a named temporary file for graphing
-	    gp << gp.file1d(curveData[i], GenerateFileName(graphTitle) + "_" + std::to_string(i));
+	    gp << gp.file1d(curveData[i], output + "/" + GenerateFileName(graphTitle) + "_" + std::to_string(i) + ".tmp");
 	  }
 	  else{
 	    //Utilize temporary file for graphing
