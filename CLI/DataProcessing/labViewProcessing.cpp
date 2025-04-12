@@ -262,7 +262,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	outputFile << "MIPS Read Ch. " << i << " (V),";
       }
 
-      outputFile << "Chemical,Analyte Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),";
+      outputFile << "Chemical,Chemical Concentration (ppm),Syringe Volume (mL),Syringe Pump (mL/hr),MFC Setting (mL/min),";
       
       //If the dopant column was indicated to be present
       if(!cli.Present(NO_DOPANT_COLUMN_PRESENT)){
@@ -406,8 +406,9 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	
 	//For every other row in the output file
 	for(unsigned i = outputSize.Rows - 1; i > 1; i-=2){
+
 	  //For every column in the pair of rows
-	  for(unsigned j = 0; j < outputSize.Columns; j++){
+	  for(unsigned j = 0; j < outputSize.Columns; j++){	   
 	    //If either of the detector columns
 	    if((j == CSV_DET_ONE_COLUMN_INDEX) || (j == CSV_DET_TWO_COLUMN_INDEX)){
 	      //Subtract background detector measurement from analyte detector measurement
@@ -420,9 +421,9 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    }
 	    
 	    //Delete value from column
-	    csvOutput(i, j) = "";
+	    csvOutput(i, j) = "";	    
 	  }
-	  
+
 	  //Calculate long and short electrode voltage settings 
 	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)), ALLOWED_DIGITS));
 	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)), ALLOWED_DIGITS));
@@ -445,11 +446,15 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 
 	  if(!cli.Present(NO_DOPANT_COLUMN_PRESENT)){
 	    //Calculate diluted analyte concentration in the device
-	    csvOutput(i-1, 29) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,29))), ALLOWED_DIGITS));
+	    csvOutput(i-1, 29) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,29))), ALLOWED_DIGITS));	    
 	  }
 	  
 	  //Increment counter
 	  rowsDeleted++;
+	}
+
+	if(verbose){
+	  std::cout << "Relative calculations complete." << std::endl;
 	}
 	
 	//Refresh output file to account for new headers
@@ -458,7 +463,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	outputSize = csvOutput.Size();	
 
 	//First row already copied, so for every row after first 
-	for(unsigned i = 2, tgt = 3; i < (outputSize.Rows - 1); i++, tgt += 2){
+	for(unsigned i = 2, tgt = 3; tgt < outputSize.Rows; i++, tgt += 2){
 	  //For all columns
 	    for(unsigned j = 0; j < outputSize.Columns; j++){
 	      //Move target row to current open row
@@ -466,9 +471,13 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 
 	      //Delete old value
 	      csvOutput(tgt,j) = "";
-	    }	   
+	    }
 	}
-
+	
+	if(verbose){
+	  std::cout << "Output lines compressed." << std::endl;
+	}
+	
 	//Remove bad columns and perform secondary calculations
 	std::vector<std::string> outputColumns = csvOutput.ColumnHeaders();
 	std::vector<bool> deleteColumn;
