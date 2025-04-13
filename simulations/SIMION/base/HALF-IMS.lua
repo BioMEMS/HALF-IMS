@@ -20,9 +20,6 @@ local ion_x_velocity = get_ion_x_velocity()
 local ion_y_velocity = get_ion_y_velocity()
 local ion_z_velocity = get_ion_z_velocity()
 
--- Ion Acceleration
-local ion_x_acceleration = 0
-
 -- Variables to hold file values
 local long_electrode_voltage = get_long_electrode_potential()
 local short_electrode_voltage = get_short_electrode_potential()
@@ -41,7 +38,7 @@ local initial_y_pos = {}
 local initial_z_pos = {}
 
 -- Flag tracking if the particular ion has been scaled
-local initial_scaled = 0
+local initial_scaled = {}
 
 -- Variable to hold the log string, log file name, and other logged values
 local output_log_line = ""
@@ -96,17 +93,20 @@ function segment.flym()
 	    for bep=min_bias,max_bias,step_bias do
 		-- Set bias ring voltage
 		bias_ring_voltage = bep
+		set_bias_ring_electrode_potential(bep)
 
 		-- For each long electrode voltage
 		for lep=min_long,max_long,step_long do
 		    -- Set long electrode voltage
 		    long_electrode_voltage = lep
+		    set_long_electrode_potential(lep)
 
 		    -- For each short electrode voltage
 		    for sep=min_short,max_short,step_short do
 			-- Set short electrode voltage
 			short_electrode_voltage = sep
-			
+			set_short_electrode_potential(sep)
+ 			
 			-- Run simulation
 			run()
 			
@@ -122,6 +122,12 @@ end
 function segment.initialize()
    -- Call SDS model's initialization function
    SDS.segment.initialize()
+
+   -- Default ion parameters
+   initial_x_pos[ion_number] = 0
+   initial_y_pos[ion_number] = 0
+   initial_z_pos[ion_number] = 0
+   initial_scaled[ion_number] = 0
 end
 
 function segment.initialize_run()
@@ -189,11 +195,8 @@ function segment.other_actions()
      initial_y_pos[ion_number] = ion_py_mm
      initial_z_pos[ion_number] = ion_pz_mm
 
-     -- Calculate and save the ion acceleration due to the carrier gas
-     ion_x_acceleration = calculate_ion_acceleration(ion_mass)
-
      -- Set flag to prevent this section from being called again for the current ion
-     initial_scaled = 1
+     initial_scaled[ion_number] = 1
    end
 
    -- Call SDS model other actions after velocity assignment
@@ -309,7 +312,7 @@ function segment.other_actions()
      write_to_log(output_log_file_name, output_log_line)
      
      -- Update flag as ion is done
-     initial_scaled = 0
+     initial_scaled[ion_number] = 0
   end
 end
 
