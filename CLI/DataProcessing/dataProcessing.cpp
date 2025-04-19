@@ -31,6 +31,8 @@
 #define LEGEND_TITLE "legend_title"
 #define LEGEND_COLUMNS "legend_columns"
 #define LEGEND_FONT_SIZE "legend_font_size"
+#define MULTIPLOT "mutltiplot_enable"
+#define MULTIPLOT_LETTERS "mutltiplot_letters"
 #define GNUPLOT_NEWLINE "\\n"
 
 //Parse out the units for the provided string
@@ -107,7 +109,9 @@ int main(int argc, char *argv[]){
   cli.Add(LEGEND_TITLE, std::vector<std::string>{"lt", "legend-title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The string to use instead of the auto-generated legend title.");
   cli.Add(LEGEND_COLUMNS, std::vector<std::string>{"lc", "legend-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of columns to display in the legend instead of auto-generated quantity.");
   cli.Add(LEGEND_FONT_SIZE, std::vector<std::string>{"lfs", "legend-font-size"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The font size value to use in the legend instead of auto-generated quantity.");
-  
+  cli.Add(MULTIPLOT, std::vector<std::string>{"m", "multiplot"}, std::vector<int>{flagTypeThree}, "Trigger the program to place each curve on a separate plot.");
+  cli.Add(MULTIPLOT_LETTERS, std::vector<std::string>{"ml", "multiplot-letters"}, std::vector<int>{flagTypeThree}, "Replace curve labels with a letter for publication.");
+    
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
@@ -117,6 +121,7 @@ int main(int argc, char *argv[]){
   }
 
   //Determine output verbosity
+  bool multiplot = cli.Present(MULTIPLOT), multiplotLetters = cli.Present(MULTIPLOT_LETTERS);
   bool debug = cli.Present(DEBUG);
   bool verbose = debug || cli.Present(Utilities::CLIParser::VERBOSE);
   
@@ -411,17 +416,30 @@ int main(int argc, char *argv[]){
     gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
     gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
     gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+
+    //If multiplot requested
+    if(multiplot){
+      // Set multiple command with title
+      gp << "set multiplot title ";
+    }
+    else{
+      // Set title command
+      gp << "set title ";
+    }
+
+    //Start the title entry
+    gp << '"';
     
     //If plot title was provided
     if(cli.Present(PLOT_TITLE)){
       //Overwrite the graph title string
-      gp << "set title \"" << cli.Get(PLOT_TITLE);
+      gp << cli.Get(PLOT_TITLE);
     }
     else{
       //Use auto-generated title
-      gp << "set title \"" << graphTitle;
-    }
-
+      gp << graphTitle;
+    }    
+    
     //Write subtitle line
     for(unsigned subtitleParam = 0; subtitleParam < constantParameters.size(); ){
       //Write a newline
@@ -429,7 +447,7 @@ int main(int argc, char *argv[]){
       for(unsigned subtitleParamCur = 0; (subtitleParam < constantParameters.size()) && (subtitleParamCur < subtitleLineColumns); subtitleParamCur++, subtitleParam++){
 	//Write the parameter string built earlier
 	gp << constantParameters[subtitleParam];
-
+	
 	//If not the final column
 	if((subtitleParam + 1) < constantParameters.size()){
 	  //Write a comma
@@ -438,14 +456,24 @@ int main(int argc, char *argv[]){
       }
       gp << "}";
     }
-    
-    gp << "\"" << std::endl;
-    
+
+    //Close the title string
+    gp << '"';
+
+    if(multiplot){
+      gp << " layout 1," << curveCount << " rowsfirst";
+    }
+
+    //End the title/multiplot line
+    gp << std::endl;
+
+    //Update X-range limits if provided
     if(cli.Present(X_RANGE_LIMIT)){
       axisLimits = cli.GetList(X_RANGE_LIMIT);
       gp << "set xrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
     }
 
+    //Update Y-range limits if provided
     if(cli.Present(Y_RANGE_LIMIT)){
       axisLimits = cli.GetList(Y_RANGE_LIMIT);
       gp << "set yrange [" << axisLimits[0] << ":" << axisLimits[1] << "]" << std::endl;
@@ -637,62 +665,88 @@ int main(int argc, char *argv[]){
       
       gp << "unset warnings" << std::endl;
       gp << "set datafile missing 'nan'" << std::endl;
-      gp << "set key reverse Left outside" << std::endl;
       gp << "set grid" << std::endl;
       gp << "set style data linespoints" << std::endl;
-      gp << "set key title \"";
 
-      //If the user provided a title
-      if(cli.Present(LEGEND_TITLE)){
-	//Replace the auto-generated label
-        gp << cli.Get(LEGEND_TITLE);
-      }//If every curve has a proper label
-      else if(keyTitleGenerated){
-	//Use the last parameter list to auto-generate title
-	for(unsigned j = 0, first = 0; j < inputSize.Columns; j++){
-	  //If first stable parameter
-	  if(parametersTable[j] && (first == 0)){
-	    //Start key label
-	    gp << inputFile(0,j);
-	    first++;
-	  }
-	  //If not first stable parameter
-	  else if(parametersTable[j]){
-	    //Append key label with next column header and a newline character
-	    gp << ", ";
-	    //If only one column
-	    if(keyColumns == 1){
-	      // Keep key small by inserting a newline
-	      gp << GNUPLOT_NEWLINE;
+      //If multiplot not requested
+      if(!multiplot){
+	//Set a legend to differentiate curves
+	gp << "set key reverse Left outside" << std::endl;
+	gp << "set key title \"";
+	
+	//If the user provided a title
+	if(cli.Present(LEGEND_TITLE)){
+	  //Replace the auto-generated label
+	  gp << cli.Get(LEGEND_TITLE);
+	}//If every curve has a proper label
+	else if(keyTitleGenerated){
+	  //Use the last parameter list to auto-generate title
+	  for(unsigned j = 0, first = 0; j < inputSize.Columns; j++){
+	    //If first stable parameter
+	    if(parametersTable[j] && (first == 0)){
+	      //Start key label
+	      gp << inputFile(0,j);
+	      first++;
 	    }
-	    gp << inputFile(0,j);
+	    //If not first stable parameter
+	    else if(parametersTable[j]){
+	      //Append key label with next column header and a newline character
+	      gp << ", ";
+	      //If only one column
+	      if(keyColumns == 1){
+		// Keep key small by inserting a newline
+		gp << GNUPLOT_NEWLINE;
+	      }
+	      gp << inputFile(0,j);
+	    }
 	  }
+	}//Otherwise
+	else{
+	  //Use a generic key title
+	  gp << "Legend";
 	}
-      }//Otherwise
-      else{
-	//Use a generic key title
-	gp << "Legend";
+
+	//Set font and number of columns
+	gp << "\" font \"," << fontSize << " \"" << std::endl;
+	gp << "set key font \"," << fontSize << "\"" << std::endl;
+	gp << "set key columns " << keyColumns << std::endl;
       }
       
-      gp << "\" font \"," << fontSize << " \"" << std::endl;
-      gp << "set key font \"," << fontSize << "\"" << std::endl;
-      gp << "set key columns " << keyColumns << std::endl;
-      
-      // If only one curve
-      if(curveCount == 1){
-	// Remove legend to ignore any discovered label
+      //If only one curve
+      if(multiplot || (curveCount == 1)){
+	//Remove legend to ignore any discovered label
 	gp << "set key off" << std::endl;
       }
-      
-      gp << "plot ";
 
       //Build the plot string one-liner
       for(unsigned i = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
+	  //If multiplot was requested
+	  if(multiplot){	    
+	    gp << "set label 1 \"{/*0.5";
+
+	    //If letters were requested
+	    if(multiplotLetters){
+	      //Generate a character from the index
+	      gp << '(' << (char)('a' + i) << ')';
+	    }
+	    else{
+	      gp << curveLabels[i];
+	    }
+	    
+
+	    gp << "}\" at graph 0.05,0.98" << std::endl;
+	  }
+
+	  //If the first curve or multiplot was requested
+	  if((i == 0) || multiplot){
+	    gp << "plot ";
+	  }
+	  
 	  // If debugging
 	  if(debug){
 	    std::cout << "Saving curve data to file: " << output << "/" << GenerateFileName(graphTitle) << "_" << std::to_string(i) << ".tmp" << std::endl;
-	    // Use a named temporary file for graphing
+	    //Use a named temporary file for graphing
 	    gp << gp.file1d(curveData[i], output + "/" + GenerateFileName(graphTitle) + "_" + std::to_string(i) + ".tmp");
 	  }
 	  else{
@@ -701,22 +755,19 @@ int main(int argc, char *argv[]){
 	  }
 	  
 	  gp << " with linespoints title '" + curveLabels[i] + "'";
-	  if(i < (curveData.size() - 1)){
+	  //If more curves are to be plotted and multiplot was not requested
+	  if(!multiplot && (i < (curveData.size() - 1))){
+	    //Separate command with a comma
 	    gp <<", ";
 	  }
 	  else{
+	    //End the line
 	    gp << std::endl;
 	  }
 	}
-      }
-      
-      //Send GNU Plot line
-      //gp << gpPlotLine.substr(0, gpPlotLine.length()-2) << std::endl;
-      //Send GNU plot data
-      //gp.send1d(gpPlotData);
-      
-    }
-    
+      }      
+    }    
   }
+  
   return 0;
 }
