@@ -7,21 +7,24 @@
 
 namespace SignalProcessing{
 
+      
+  enum Operation{
+    LowPassFilter,
+    HighPassFilter,
+    BandPassFilter,
+    WeightedAverage,
+    MovingAverage,
+  };
+
+  enum Parameters{
+    Aperture=0,
+    Repetitions=1,
+  };
+
   class Filter{
   public:
     Filter();
     ~Filter();
-    
-    enum Operation{
-      LowPassFilter,
-      HighPassFilter,
-      BandPassFilter,
-      WeightedAverage
-    };
-
-    enum Parameters{
-      Aperture=0,
-    };
     
     /*
       Name:    Apply
@@ -33,7 +36,7 @@ namespace SignalProcessing{
       applies a weighted average to the signal.
     */
     void Apply(std::vector<double> *trace, Operation filter);
-    
+
     /*
       Name:    SetParameter
       Purpose: Allow dynamic setting of separate values for filtering.
@@ -59,8 +62,9 @@ namespace SignalProcessing{
     void LowPass(std::vector<double> *trace);
     void HighPass(std::vector<double> *trace);
     void BandPass(std::vector<double> *trace);
-    void Average(std::vector<double> *trace);
-    
+    void WeightedAverage(std::vector<double> *trace);
+    void MovingAverage(std::vector<double> *trace);
+
     //Hold the values to use in filtering operations
     std::map<int, bool> filterFlags;
     std::map<int, double> filterParameters;

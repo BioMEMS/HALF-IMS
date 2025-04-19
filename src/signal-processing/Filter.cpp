@@ -6,6 +6,7 @@ namespace SignalProcessing{
   //Public functions
   Filter::Filter(){
     SetParameter(Parameters::Aperture, 20.0);
+    SetParameter(Parameters::Repetitions, 1.0);
   }
 
   Filter::~Filter(){
@@ -13,6 +14,8 @@ namespace SignalProcessing{
   }
   
   void Filter::Apply(std::vector<double> *trace, Operation filter){
+    //Get the repetition parameter
+    unsigned repeats = filterParameters[Parameters::Repetitions];
     
     if(filter == Operation::LowPassFilter){
       LowPass(trace);
@@ -24,7 +27,18 @@ namespace SignalProcessing{
       BandPass(trace);
     }
     else if(filter == Operation::WeightedAverage){
-      Average(trace);
+      //For set value
+      for(unsigned i = 0; i < repeats; i++){
+	//Apply weighted average filter to trace
+	WeightedAverage(trace);
+      }
+    }
+    else if(filter == Operation::MovingAverage){
+      //For set value
+      for(unsigned i = 0; i < repeats; i++){
+	//Apply weighted average filter to trace
+	MovingAverage(trace);
+      }
     }
     
     return;
@@ -81,7 +95,7 @@ namespace SignalProcessing{
     return;
   }
 
-  void Filter::Average(std::vector<double> *trace){
+  void Filter::WeightedAverage(std::vector<double> *trace){
     //Get the aperture size defined
     int aperture = std::abs(filterParameters[Parameters::Aperture]);
 
@@ -89,7 +103,7 @@ namespace SignalProcessing{
     int traceSize = (*trace).size();
 
     //If the aperture exceeds the trace length
-    if(aperture > traceSize){
+    if((aperture >= traceSize) || (aperture == 0)){
       //Do nothing
       return;
     }
@@ -178,4 +192,49 @@ namespace SignalProcessing{
     return;
   }
 
+  void Filter::MovingAverage(std::vector<double> *trace){
+    //Instantiate saved data list and temporary value
+    std::vector<double> data;
+    double temp;
+
+    //Get the aperture size defined
+    unsigned aperture = std::abs(filterParameters[Parameters::Aperture]);
+    
+    //Get the trace length
+    unsigned traceSize = (*trace).size();
+    
+    //If aperture exceeds trace size
+    if((aperture >= traceSize) || (aperture == 0)){
+      //Do nothing
+      return;
+    }
+
+    //Calculate update trace
+    for(unsigned i = 0,  half = aperture / 2, calcIndex = traceSize - half - 1; i < traceSize; i++){
+      //If outside the aperture
+      if((i < half) || (i > calcIndex)){
+	//Copy data
+	temp = (*trace)[i];
+      }
+      else{
+	//Sum all values
+	for(unsigned j = i - half; j < (i + half); j++){
+	  temp += (*trace)[j];
+	}
+
+	//Average
+	temp /= aperture;
+      }
+
+      //Add calculated/copied value to data
+      data.push_back(temp);
+    }
+
+    // Copy data back into trace
+    for(unsigned i = 0; i < traceSize; i++){
+      (*trace)[i] = data[i];
+    }
+    
+    return;
+  }
 }

@@ -35,6 +35,8 @@
 #define MULTIPLOT_LETTERS "mutltiplot_letters"
 #define MULTIPLOT_ROWS "multiplot_rows"
 #define MULTIPLOT_COLUMNS "multiplot_columns"
+#define FILTER_APERTURE "filter_aperture"
+#define FILTER_REPETITIONS "filter_repeats"
 #define GNUPLOT_NEWLINE "\\n"
 #define GNUPLOT_CANVAS_FONT 30
 
@@ -87,6 +89,7 @@ int main(int argc, char *argv[]){
   //Instantiate value for how many fields are in a row of the subtitle line
   unsigned subtitleLineColumns = 5;
   unsigned multiplotRows = 1, multiplotColumns = 1;
+
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -117,7 +120,9 @@ int main(int argc, char *argv[]){
   cli.Add(MULTIPLOT_LETTERS, std::vector<std::string>{"ml", "multiplot-letters"}, std::vector<int>{flagTypeThree}, "Replace curve labels with a letter for publication.");
   cli.Add(MULTIPLOT_ROWS, std::vector<std::string>{"mr", "multiplot-rows"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of rows to have in the multiplot.");
   cli.Add(MULTIPLOT_COLUMNS, std::vector<std::string>{"mc", "multiplot-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of columns to have in the multiplot.");
-  
+  cli.Add(FILTER_APERTURE, std::vector<std::string>{"f", "filter"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "Apply a moving average filter with this aperture.");
+  cli.Add(FILTER_REPETITIONS, std::vector<std::string>{"fr", "filter-repetitions"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The repeated applications of the filter. Default is 1.");
+
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
@@ -126,6 +131,21 @@ int main(int argc, char *argv[]){
     return 0;
   }
 
+  //Instantiate filter object
+  SignalProcessing::Filter averageFilter;
+  
+  //If aperture was provided
+  if(cli.Present(FILTER_APERTURE)){
+    //Set the aperture value
+    averageFilter.SetParameter(SignalProcessing::Parameters::Aperture, cli.GetNumeric(FILTER_APERTURE));
+  }
+
+  //If repetitions value is provided
+  if(cli.Present(FILTER_REPETITIONS)){
+    //Set the reptitions value
+    averageFilter.SetParameter(SignalProcessing::Parameters::Repetitions, cli.GetNumeric(FILTER_REPETITIONS));
+  }
+  
   //Determine output verbosity
   bool multiplot = cli.Present(MULTIPLOT), multiplotLetters = cli.Present(MULTIPLOT_LETTERS);
   bool debug = cli.Present(DEBUG);
@@ -260,6 +280,21 @@ int main(int argc, char *argv[]){
     }
   }
 
+  //If filtering data
+  if(cli.Present(FILTER_APERTURE)){
+    //Add a constant parameter indicating filter aperture
+    constantParameters.push_back("Filter Aperture: " + cli.Get(FILTER_APERTURE));
+    
+    //Add a constant parameter indicating filter repetitions
+    std::string filterRepeatsString = "1";
+    if(cli.Present(FILTER_REPETITIONS)){
+     filterRepeatsString = cli.Get(FILTER_REPETITIONS);
+    }
+
+    //Add a constant parameter indicating filter repetitions
+    constantParameters.push_back("Filter Repetitions: " + filterRepeatsString);
+  }
+  
   //Print out header line without consideration of subtitle count
   if(debug){
     std::cout << "Plot Subtitle" << std::endl;
@@ -660,6 +695,32 @@ int main(int argc, char *argv[]){
 	std::cout << std::endl;
       }
 
+      
+      //If a filter aperture value was provided
+      if(cli.Present(FILTER_APERTURE)){
+	//Extract curve data
+	std::vector<double> trace;
+
+	//For every curve
+	for(unsigned i = 0; i < curveData.size(); i++){
+	  //Clear trace data
+	  trace.clear();
+        
+	  //Build a trace vector
+	  for(unsigned j = 0; j < curveData[i].size(); j++){	
+	    trace.push_back(std::get<1>(curveData[i][j]));
+	  }
+        
+	  //Apply filter to trace
+	  averageFilter.Apply(&trace, SignalProcessing::Operation::MovingAverage);
+
+	  //Copy values back into curve
+	  for(unsigned j = 0; j < curveData[i].size(); j++){
+	    curveData[i][j] = std::make_tuple(std::get<0>(curveData[i][j]), trace[j], trace[j]);
+	  }
+	}
+      }
+      
       //Send GNU Plot parameters for a 2D plot
       int keyColumns = curveCount / 32;
       //If user provided a columns value
