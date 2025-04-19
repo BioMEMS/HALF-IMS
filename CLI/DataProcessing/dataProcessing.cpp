@@ -33,7 +33,10 @@
 #define LEGEND_FONT_SIZE "legend_font_size"
 #define MULTIPLOT "mutltiplot_enable"
 #define MULTIPLOT_LETTERS "mutltiplot_letters"
+#define MULTIPLOT_ROWS "multiplot_rows"
+#define MULTIPLOT_COLUMNS "multiplot_columns"
 #define GNUPLOT_NEWLINE "\\n"
+#define GNUPLOT_CANVAS_FONT 30
 
 //Parse out the units for the provided string
 std::string ParseUnits(std::string parameter){
@@ -83,6 +86,7 @@ int main(int argc, char *argv[]){
 
   //Instantiate value for how many fields are in a row of the subtitle line
   unsigned subtitleLineColumns = 5;
+  unsigned multiplotRows = 1, multiplotColumns = 1;
   //Instantiate command line input parser
   Utilities::CLIParser cli;
 
@@ -109,9 +113,11 @@ int main(int argc, char *argv[]){
   cli.Add(LEGEND_TITLE, std::vector<std::string>{"lt", "legend-title"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The string to use instead of the auto-generated legend title.");
   cli.Add(LEGEND_COLUMNS, std::vector<std::string>{"lc", "legend-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of columns to display in the legend instead of auto-generated quantity.");
   cli.Add(LEGEND_FONT_SIZE, std::vector<std::string>{"lfs", "legend-font-size"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The font size value to use in the legend instead of auto-generated quantity.");
-  cli.Add(MULTIPLOT, std::vector<std::string>{"m", "multiplot"}, std::vector<int>{flagTypeThree}, "Trigger the program to place each curve on a separate plot.");
+  cli.Add(MULTIPLOT, std::vector<std::string>{"m", "multiplot"}, std::vector<int>{flagTypeThree}, "Trigger the program to place each curve on a separate plot. Attempts to keep a square area by default.");
   cli.Add(MULTIPLOT_LETTERS, std::vector<std::string>{"ml", "multiplot-letters"}, std::vector<int>{flagTypeThree}, "Replace curve labels with a letter for publication.");
-    
+  cli.Add(MULTIPLOT_ROWS, std::vector<std::string>{"mr", "multiplot-rows"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of rows to have in the multiplot.");
+  cli.Add(MULTIPLOT_COLUMNS, std::vector<std::string>{"mc", "multiplot-columns"}, std::vector<int>{flagTypeOne, flagTypeTwo}, "The number of columns to have in the multiplot.");
+  
   //Parse provided arguments list
   cli.Parse(argc, argv);
 
@@ -413,7 +419,7 @@ int main(int argc, char *argv[]){
     std::vector<std::string> axisLimits;
     
     gp << "set output \"" << output << "/" << GenerateFileName(graphTitle) << ".png\"" << std::endl;
-    gp << "set terminal png size 1920,1080 font \" ,30\"" << std::endl;
+    gp << "set terminal png size 1920,1080 font \" ," << GNUPLOT_CANVAS_FONT << "\"" << std::endl;
     gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
     gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
 
@@ -461,7 +467,27 @@ int main(int argc, char *argv[]){
     gp << '"';
 
     if(multiplot){
-      gp << " layout 1," << curveCount << " rowsfirst";
+      //If user provided a rows value
+      if(cli.Present(MULTIPLOT_ROWS)){
+	//Update variable
+	multiplotRows = cli.GetNumeric(MULTIPLOT_ROWS);
+      }
+      else{
+	//Calculate by attempting to keep a square number of plots
+	multiplotRows = std::ceil(std::sqrt(curveCount));
+      }
+
+      //If user provided a columns value
+      if(cli.Present(MULTIPLOT_COLUMNS)){
+	//Update variable
+	multiplotColumns = cli.GetNumeric(MULTIPLOT_COLUMNS);
+      }
+      else{
+	//Calculate by attempting to keep a square number of plots
+	multiplotColumns = curveCount / multiplotRows;
+      }
+     
+      gp << " layout " << multiplotRows << "," << multiplotColumns << " rowsfirst";
     }
 
     //End the title/multiplot line
@@ -652,7 +678,7 @@ int main(int argc, char *argv[]){
 	std::cout << "Key Columns: " << keyColumns << std::endl;
       }
       
-      int fontSize = 20 / keyColumns;
+      int fontSize = (2 * GNUPLOT_CANVAS_FONT) / (3 * keyColumns);
       //If user provided a font size
       if(cli.Present(LEGEND_FONT_SIZE)){
 	//Replace auto-generated value
@@ -718,11 +744,47 @@ int main(int argc, char *argv[]){
 	gp << "set key off" << std::endl;
       }
 
+      //If multiplot requested
+      if(multiplot){
+	//Manage the tic sizes based upon the number of curves
+	gp << "set xtics font '," << GNUPLOT_CANVAS_FONT / multiplotColumns << "'" << std::endl;
+	gp << "set ytics font '," << GNUPLOT_CANVAS_FONT / multiplotRows << "'" << std::endl;
+      }
+      
       //Build the plot string one-liner
-      for(unsigned i = 0; i < curveData.size(); i++){
+      for(unsigned i = 0, row = 0, col = 0; i < curveData.size(); i++){
 	if(curveData[i].size() > 0){
-	  //If multiplot was requested
-	  if(multiplot){	    
+	  //If multiplot requested
+	  if(multiplot){
+	    //If the first column
+	    if(col == 0){
+	      //Set the Y-label 
+	      gp << "set ylabel \"" << possiblePlots[plotId][1] << "\"" << std::endl;
+	    }
+	    else{
+	      //Unset the Y-label
+	      gp << "unset ylabel" << std::endl;
+	    }
+
+	    //If the last row
+	    if((row + 1) == multiplotRows){
+	      //Set the X-label
+	      gp << "set xlabel \"" << possiblePlots[plotId][0] << "\"" << std::endl;
+	    }
+	    else{
+	      //Unset the X-label
+	      gp << "unset xlabel" << std::endl;
+	    }
+
+	    //Increment column counter
+	    col++;
+	    //If column counter exceeds maximum
+	    if(col >= multiplotColumns){
+	      //Reset and increment row counter
+	      col = 0;
+	      row++;
+	    }
+	    
 	    gp << "set label 1 \"{/*0.5";
 
 	    //If letters were requested
@@ -731,11 +793,12 @@ int main(int argc, char *argv[]){
 	      gp << '(' << (char)('a' + i) << ')';
 	    }
 	    else{
+	      //Use curve label string
 	      gp << curveLabels[i];
 	    }
-	    
 
-	    gp << "}\" at graph 0.05,0.98" << std::endl;
+	    //Close out label string
+	    gp << "}\" at graph 0.05,0.9" << std::endl;
 	  }
 
 	  //If the first curve or multiplot was requested
@@ -765,7 +828,13 @@ int main(int argc, char *argv[]){
 	    gp << std::endl;
 	  }
 	}
-      }      
+      }
+
+      //If multiplot requested
+      if(multiplot){
+	//Clean up multiplot operation
+	gp << "unset multiplot" << std::endl;
+      }
     }    
   }
   
