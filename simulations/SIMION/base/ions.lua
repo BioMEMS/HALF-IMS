@@ -161,8 +161,6 @@ function calculate_atom_count()
 	    zLength = get_simulated_z_device_length()
 	 end
 
-	 print(zLength)
-
 	 local deviceVolume = (get_ion_packet_x_length()*get_grid_x_spacing())*(get_device_y_length()*get_grid_y_spacing())*(zLength*get_grid_z_spacing())	 
 
 	 -- Determine 
