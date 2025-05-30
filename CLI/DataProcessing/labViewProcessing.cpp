@@ -403,6 +403,10 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	csvOutput(0, outputSize.Columns) = "Temperature (C)";
 	csvOutput(0, outputSize.Columns+1) = "Pressure (PSI)";
 	csvOutput(0, outputSize.Columns+2) = "Gap Size (um)";
+	csvOutput(0, outputSize.Columns+3) = "Control Ratio";
+
+	// Declare long and short electrode temporary values
+	double longElectrodeValue, shortElectrodeValue;
 	
 	//For every other row in the output file
 	for(unsigned i = outputSize.Rows - 1; i > 1; i-=2){
@@ -424,13 +428,17 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	    csvOutput(i, j) = "";	    
 	  }
 
-	  //Calculate long and short electrode voltage settings 
-	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)), ALLOWED_DIGITS));
-	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(Utilities::TruncateValue(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)), ALLOWED_DIGITS));
+	  // Calculat elong and short values from the settings
+	  longElectrodeValue = Utilities::TruncateValue(std::stod(csvOutput(i-1,7)) - std::stod(csvOutput(i-1,9)), ALLOWED_DIGITS);
+	  shortElectrodeValue = Utilities::TruncateValue(std::stod(csvOutput(i-1,10)) - std::stod(csvOutput(i-1,8)), ALLOWED_DIGITS);
+	  
+	  //Store long and short electrode voltage settings 
+	  csvOutput(i-1, outputSize.Columns-6) = std::to_string(longElectrodeValue);
+	  csvOutput(i-1, outputSize.Columns-5) = std::to_string(shortElectrodeValue);
 
 	  //Convert long and short electrode settings to Townsends
-	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-6))), ALLOWED_DIGITS));
-	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,std::stod(csvOutput(i-1, outputSize.Columns-5))), ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns-4) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,longElectrodeValue), ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns-3) = std::to_string(Utilities::TruncateValue(Utilities::ConvertValue_Townsends(systemTemperature,systemPressure,systemGap,shortElectrodeValue), ALLOWED_DIGITS));
 
 	  //Calculate ideal detector current
 	  csvOutput(i-1, outputSize.Columns-2) = std::to_string(Utilities::TruncateValue((1E12)*Utilities::CalculateCurrent(std::stod(csvOutput(i-1,5))), ALLOWED_DIGITS));
@@ -440,6 +448,9 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  csvOutput(i-1, outputSize.Columns) = std::to_string(Utilities::TruncateValue(systemTemperature, ALLOWED_DIGITS));
 	  csvOutput(i-1, outputSize.Columns+1) = std::to_string(Utilities::TruncateValue(systemPressure, ALLOWED_DIGITS));
 	  csvOutput(i-1, outputSize.Columns+2) = std::to_string(Utilities::TruncateValue(systemGapScaled, ALLOWED_DIGITS));
+
+	  //Calculate control ratio
+	  csvOutput(i-1, outputSize.Columns+3) = std::to_string(Utilities::TruncateValue(Utilities::CalculateNormalizedControl(longElectrodeValue, shortElectrodeValue), 3*ALLOWED_DIGITS));
 	  
 	  //Calculate diluted analyte concentration in the device
 	  csvOutput(i-1, 24) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))), ALLOWED_DIGITS));

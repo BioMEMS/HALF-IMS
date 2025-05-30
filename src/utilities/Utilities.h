@@ -169,6 +169,21 @@ namespace Utilities{
   //Output:  volume (double) - The calculated volume in Liters (L).
   //Note:    Calculate analyte volume from V_c = V / ((PPM / 1E6) * (D_c * MM) / (D * MM_c))
   double CalculateCarrierVolume(double targetConcentration, double analyteMolarMass, double analyteDensity, double analyteVolume, double carrierMolarMass, double carrierDensity);
+
+  //Name:    CalculateNormalizedControl
+  //Purpose: Calculate the normalized control parameters value.
+  //Input:   longVoltage (double) - The set long electrode voltage in Volts.
+  //         shortVoltage (double) - The set short electrode voltage in Volts.
+  //Output:  value (double) - The calculated normalized control parameter.
+  //Note:    Calculate ratio from VN = 1 - (VL/VS)
+  double CalculateNormalizedControl(double longVoltage, double shortVoltage);
+
+  //Name:    CalculateVoltageIntensity
+  //Purpose: Calculate voltage intensity relative to standard voltage.
+  //Input:   longVoltage (double) - The set electrode voltage in Volts.
+  //Output:  intensity (double) - The calculated intensity value.
+  //Note:    None
+  double CalculateVoltageIntensity(double voltage);
   
   //Name:    ContainsItem
   //Purpose: Template function to check presence of item in list.
