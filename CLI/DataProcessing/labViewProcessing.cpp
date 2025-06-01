@@ -31,6 +31,7 @@
 #define CSV_DET_ONE_COLUMN_INDEX 5
 #define CSV_DET_TWO_COLUMN_INDEX 6
 #define ALLOWED_DIGITS 3
+#define ALLOWED_DIGITS_CONTROL_RATIO 6
 
 //Determine if the column should be deleted based upon the header
 bool MarkColumnDeleted(std::string column){
@@ -450,7 +451,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	  csvOutput(i-1, outputSize.Columns+2) = std::to_string(Utilities::TruncateValue(systemGapScaled, ALLOWED_DIGITS));
 
 	  //Calculate control ratio
-	  csvOutput(i-1, outputSize.Columns+3) = std::to_string(Utilities::TruncateValue(Utilities::CalculateNormalizedControl(longElectrodeValue, shortElectrodeValue), 3*ALLOWED_DIGITS));
+	  csvOutput(i-1, outputSize.Columns+3) = std::to_string(Utilities::TruncateValue(Utilities::CalculateNormalizedControl(longElectrodeValue, shortElectrodeValue), ALLOWED_DIGITS_CONTROL_RATIO));
 	  
 	  //Calculate diluted analyte concentration in the device
 	  csvOutput(i-1, 24) = std::to_string(Utilities::TruncateValue(Utilities::CalculateAnalyteConcentration(std::stod(csvOutput(i-1,27)),std::stod(csvOutput(i-1,26)),std::stod(csvOutput(i-1,24))), ALLOWED_DIGITS));
