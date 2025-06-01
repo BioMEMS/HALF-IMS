@@ -404,7 +404,7 @@ cli.Add(SYSTEM_TEMPERATURE, std::vector<std::string>{"t", "temperature"}, std::v
 	csvOutput(0, outputSize.Columns) = "Temperature (C)";
 	csvOutput(0, outputSize.Columns+1) = "Pressure (PSI)";
 	csvOutput(0, outputSize.Columns+2) = "Gap Size (um)";
-	csvOutput(0, outputSize.Columns+3) = "Control Ratio";
+	csvOutput(0, outputSize.Columns+3) = "Control Ratio (V/V)";
 
 	// Declare long and short electrode temporary values
 	double longElectrodeValue, shortElectrodeValue;
