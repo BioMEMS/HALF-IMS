@@ -551,3 +551,73 @@ function get_chemical_properties(mass)
 	 -- Return table with both values
 	 return {["mass"] = molarMass, ["density"] = chemicalDensity}
 end
+
+-- Functions to manage periodic boundary conditions
+local periodic_boundary_enable_file_value = "periodic_boundary_enable"
+
+function get_periodic_boundary_status()
+	 return get_file_value(periodic_boundary_enable_file_value, 1)
+end
+
+function set_periodic_boundary_status(value)
+	 set_file_value(periodic_boundary_enable_file_value, value)
+	 return
+end
+
+function get_periodic_boundary_start()
+	 -- Return the total length of the shutter pattern
+	 -- which indicates the start of the first drift cell
+	 return get_shutter_pattern_length() * get_grid_x_spacing()
+end
+
+function get_periodic_boundary_stop()
+	 -- Return the total length of a single drift cell
+	 return (get_drift_cell_pattern_length() + get_shutter_pattern_length()) * get_grid_x_spacing()
+end
+
+-- Functions to updated position for periodic boundary conditions
+function calculate_slope(start_primary, stop_primary, start_secondary, stop_secondary)
+	 return (stop_secondary - start_secondary) / (stop_primary - start_primary)
+end
+
+function calculate_updated_position(x_pos, y_pos, z_pos, y_slope, z_slope)
+	 -- Calculate drift region dimensions
+	 local driftRegionXLength = get_grid_x_spacing() * get_electrode_pattern_length()
+	 local driftRegionYLength = get_grid_y_spacing() * get_device_y_length()
+ 	 local driftRegionZLength = get_grid_z_spacing() * get_device_z_length()
+
+	 -- Initially assume ion travels to end of drift region without striking a wall
+	 local updatedXPos = x_pos + driftRegionXLength
+	 local updatedYPos = y_slope * updatedXPos
+	 local updatedZPos = z_slope * updatedXPos
+
+	 -- If either calculate positions exceed the known device limits
+	 local exceededYDimensionUpper = (updatedYPos > driftRegionYLength)
+	 local exceededYDimensionLower = (updatedYPos < 0)
+ 	 local exceededZDimensionUpper = (updatedZPos > driftRegionZLength)
+	 local exceededZDimensionLower = (updatedZPos < 0)
+
+	 if (exceededYDimensionUpper or exceededYDimensionLower) then
+	    -- Recalculate X-position
+	    if (exceededYDimensionUpper) then
+		updatedYPos = driftRegionYLength
+	    else
+		updatedYPos = 0	
+	    end
+	    updatedXPos = updatedYPos / y_slope
+	    updatedZPos = z_slope * updatedXPos
+	 elseif (exceededZDimensionUpper or exceededZDimensionLower) then
+	    -- Recalculate X-position
+	    if (exceededZDimensionUpper) then
+		updatedZPos = driftRegionZLength
+	    else
+		updatedZPos = 0	
+	    end
+	    updatedXPos = updatedZPos / z_slope
+	    updatedYPos = y_slope * updatedXPos
+	 end
+
+	 -- Return all three values
+	 return updatedXPos, updatedYPos, updatedZPos
+end
+

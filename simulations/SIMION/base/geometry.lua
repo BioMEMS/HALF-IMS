@@ -296,8 +296,12 @@ function get_shutter_pattern_length()
 	 return get_shutter_electrode_length() + 2*get_shutter_electrode_spacing() + get_flow_channel_offset() + get_first_ground_pad_length()
 end
 
+function get_drift_cell_pattern_length()
+	 return 2*get_electrode_spacing() + get_short_electrode_length() + get_long_electrode_length()
+end	 
+
 function get_electrode_pattern_length()
-	 return get_electrode_pair_count()*(2*get_electrode_spacing() + get_short_electrode_length() + get_long_electrode_length())
+	 return get_electrode_pair_count()*get_drift_cell_pattern_length()
 end
 
 function get_detector_pattern_length()

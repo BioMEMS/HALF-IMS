@@ -9,7 +9,8 @@ simion.import("ions.lua")
 t = simion.experimental.dialog {
   title='Batch Simulation Parameters',
   {'Log File', get_results_file_name()},
-  {'Log File Header Written', get_header_line_present()},	
+  {'Log File Header Written', get_header_line_present()},
+  {'Periodic Boundary Enabled', get_periodic_boundary_status()},
   {'Long Electrode Min. Potential (V)', get_long_electrode_min_potential()},
   {'Long Electrode Max. Potential (V)', get_long_electrode_max_potential()},
   {'Long Electrode Step Potential (V)', get_long_electrode_step_potential()},
@@ -62,4 +63,5 @@ if(t.result == "Update") then
   set_ion_packet_x_length(t['Ion Packet X Stop (mm)'])
   set_results_file_name(t['Log File'])
   set_header_line_present(t['Log File Header Written'])
+  set_periodic_boundary_status(t['Periodic Boundary Enabled'])
 end

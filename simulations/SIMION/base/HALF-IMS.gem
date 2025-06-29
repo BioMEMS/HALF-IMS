@@ -50,7 +50,7 @@ simion.import("geometry.lua")
 # local electrodeLengthLong = get_long_electrode_length()
 
 ; The electrode pattern to lay down for every pair number
-# local electrodePattern = 2*electrodeSpacing + electrodeLengthShort + electrodeLengthLong
+# local electrodePattern = get_drift_cell_pattern_length()
 
 ; Define parameters for the bias ring and detector pad
 ; Unclear what this should be per paper, but set in grid units
