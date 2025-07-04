@@ -45,6 +45,7 @@ local periodic_boundary_stop_y_pos = {}
 local periodic_boundary_stop_z_pos = {}
 local periodic_boundary_y_slope = {}
 local periodic_boundary_z_slope = {}
+local periodic_boundary_ion_moved = {}
 local ion_current_x_pos = {}
 local ion_current_y_pos = {}
 local ion_current_z_pos = {}
@@ -54,6 +55,9 @@ local periodic_boundary_splat = {}
 local initial_x_pos = {}
 local initial_y_pos = {}
 local initial_z_pos = {}
+
+local ion_unique_mass = {}
+local ion_unique_charge = {}
 
 -- Flag tracking if the particular ion has been scaled
 local initial_scaled = {}
@@ -156,11 +160,14 @@ function segment.initialize()
    periodic_boundary_stop_z_pos[ion_number] = -1
    periodic_boundary_y_slope[ion_number] = 0
    periodic_boundary_z_slope[ion_number] = 0
+   periodic_boundary_ion_moved[ion_number] = 0
    ion_current_x_pos[ion_number] = 0
    ion_current_y_pos[ion_number] = 0
    ion_current_z_pos[ion_number] = 0
    periodic_boundary_splat[ion_number] = 0
    periodic_boundary_ions_through = 0
+   ion_unique_mass[ion_number] = ion_mass
+   ion_unique_charge[ion_number] = ion_charge   
 end
 
 function segment.initialize_run()
@@ -237,11 +244,14 @@ function segment.other_actions()
    ion_current_y_pos[ion_number] = tonumber(string.format("%.3f", ion_py_mm))
    ion_current_z_pos[ion_number] = tonumber(string.format("%.3f", ion_pz_mm))
       
-   -- If periodic boundary is enabled
+   -- If periodic boundary is enabled and ions have not gotten through the boundaries
    if (periodic_boundary_enabled ~= 0) then
       -- Save splat status
       periodic_boundary_splat[ion_number] = ion_splat
-      
+
+      -- Unset ions through flag
+      periodic_boundary_ions_through = 0
+
       -- If the ion is beyond the periodic boundary start and not saved
       if ((ion_current_x_pos[ion_number] >= periodic_boundary_start) and (periodic_boundary_start_x_pos[ion_number] < 0) and (periodic_boundary_stop_x_pos[ion_number] < 0)) then
 	 periodic_boundary_start_x_pos[ion_number] = ion_current_x_pos[ion_number]
@@ -254,37 +264,36 @@ function segment.other_actions()
 	 periodic_boundary_stop_x_pos[ion_number] = ion_current_x_pos[ion_number]
 	 periodic_boundary_stop_y_pos[ion_number] = ion_current_y_pos[ion_number]
 	 periodic_boundary_stop_z_pos[ion_number] = ion_current_z_pos[ion_number]
+
+	 -- Set flag indicating ion is through boundary conditions
+	 periodic_boundary_ions_through = 1
       end
 
       -- Determine if every ion is outside the periodic boundary condition
-      if (periodic_boundary_ions_through == 0) then
+      -- if (periodic_boundary_ions_through == 0) then
 	 -- loop over each element in the periodic boundary stop to determine if all done
-	 periodic_boundary_ions_through = 1
-	 for key,value in ipairs(periodic_boundary_stop_x_pos) do
+	 -- periodic_boundary_ions_through = 1
+	 -- for key,value in ipairs(periodic_boundary_stop_x_pos) do
 	     -- If any value is less than zero that has not struck something
-	     if ((periodic_boundary_splat[key] == 0) and (value < 0)) then
+	     -- if ((periodic_boundary_splat[key] == 0) and (value < 0)) then
 		-- Unset flag
-		periodic_boundary_ions_through = 0
-	     end
-	 end
-      end
+		-- periodic_boundary_ions_through = 0
+	     -- end
+	 -- end
+      -- end
 
-      -- If all ions are through the periodic boundaries
-      if (periodic_boundary_ions_through == 1) then
-      	 -- For every ion
-      	 for key,value in ipairs(periodic_boundary_start_x_pos) do
-	     -- If the ion is still in flight
-	     if (periodic_boundary_splat[key] == 0) then
-	           print(periodic_boundary_ions_through, key, periodic_boundary_start, periodic_boundary_stop, periodic_boundary_start_x_pos[key], periodic_boundary_stop_x_pos[key], ion_current_x_pos[key])
+      -- If all ions are through the periodic boundaries and in flight
+      if ((periodic_boundary_ion_moved[ion_number] == 0) and (periodic_boundary_ions_through == 1) and (periodic_boundary_splat[ion_number] == 0)) then
+      	 -- Calculate Y- and Z-slopes
+	 periodic_boundary_y_slope[ion_number] = calculate_slope(periodic_boundary_start_x_pos[ion_number], periodic_boundary_stop_x_pos[ion_number], periodic_boundary_start_y_pos[ion_number], periodic_boundary_stop_y_pos[ion_number])
+	 periodic_boundary_z_slope[ion_number] = calculate_slope(periodic_boundary_start_x_pos[ion_number], periodic_boundary_stop_x_pos[ion_number], periodic_boundary_start_z_pos[ion_number], periodic_boundary_stop_z_pos[ion_number])
+	 -- Calculate updated position
+	 ion_px_mm, ion_py_mm, ion_pz_mm = calculate_updated_position(periodic_boundary_start_x_pos[ion_number], periodic_boundary_start_y_pos[ion_number], periodic_boundary_start_z_pos[ion_number], periodic_boundary_y_slope[ion_number], periodic_boundary_z_slope[ion_number])
 
-		-- Calculate Y- and Z-slopes
-		periodic_boundary_y_slope[key] = calculate_slope(periodic_boundary_start_x_pos[key], periodic_boundary_stop_x_pos[key], periodic_boundary_start_y_pos[key], periodic_boundary_stop_y_pos[key])
-		periodic_boundary_z_slope[key] = calculate_slope(periodic_boundary_start_x_pos[key], periodic_boundary_stop_x_pos[key], periodic_boundary_start_z_pos[key], periodic_boundary_stop_z_pos[key])
-
-		-- Calculate updated position
-		ion_px_mm, ion_py_mm, ion_pz_mm = calculate_updated_position(ion_current_x_pos[key], ion_current_y_pos[key], ion_current_z_pos[key], periodic_boundary_y_slope[key], periodic_boundary_z_slope[key])
-	     end
-	 end
+	 -- Update the current ion position
+   	 ion_current_x_pos[ion_number] = tonumber(string.format("%.3f", ion_px_mm))
+	 ion_current_y_pos[ion_number] = tonumber(string.format("%.3f", ion_py_mm))
+	 ion_current_z_pos[ion_number] = tonumber(string.format("%.3f", ion_pz_mm))
       end
    end
    
@@ -304,6 +313,9 @@ end
 function segment.terminate()
   sim_retain_changed_potentials = freeze_potentials
 
+end
+
+function segment.terminate_run()
   -- Initialize output log line
   output_log_line = ""
 
@@ -369,7 +381,6 @@ function segment.terminate()
   end
 
   for key,value in ipairs(ion_current_x_pos) do
-      print("Saving:", key, ion_current_x_pos[key], ion_current_y_pos[key], ion_current_z_pos[key])
        -- Log final position, hit metric, and simulation parameters
        output_log_line = output_log_line .. workbenchGroupedSetting .. ","
        output_log_line = output_log_line .. workbenchGroupedRepulsion .. ","
@@ -395,9 +406,9 @@ function segment.terminate()
        output_log_line = output_log_line .. upstreamPressure .. ","
        output_log_line = output_log_line .. carrierPressure .. ","
        output_log_line = output_log_line .. chemicalConcentration .. ","
-       output_log_line = output_log_line .. ion_mass .. ","
-       output_log_line = output_log_line .. ion_charge .. ","
-       output_log_line = output_log_line .. ion_number .. ","
+       output_log_line = output_log_line .. ion_unique_mass[key] .. ","
+       output_log_line = output_log_line .. ion_unique_charge[key] .. ","
+       output_log_line = output_log_line .. key .. ","
        output_log_line = output_log_line .. cur_carrier_gas .. ","
        output_log_line = output_log_line .. bias_ring_voltage .. ","
        output_log_line = output_log_line .. shutter_electrode_voltage .. ","
@@ -409,9 +420,9 @@ function segment.terminate()
        output_log_line = output_log_line .. initial_x_pos[key] .. ","
        output_log_line = output_log_line .. initial_y_pos[key] .. ","
        output_log_line = output_log_line .. initial_z_pos[key] .. ","
-       output_log_line = output_log_line .. ion_px_mm .. ","
-       output_log_line = output_log_line .. ion_py_mm .. ","
-       output_log_line = output_log_line .. ion_pz_mm .. ","
+       output_log_line = output_log_line .. ion_current_x_pos[key] .. ","
+       output_log_line = output_log_line .. ion_current_y_pos[key] .. ","
+       output_log_line = output_log_line .. ion_current_z_pos[key] .. ","
        if (periodic_boundary_enabled == 1) then
 	  output_log_line = output_log_line .. periodic_boundary_start_x_pos[key] .. ","
 	  output_log_line = output_log_line .. periodic_boundary_start_y_pos[key] .. ","

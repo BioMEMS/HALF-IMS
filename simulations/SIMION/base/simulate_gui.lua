@@ -33,6 +33,7 @@ t = simion.experimental.dialog {
   {'Simulation Repulsion Type', get_iob_grouped_repulsion()},	
   {'Simulation Repulsion Value (C)', get_iob_grouped_repulsion_value()},
   {'Simulation Trajectory Quality', get_iob_trajectory_quality()},	
+  {'Simulation Image Control Mask', get_iob_trajectory_image_control()},	
   {'Simulation Loop Count', get_simulate_loop_count()},
   buttons="&Update|&Close"
 }
@@ -59,6 +60,7 @@ if(t.result == "Update") then
   set_iob_grouped_repulsion(t['Simulation Repulsion Type'])
   set_iob_grouped_repulsion_value(t['Simulation Repulsion Value (C)'])
   set_iob_trajectory_quality(t['Simulation Trajectory Quality'])
+  set_iob_trajectory_image_control(t['Simulation Image Control Mask'])
   set_simulate_loop_count(t['Simulation Loop Count'])
   set_ion_packet_x_length(t['Ion Packet X Stop (mm)'])
   set_results_file_name(t['Log File'])

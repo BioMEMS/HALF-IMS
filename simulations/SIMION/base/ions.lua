@@ -431,7 +431,7 @@ end
 
 -- Functions to get/set the ion trajectory settings
 local iob_trajectory_quality_file_value = "iob_trajectory_quality_setting"
-local iob_trajectory_image_control_file_value = "iob_trajectory_image_control"
+local iob_trajectory_image_control_file_value = "iob_trajectory_image_control_mask"
 
 function get_iob_trajectory_quality()
 	 return get_file_value(iob_trajectory_quality_file_value, 0)
@@ -586,10 +586,17 @@ function calculate_updated_position(x_pos, y_pos, z_pos, y_slope, z_slope)
 	 local driftRegionYLength = get_grid_y_spacing() * get_device_y_length()
  	 local driftRegionZLength = get_grid_z_spacing() * get_device_z_length()
 
+	 -- If doing a cross-sectional simulation
+	 if (driftRegionZLength == 0) then
+	    -- Enforce no position change
+	    z_slope = 0
+	    z_pos = 0
+	 end
+	 
 	 -- Initially assume ion travels to end of drift region without striking a wall
 	 local updatedXPos = x_pos + driftRegionXLength
-	 local updatedYPos = y_slope * updatedXPos
-	 local updatedZPos = z_slope * updatedXPos
+	 local updatedYPos = y_slope * driftRegionXLength + y_pos
+	 local updatedZPos = z_slope * driftRegionXLength + z_pos
 
 	 -- If either calculate positions exceed the known device limits
 	 local exceededYDimensionUpper = (updatedYPos > driftRegionYLength)
@@ -604,8 +611,12 @@ function calculate_updated_position(x_pos, y_pos, z_pos, y_slope, z_slope)
 	    else
 		updatedYPos = 0	
 	    end
-	    updatedXPos = updatedYPos / y_slope
-	    updatedZPos = z_slope * updatedXPos
+	    -- Calculate the X-position change
+	    updatedXPos = (updatedYPos - y_pos) / y_slope
+	    -- Re-calculate Z-position
+	    updatedZPos = z_slope * updatedXPos + z_pos
+	    -- Properly update X-position relative to provided
+	    updatedXPos = updatedXPos + x_pos
 	 elseif (exceededZDimensionUpper or exceededZDimensionLower) then
 	    -- Recalculate X-position
 	    if (exceededZDimensionUpper) then
@@ -613,8 +624,12 @@ function calculate_updated_position(x_pos, y_pos, z_pos, y_slope, z_slope)
 	    else
 		updatedZPos = 0	
 	    end
-	    updatedXPos = updatedZPos / z_slope
-	    updatedYPos = y_slope * updatedXPos
+   	    -- Calculate the X-position change
+	    updatedXPos = (updatedZPos - z_pos) / z_slope
+	    -- Re-calculate Y-position
+	    updatedYPos = y_slope * updatedXPos + y_pos
+	    -- Properly update X-position relative to provided
+	    updatedXPos = updatedXPos + x_pos
 	 end
 
 	 -- Return all three values
