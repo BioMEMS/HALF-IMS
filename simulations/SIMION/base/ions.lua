@@ -2,7 +2,7 @@ simion.import("file_io.lua")
 simion.import("geometry.lua")
 
 --Function to build an ion file and place in particles directory
-function build_ion_file(name, masses, charges)
+function build_ion_file(name, masses, charges, concentrations)
 
 	 local fileID = io.open(name,"w")
 	 local particles = 0
@@ -18,10 +18,10 @@ function build_ion_file(name, masses, charges)
 	     -- If charge is neutral
 	     if(charges[i] == 0) then
 	        -- Assume carrier gas
-	        particles = calculate_atom_count()
+	        particles = calculate_atom_count(concentrations[i])
 	     else
 		-- Calculate ion count per concentration
-	        particles = calculate_ion_count()
+	        particles = calculate_ion_count(concentrations[i])
 		ions = ions + particles
 	     end
 
@@ -31,9 +31,10 @@ function build_ion_file(name, masses, charges)
 	     -- If charges are not neutral
 	     if(charges[i] ~= 0) then
 	        -- Calculate non-ionized particles
-	     	particles = calculate_atom_count() - particles
+	     	particles = calculate_atom_count(concentrations[i]) - particles
 
-		--fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), "0", "0"))
+		-- Add non-ionized particles to packet
+		fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), "0", "0"))
 	     end
 	 end 
 
@@ -83,19 +84,19 @@ function set_current_ion_file(packet_string)
 	 -- Parse packet string
  	 local masses = {}
 	 local charges = {}
-	 for pair in string.gmatch(packet_string, "([^,]+)") do
+	 local concentrations = {}
+	 for pair in string.gmatch(packet_string, "([^;]+)") do
 	     local table = {}
-	     local count = 1
 	     for value in string.gmatch(pair, "([^|]+)") do
-	     	 table[count] = value
-		 count = count + 1
+	     	 table[#table + 1] = value
 	     end
 	     masses[#masses + 1] = table[1]
 	     charges[#charges + 1] = table[2]
+	     concentrations[#concentrations + 1] = table[3]
 	 end
 
 	 -- Dynamically build ion file
-	 build_ion_file(temp, masses, charges)	 
+	 build_ion_file(temp, masses, charges, concentrations)	 
 
 	 -- Copy file to local directory
 	 copy_file(temp, tempFileName)
@@ -104,20 +105,18 @@ function set_current_ion_file(packet_string)
 	 local electrodeHeight = 2*math.ceil(get_electrode_height())
 	 local yDimension = get_device_y_length()
 	 local zDimension = get_device_z_length()
-
+	 local ionPacketEnd = tostring(1 + math.ceil((get_ion_packet_x_length() / get_grid_x_spacing())))
+	 
 	 -- Open file with read/write
 	 local tempID = io.open(tempFileName,"r")
 	 local fileID = io.open(temp,"w")
-	 
-	 -- Get ion count
-	 local ionPacketEnd = tostring(get_ion_packet_x_length())
 	 
 	 -- For every line in the file
 	 for line in tempID:lines() do
 	     -- If it matches the first position vector
 	     if (string.match(tostring(line), " *first =.*")) then
 	     	 -- Updating Y position
-	     	 fileID:write("      first = vector(0, " .. tostring(electrodeHeight) .. ", " .. tostring(0.2*zDimension) .. "),")
+	     	 fileID:write("      first = vector(1, " .. tostring(electrodeHeight) .. ", " .. tostring(0.2*zDimension) .. "),")
 	     elseif (string.match(tostring(line), " *last =.*")) then
 	     	 -- Updating Y position end
      	     	 fileID:write("      last = vector(" .. ionPacketEnd .. ", " .. tostring(yDimension - electrodeHeight) .. " , " .. tostring(0.8*zDimension) .. ")")
@@ -143,16 +142,15 @@ function set_current_ion_file(packet_string)
 end
 
 --Function to calculate the total number of ions based upon concentration
-function calculate_ion_count()
+function calculate_ion_count(concentration)
 
 	 -- Reduce total atom count by ionization percentage
-	 local ions = get_ionization_percentage() * calculate_atom_count()
+	 local ions = get_ionization_percentage() * calculate_atom_count(concentration)
 	 
 	 return math.floor(ions)
 end
 
-function calculate_atom_count()
-	 local chemicalConcentration = get_chemical_concentration()
+function calculate_atom_count(chemicalConcentration)
 	 local zLength = get_device_z_length()
 
 	 -- If cross-sectional simulation
@@ -177,17 +175,6 @@ end
 
 function set_ion_packet_x_length(length)
 	 set_file_value(ion_packet_x_length_file_value, length)
-	 return
-end
-
---Functions to set/get the current chemical concentration
-local chemical_concentration="drift_region_chemical_concentration"
-function get_chemical_concentration()
-	 return get_file_value(chemical_concentration, 0)
-end
-
-function set_chemical_concentration(value)
-	 set_file_value(chemical_concentration, value)
 	 return
 end
 
