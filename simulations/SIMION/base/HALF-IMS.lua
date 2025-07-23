@@ -85,7 +85,6 @@ local workbenchGroupedSetting = get_iob_grouped_setting()
 local workbenchGroupedRepulsion = get_iob_grouped_repulsion()
 local workbenchRepulsionValue = get_iob_grouped_repulsion_value()
 local workbenchTrajectorySetting = get_iob_trajectory_quality()
-local chemicalConcentration = get_chemical_concentration()
 local upstreamPressure = get_upstream_pressure() / 6894.75729
 local carrierPressure = get_carrier_gas_pressure() / 6894.75729
 
@@ -344,7 +343,6 @@ function segment.terminate_run()
      output_log_line = output_log_line .. "Current Ion File,"
      output_log_line = output_log_line .. "Upstream Pressure (psi),"
      output_log_line = output_log_line .. "Carrier Pressure (psi),"
-     output_log_line = output_log_line .. "Concentration (ppm),"
      output_log_line = output_log_line .. "Ion Mass (u),"
      output_log_line = output_log_line .. "Ion Charge (e),"
      output_log_line = output_log_line .. "Ion Number,"
@@ -405,7 +403,6 @@ function segment.terminate_run()
        output_log_line = output_log_line .. cur_ion_file .. ","
        output_log_line = output_log_line .. upstreamPressure .. ","
        output_log_line = output_log_line .. carrierPressure .. ","
-       output_log_line = output_log_line .. chemicalConcentration .. ","
        output_log_line = output_log_line .. ion_unique_mass[key] .. ","
        output_log_line = output_log_line .. ion_unique_charge[key] .. ","
        output_log_line = output_log_line .. key .. ","
