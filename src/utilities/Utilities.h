@@ -177,7 +177,16 @@ namespace Utilities{
   //Output:  value (double) - The calculated normalized control parameter.
   //Note:    Calculate ratio from VN = 1 - (VL/VS)
   double CalculateNormalizedControl(double longVoltage, double shortVoltage);
-
+  
+  //Name:    CalculateVoltageFromControl
+  //Purpose: Calculate the appropriate voltage given the control ratio and other voltage parameter.
+  //Input:   voltage (double) - The set electrode voltage in Volts.
+  //         control (double) - The normalized control ratio.
+  //         shortProvided (bool) - Flag indicating if the short (true) or long (false) electrode voltage was provided.
+  //Output:  value (double) - The calcualted voltage parameter.
+  //Note:    Calculate VS = VL / (1 - VN) & VL = VS * (1 - VN)
+  double CalculateVoltageFromControl(double control, double voltage, bool shortProvided);
+  
   //Name:    CalculateVoltageIntensity
   //Purpose: Calculate voltage intensity relative to standard voltage.
   //Input:   longVoltage (double) - The set electrode voltage in Volts.

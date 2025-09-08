@@ -144,8 +144,26 @@ double Utilities::CalculateCarrierVolume(double targetConcentration, double anal
 }
 
 double Utilities::CalculateNormalizedControl(double longVoltage, double shortVoltage){
+  // If either input are zero
+  if((shortVoltage == 0.0) || (longVoltage == 0.0)){
+    // Return default value of zero
+    return 0;
+  }
+  
   // Calculate appropriate ratio and then subtract from unity
   return 1 - (longVoltage / shortVoltage);
+}
+
+double Utilities::CalculateVoltageFromControl(double control, double voltage, bool shortProvided){
+  // If the short voltage is provided
+  if(shortProvided){
+    // Calculate the long voltage
+    return voltage * (1 - control);
+  }
+  else{
+    // Calculate the short voltage
+    return voltage / (1 - control);
+  }
 }
 
 double Utilities::CalculateVoltageIntensity(double voltage){

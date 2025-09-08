@@ -63,6 +63,10 @@
 //Pre-processor variables for output file columns
 #define AVG_COUNT "Average Count"
 #define ION_CURRENT "Ion Current (pA)"
+#define CONTROL_RATIO "Control Ratio (V/V)"
+
+//Pre-processor variables for value processing
+#define ROUNDING_DIGITS 5
 
 //Find the index of the provided value, return -1 if not found
 bool FindIndex(std::vector<std::string> items, std::string value){
@@ -315,11 +319,13 @@ int main(int argc, char *argv[]){
     columnToIndexMapping[DET_HIT_RATIO] = columnsInFile.size();
     columnToIndexMapping[AVG_COUNT] = columnsInFile.size() + 1;
     columnToIndexMapping[ION_CURRENT] = columnsInFile.size() + 2;
+    columnToIndexMapping[CONTROL_RATIO] = columnsInFile.size() + 3;
     
     //Write the appropriate columns headers
     outputFile(0, columnToIndexMapping[DET_HIT_RATIO]) = DET_HIT_RATIO;
     outputFile(0, columnToIndexMapping[AVG_COUNT]) = AVG_COUNT;
     outputFile(0, columnToIndexMapping[ION_CURRENT]) = ION_CURRENT;
+    outputFile(0, columnToIndexMapping[CONTROL_RATIO]) = CONTROL_RATIO;
     
     //For all packet keys found
     for(unsigned i = 0, fileRow = 1, columnCount = columnsInFile.size(); i < ionPacketKeys.size(); i++, fileRow = i + 1){
@@ -350,6 +356,7 @@ int main(int argc, char *argv[]){
       outputFile(fileRow, columnToIndexMapping[DET_HIT_RATIO]) = std::to_string(ionPacketData[ionPacketKeys[i]][DET_HIT] / ionPacketData[ionPacketKeys[i]][AVG_COUNT]);
       outputFile(fileRow, columnToIndexMapping[AVG_COUNT]) = std::to_string(ionPacketData[ionPacketKeys[i]][AVG_COUNT]);      
       outputFile(fileRow, columnToIndexMapping[ION_CURRENT]) = std::to_string((1E12) * Utilities::CalculateCurrent(ionPacketData[ionPacketKeys[i]][DET_HIT], ionPacketData[ionPacketKeys[i]][X_LENGTH] / ((1E6) * ionPacketData[ionPacketKeys[i]][ION_VELOCITY_X])));
+      outputFile(fileRow, columnToIndexMapping[CONTROL_RATIO]) = std::to_string(Utilities::TruncateValue(Utilities::CalculateNormalizedControl(ionPacketData[ionPacketKeys[i]][LONG_VOLTAGE], ionPacketData[ionPacketKeys[i]][SHORT_VOLTAGE]), ROUNDING_DIGITS));
     }
 
     //Write object contents to disk
