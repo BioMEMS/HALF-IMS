@@ -14,9 +14,9 @@ t = simion.experimental.dialog {
   {'Long Electrode Min. Potential (V)', get_long_electrode_min_potential()},
   {'Long Electrode Max. Potential (V)', get_long_electrode_max_potential()},
   {'Long Electrode Step Potential (V)', get_long_electrode_step_potential()},
-  {'Short Electrode Min. Potential (V)', get_short_electrode_min_potential()},
-  {'Short Electrode Max. Potential (V)', get_short_electrode_max_potential()},
-  {'Short Electrode Step Potential (V)', get_short_electrode_step_potential()},
+  {'Control Ratio Min. (V/V)', get_control_ratio_min()},
+  {'Control Ratio Max. (V/V)', get_control_ratio_max()},
+  {'Control Ratio Step (V/V)', get_control_ratio_step()},
   {'Bias Electrode Min. Potential (V)', get_bias_electrode_min_potential()},
   {'Bias Electrode Max. Potential (V)', get_bias_electrode_max_potential()},
   {'Bias Electrode Step Potential (V)', get_bias_electrode_step_potential()},
@@ -41,9 +41,9 @@ if(t.result == "Update") then
   set_long_electrode_min_potential(t['Long Electrode Min. Potential (V)'])
   set_long_electrode_max_potential(t['Long Electrode Max. Potential (V)'])
   set_long_electrode_step_potential(t['Long Electrode Step Potential (V)'])
-  set_short_electrode_min_potential(t['Short Electrode Min. Potential (V)'])
-  set_short_electrode_max_potential(t['Short Electrode Max. Potential (V)'])
-  set_short_electrode_step_potential(t['Short Electrode Step Potential (V)'])
+  set_control_ratio_min(t['Control Ratio Min. (V/V)'])
+  set_control_ratio_max(t['Control Ratio Max. (V/V)'])
+  set_control_ratio_step(t['Control Ratio Step (V/V)'])
   set_bias_electrode_min_potential(t['Bias Electrode Min. Potential (V)'])
   set_bias_electrode_max_potential(t['Bias Electrode Max. Potential (V)'])
   set_bias_electrode_step_potential(t['Bias Electrode Step Potential (V)'])

@@ -75,32 +75,36 @@ function set_long_electrode_step_potential(value)
 end
 
 -- Functions to control short electrode potential ranges during simulation
-local short_electrode_min_potential_file_name = "short_electrode_min_potential"
-local short_electrode_max_potential_file_name = "short_electrode_max_potential"
-local short_electrode_step_potential_file_name = "short_electrode_step_potential"
+local control_ratio_min_file_name = "control_ratio_min"
+local control_ratio_max_file_name = "control_ratio_max"
+local control_ratio_step_file_name = "control_ratio_step"
 
-function get_short_electrode_min_potential()
-	 return get_file_value(short_electrode_min_potential_file_name, 0)
+function get_control_ratio_min()
+	 return get_file_value(control_ratio_min_file_name, 0)
 end
 
-function set_short_electrode_min_potential(value)
-	 set_file_value(short_electrode_min_potential_file_name, value)
+function set_control_ratio_min(value)
+	 set_file_value(control_ratio_min_file_name, value)
 end
 
-function get_short_electrode_max_potential()
-	 return get_file_value(short_electrode_max_potential_file_name, 60)
+function get_control_ratio_max()
+	 return get_file_value(control_ratio_max_file_name, 1)
 end
 
-function set_short_electrode_max_potential(value)
-	 set_file_value(short_electrode_max_potential_file_name, value)
+function set_control_ratio_max(value)
+	 set_file_value(control_ratio_max_file_name, value)
 end
 
-function get_short_electrode_step_potential()
-	 return get_file_value(short_electrode_step_potential_file_name, 0.25)
+function get_control_ratio_step()
+	 return get_file_value(control_ratio_step_file_name, 0.01)
 end
 
-function set_short_electrode_step_potential(value)
-	 set_file_value(short_electrode_step_potential_file_name, value)
+function set_control_ratio_step(value)
+	 set_file_value(control_ratio_step_file_name, value)
+end
+
+function calculate_short_electrode_potential(long_electrode_potential, control_ratio)
+	 return long_electrode_potential / (1 - control_ratio)
 end
 
 -- Functions to control bias electrode potential ranges during simulation

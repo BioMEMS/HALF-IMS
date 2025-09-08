@@ -92,9 +92,9 @@ local min_long = get_long_electrode_min_potential()
 local max_long = get_long_electrode_max_potential()
 local step_long = get_long_electrode_step_potential()
 
-local min_short = get_short_electrode_min_potential()
-local max_short = get_short_electrode_max_potential()
-local step_short = get_short_electrode_step_potential()
+local min_control = get_control_ratio_min()
+local max_control = get_control_ratio_max()
+local step_control = get_control_ratio_step()
 
 local min_bias = get_bias_electrode_min_potential()
 local max_bias = get_bias_electrode_max_potential()
@@ -123,16 +123,16 @@ function segment.flym()
 		    set_long_electrode_potential(lep)
 
 		    -- For each short electrode voltage
-		    for sep=min_short,max_short,step_short do
+		    for cr=min_control,max_control,step_control do
 			-- Set short electrode voltage
-			short_electrode_voltage = sep
-			set_short_electrode_potential(sep)
+			short_electrode_voltage = calculate_short_electrode_potential(lep, cr)
+			set_short_electrode_potential(short_electrode_voltage)
  			
 			-- Run simulation
 			run()
 			
 			-- Report progress
-			print("Long (V):",lep,"Short (V):",sep,"Bias (V):",bep,"Repeats:",repetition,"/",repetition_count)
+			print("Long (V):",lep,"Control Ratio (V/V):",cr,"Short (V):",short_electrode_voltage,"Bias (V):",bep,"Repeats:",repetition,"/",repetition_count)
 	    	    end
 		end
 	    end

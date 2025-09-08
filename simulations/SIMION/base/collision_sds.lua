@@ -1303,7 +1303,7 @@ function M.update_ion()
   -- or independent of position.
   local nion = ion_number
   ions_log_mr_ratio[nion]       = logmrratio
-  ions_STP_damping[nion]        = damping
+  ions_STP_damping[nion]        = abs(damping)
   ions_STP_mfp_mm[nion]         = mfpmass
   ions_STP_Vo_mm_per_usec[nion] = vmass
 
