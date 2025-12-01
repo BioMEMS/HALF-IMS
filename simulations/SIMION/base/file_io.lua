@@ -1,4 +1,4 @@
-local configuration_file_name = "config.tmp"
+local configuration_file_name = "settings.config"
 local configuration_separator = ":"
 
 -- Get all functions within a file

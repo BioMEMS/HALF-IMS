@@ -10,6 +10,7 @@ t = simion.experimental.dialog {
   title='Batch Simulation Parameters',
   {'Log File', get_results_file_name()},
   {'Log File Header Written', get_header_line_present()},
+  {'Neutral Particles Enabled', get_neutral_particle_output_status()},	
   {'Periodic Boundary Enabled', get_periodic_boundary_status()},
   {'Long Electrode Min. Potential (V)', get_long_electrode_min_potential()},
   {'Long Electrode Max. Potential (V)', get_long_electrode_max_potential()},
@@ -64,4 +65,5 @@ if(t.result == "Update") then
   set_results_file_name(t['Log File'])
   set_header_line_present(t['Log File Header Written'])
   set_periodic_boundary_status(t['Periodic Boundary Enabled'])
+  set_neutral_particle_output_status(t['Neutral Particles Enabled'])
 end

@@ -13,10 +13,10 @@ if (len(sys.argv) < 2 or not os.path.isdir(sys.argv[1])):
     sys.exit(1)
 
 # Build the target file path
-target_file="config"
+target_file="settings.config"
 target_path=os.path.abspath(sys.argv[1] + "/" + target_file)
 simulation_directory_path=os.path.abspath(os.path.dirname(__file__) + "/base/")
-destination_path=os.path.abspath(simulation_directory_path + "/" + target_file + ".tmp")
+destination_path=os.path.abspath(simulation_directory_path + "/" + target_file)
 
 # Indicate target path for files
 print("Target Path:", target_path)

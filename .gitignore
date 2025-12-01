@@ -13,6 +13,7 @@ simulations/SIMION/base/*.fly2
 simulations/SIMION/base/*.fly
 simulations/SIMION/base/*.ion
 simulations/SIMION/base/*.csv
+simulations/SIMION/base/*.config
 
 #Directories to ignore
 bin/

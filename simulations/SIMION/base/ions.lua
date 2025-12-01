@@ -29,7 +29,7 @@ function build_ion_file(name, masses, charges, concentrations)
 	     fileID:write(string.format(contentFormatString, tostring(particles), tostring(masses[i]), tostring(charges[i]), tostring(i)))
 
 	     -- If charges are not neutral
-	     if(charges[i] ~= 0) then
+	     if((get_neutral_particle_output_status() == 1) and (charges[i] ~= 0)) then
 	        -- Calculate non-ionized particles
 	     	particles = calculate_atom_count(concentrations[i]) - particles
 
@@ -56,7 +56,7 @@ end
 --Functions to set/get a list of ion files to process
 local simulation_ions_file_name = "simulate_files_list"
 function get_ion_files()
-	 return get_raw_file_value(simulation_ions_file_name, "")
+	 return get_raw_file_value(simulation_ions_file_name, "74.055|-1|0.001;205.236|1|0.001")
 end
 
 function set_ion_files(value_list)
@@ -623,3 +623,14 @@ function calculate_updated_position(x_pos, y_pos, z_pos, y_slope, z_slope)
 	 return updatedXPos, updatedYPos, updatedZPos
 end
 
+-- Functions to manage inclusion of neutral particles in ion file
+local neutral_particle_output_enable_file_value = "neutral_particle_in_flym_enable"
+
+function get_neutral_particle_output_status()
+	 return get_file_value(neutral_particle_output_enable_file_value, 0)
+end
+
+function set_neutral_particle_output_status(value)
+	 set_file_value(neutral_particle_output_enable_file_value, value)
+	 return
+end
