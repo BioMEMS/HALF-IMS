@@ -4,7 +4,10 @@ COMPILER=g++
 CPPFLAGS=-ggdb -std=c++26 -Wall -Wextra
 #Declare linker flags
 LDFLAGS=$(CPPFLAGS)
-LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
+LDFLAGS+=-lutil
+LDFLAGS+=-lboost_iostreams
+#LDFLAGS+=-lboost_system
+LDFLAGS+=-lboost_filesystem
 #Declare output file
 OUTFILE=processing.x
 
