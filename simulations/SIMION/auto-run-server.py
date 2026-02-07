@@ -52,11 +52,12 @@ while True:
         subprocess.run([command], shell=True)
 
         # Move any detected CSV files back to target directory
-        print("Moving results to configuration file directory.")
-        for item in os.listdir(simulation_directory_path):
-            if(len(re.findall(".*\\.csv$",item)) > 0):
-                print("Moving", item)
-                shutil.move(os.path.abspath(simulation_directory_path + "/" + item), os.path.abspath(sys.argv[1]))
+        #print("Moving results to configuration file directory.")
+        
+    for item in os.listdir(simulation_directory_path):
+        if(len(re.findall(".*\\.csv$",item)) > 0):
+            print("Moving", item)
+            shutil.move(os.path.abspath(simulation_directory_path + "/" + item), os.path.abspath(sys.argv[1]))
                 
         # Once finished, change the file extension to prevent re-runs while preserving a log of what was run
         print("Removing configuration file from runtime list.")
